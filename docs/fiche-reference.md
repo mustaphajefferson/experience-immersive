@@ -117,7 +117,7 @@ L'accent sert uniquement pour : le déclencheur et le cadre du scanner, le bouto
 - **Figma :** fichier « experience-immersive », partagé avec le binôme. Le connecteur Figma (offre Starter) est limité à 6 appels par mois : il sert à lire, pas à écrire.
 - **Plugin Figma v3 :** génère les 11 maquettes et la section 09. Il se relie aux variables et styles du fichier par leur nom.
 - **Google Doc « experience immersive » :** dossier partagé (recherche, entretiens fictifs, benchmark, persona, parcours, storyboard).
-- **Dépôt GitHub `experience-immersive` :** code du plugin, tokens, affiches, et le site prototype à venir.
+- **Dépôt GitHub `experience-immersive` :** code du plugin, tokens, affiches, et le site prototype (`site/`, déployé sur GitHub Pages par `.github/workflows/pages.yml`).
 
 ## 7. Méthode de travail
 

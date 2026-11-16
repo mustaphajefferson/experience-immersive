@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Expérience immersive — prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <div class="disposition">
+    <aside class="sommaire">
+      <p class="t-texte-meta secondaire">Expérience immersive · prototype</p>
+      <h1 class="t-titre-m">Parcours d'Inès</h1>
+      <p class="t-texte-petit secondaire">
+        11 écrans, design system v1.0. On navigue dans le téléphone (boutons, onglets, glisser)
+        ou depuis cette liste.
+      </p>
+      <nav id="sommaire" class="liste-ecrans" aria-label="Écrans"></nav>
+    </aside>
+    <main class="scene">
+      <div id="ecran" class="ecran" role="application" aria-label="Prototype de l'application"></div>
+    </main>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

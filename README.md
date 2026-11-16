@@ -18,7 +18,17 @@ Projet de Workshop 2 (LISAA, Mastère Direction Artistique) : une app qui fait s
 1. `python3 figma-plugin/build.py` reconstruit `figma-plugin/code.js` à partir de `src/logic.js` et des affiches.
 2. Dans Figma : clic droit › Plugins › Development › Import plugin from manifest… › `figma-plugin/manifest.json`.
 
+## Site prototype
+
+Les 11 écrans du parcours d'Inès, en HTML, CSS et JavaScript sans dépendance. Les couleurs, la typographie et la grille viennent de `design/tokens.json`.
+
+```bash
+python3 site/tools/build.py            # génère site/css/tokens.css et copie les affiches
+python3 -m http.server -d site 8000    # puis ouvrir http://localhost:8000
+```
+
+Le site est déployé sur GitHub Pages par `.github/workflows/pages.yml` à chaque push sur `main`. Réglage du dépôt : Settings › Pages › Source : « GitHub Actions ».
+
 ## À venir
 
-- `site/` : prototype web des 11 écrans, hébergé sur GitHub Pages, basé sur `design/tokens.json`.
 - Le plugin Figma lira les mêmes tokens que le site.
