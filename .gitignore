@@ -1,2 +1,6 @@
 .DS_Store
 *.zip
+
+# Généré par site/tools/build.py (tokens CSS, copie des affiches)
+site/css/tokens.css
+site/assets/

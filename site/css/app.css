@@ -1,0 +1,1000 @@
+/* Prototype : composants des écrans.
+ * Valeurs de couleur, police et styles de texte : css/tokens.css (généré depuis design/tokens.json).
+ * Règles du design system : rayon 0, filets de 1 px, aucune ombre, accent réservé à la capture.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--fond-secondaire);
+  color: var(--texte-principal);
+  font-family: var(--police);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+p,
+dl,
+dd,
+dt {
+  margin: 0;
+  font-weight: inherit;
+}
+
+button,
+input,
+label {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.secondaire {
+  color: var(--texte-secondaire);
+}
+
+.accent {
+  color: var(--accent-capture);
+}
+
+.centre {
+  text-align: center;
+}
+
+/* ---------- Mise en page du prototype (autour du téléphone) ---------- */
+
+.disposition {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sommaire {
+  width: 280px;
+  flex-shrink: 0;
+  padding: 32px 24px;
+  border-right: 1px solid var(--trait-defaut);
+}
+
+.sommaire h1 {
+  margin-top: 8px;
+}
+
+.sommaire p:last-of-type {
+  margin-top: 8px;
+}
+
+.liste-ecrans {
+  display: flex;
+  flex-direction: column;
+  margin-top: 24px;
+}
+
+.liste-ecrans a {
+  display: flex;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--trait-defaut);
+  color: var(--texte-secondaire);
+  text-decoration: none;
+  font-size: 14px;
+  line-height: 19px;
+}
+
+.liste-ecrans a:hover,
+.liste-ecrans a.actif {
+  color: var(--texte-principal);
+}
+
+.liste-ecrans .num {
+  width: 24px;
+  font-variant-numeric: tabular-nums;
+}
+
+.scene {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 32px;
+  overflow: auto;
+}
+
+/* Le téléphone : 402 × 874 (iPhone 17) */
+.ecran {
+  position: relative;
+  width: var(--ecran-largeur);
+  height: var(--ecran-hauteur);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--fond-principal);
+  color: var(--texte-principal);
+  border: 1px solid var(--trait-defaut);
+}
+
+.fond-grille {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.vue {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- En-têtes, corps, pieds ---------- */
+
+.entete {
+  flex-shrink: 0;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 16px;
+  background: var(--fond-principal);
+  border-bottom: 1px solid var(--trait-defaut);
+}
+
+.entete--recherche {
+  height: 72px;
+  gap: 12px;
+}
+
+.entete--titre {
+  height: 64px;
+}
+
+.entete-texte {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.espace-icone {
+  width: 24px;
+  height: 24px;
+}
+
+.corps {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px;
+  position: relative;
+}
+
+.pied {
+  flex-shrink: 0;
+  padding: 16px;
+  background: var(--fond-principal);
+  border-top: 1px solid var(--trait-defaut);
+}
+
+.pied--deux {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.pied--declencheur {
+  display: flex;
+  justify-content: center;
+  padding: 24px 16px 32px;
+}
+
+.bande {
+  flex-shrink: 0;
+  padding: 12px 16px;
+  background: var(--fond-principal);
+  border-bottom: 1px solid var(--trait-defaut);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.ligne-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.icone-bouton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin: 0 -8px;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--texte-principal);
+}
+
+/* ---------- Boutons, puces, étiquettes ---------- */
+
+.bouton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 52px;
+  padding: 0 16px;
+  border: 1px solid var(--fond-inverse);
+  border-radius: 0;
+  background: var(--fond-inverse);
+  color: var(--texte-inverse);
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+}
+
+.bouton:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.bouton--secondaire {
+  background: transparent;
+  border-color: var(--trait-fort);
+  color: var(--texte-principal);
+}
+
+.bouton--capture {
+  background: var(--accent-capture);
+  border-color: var(--accent-capture);
+  color: var(--accent-sur-accent);
+}
+
+.bouton-lien {
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--texte-principal);
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.puce {
+  flex-shrink: 0;
+  height: 32px;
+  padding: 0 12px;
+  background: var(--fond-principal);
+  border: 1px solid var(--trait-defaut);
+  color: var(--texte-principal);
+  font-size: 14px;
+  line-height: 19px;
+  font-weight: 500;
+}
+
+.puce.actif {
+  background: var(--fond-inverse);
+  border-color: var(--fond-inverse);
+  color: var(--texte-inverse);
+}
+
+.etiquette {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--trait-fort);
+  background: var(--fond-principal);
+  color: var(--texte-principal);
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.etiquette--numero {
+  border-color: var(--accent-capture);
+  color: var(--accent-capture);
+}
+
+.etiquette-num {
+  color: var(--accent-capture);
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.pastille {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  background: var(--accent-capture);
+}
+
+/* ---------- Onglets ---------- */
+
+.onglets {
+  flex-shrink: 0;
+  display: flex;
+  height: 64px;
+  background: var(--fond-principal);
+  border-top: 1px solid var(--trait-defaut);
+}
+
+.onglet {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-top: 2px solid transparent;
+  color: var(--texte-secondaire);
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.onglet.actif {
+  color: var(--texte-principal);
+  border-top-color: var(--trait-fort);
+}
+
+/* ---------- Carte (01) ---------- */
+
+.recherche {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  border-bottom: 1px solid var(--trait-fort);
+  color: var(--texte-secondaire);
+}
+
+.recherche input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--texte-principal);
+  font-size: 14px;
+  outline: none;
+}
+
+.recherche input::placeholder {
+  color: var(--texte-secondaire);
+}
+
+.carte {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--fond-secondaire);
+}
+
+.carte-fond {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.marqueur {
+  position: absolute;
+  width: 14px;
+  height: 20px;
+  padding: 0;
+  transform: translate(-50%, -100%);
+  background: var(--fond-principal);
+  border: 1px solid var(--trait-fort);
+}
+
+.marqueur.actif {
+  background: var(--fond-inverse);
+}
+
+.position {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  transform: translate(-50%, -50%);
+  border: 2px solid var(--fond-principal);
+  border-radius: 50%;
+  background: var(--accent-capture);
+}
+
+.apercu {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--fond-principal);
+  border-top: 1px solid var(--trait-defaut);
+  cursor: pointer;
+}
+
+.apercu .affiche {
+  width: 48px;
+  flex-shrink: 0;
+}
+
+.apercu-texte {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* ---------- Affiches : toujours à leur format, sur fond plein ---------- */
+
+.affiche {
+  position: relative;
+  width: 100%;
+  aspect-ratio: var(--ratio);
+  background: var(--fond-principal);
+  overflow: hidden;
+}
+
+.affiche img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* ---------- Scanner (02) ---------- */
+
+.cadre-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.visee {
+  position: relative;
+  width: 100%;
+  height: 430px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--fond-secondaire);
+  overflow: hidden;
+}
+
+.visee .affiche {
+  width: 58%;
+}
+
+.cadre {
+  position: absolute;
+  inset: 28px;
+  border: 2px solid var(--accent-capture);
+  pointer-events: none;
+}
+
+.declencheur {
+  width: 72px;
+  height: 72px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--accent-capture);
+  border: 4px solid var(--fond-principal);
+  outline: 1px solid var(--trait-fort);
+  outline-offset: 0;
+}
+
+/* ---------- Affiche scannée : recto / verso (03, 04) ---------- */
+
+.affiche-grand {
+  width: 100%;
+}
+
+.legende {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lig-etiquettes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.faces {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+.faces-piste {
+  display: flex;
+  width: 200%;
+  height: 100%;
+  transition: transform 0.25s ease-out;
+}
+
+.faces-piste[data-face="verso"] {
+  transform: translateX(-50%);
+}
+
+.faces-piste.en-glisse {
+  transition: none;
+}
+
+.face {
+  flex-shrink: 0;
+  width: 50%;
+  height: 100%;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.face--recto .indice {
+  margin-top: auto;
+}
+
+.indice {
+  align-self: center;
+  padding: 8px;
+  background: none;
+  border: 0;
+  color: var(--texte-secondaire);
+  text-transform: uppercase;
+}
+
+.tableau {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--trait-defaut);
+}
+
+.ligne-tab {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--trait-defaut);
+}
+
+.ligne-tab dd {
+  min-width: 0;
+}
+
+.face--verso .indice {
+  margin-top: auto;
+}
+
+/* ---------- Mur virtuel (05) ---------- */
+
+.mur-zone {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.mur-item {
+  position: absolute;
+  transform-origin: 0 0;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.mur-item.selection {
+  outline: 1px solid var(--trait-fort);
+  outline-offset: 4px;
+}
+
+.dechire {
+  position: relative;
+}
+
+.dechire > .affiche:first-child {
+  clip-path: inset(0 0 50% 0);
+}
+
+.dechire > .affiche + .affiche {
+  position: absolute;
+  inset: 0;
+  clip-path: inset(50% 0 0 0);
+  transform: translate(6px, 4px);
+}
+
+.zone-outils {
+  flex-shrink: 0;
+  padding: 12px 16px 0;
+  background: var(--fond-principal);
+  border-top: 1px solid var(--trait-defaut);
+}
+
+.outils {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 12px 0 16px;
+}
+
+.outil {
+  height: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0;
+  background: var(--fond-principal);
+  border: 1px solid var(--trait-defaut);
+  color: var(--texte-principal);
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.outil.actif {
+  background: var(--fond-inverse);
+  border-color: var(--fond-inverse);
+  color: var(--texte-inverse);
+}
+
+/* ---------- Collection (06) et sélection (07) ---------- */
+
+.filtres {
+  flex-shrink: 0;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 12px 16px;
+  background: var(--fond-principal);
+  border-bottom: 1px solid var(--trait-defaut);
+  scrollbar-width: none;
+}
+
+.grille {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px 8px;
+}
+
+.carte-affiche {
+  position: relative;
+  cursor: pointer;
+}
+
+.legende-min {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 8px;
+}
+
+.ligne-num {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 24px;
+}
+
+.coche {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  background: var(--fond-principal);
+  border: 1px solid var(--trait-fort);
+  color: var(--texte-principal);
+}
+
+.coche.on {
+  background: var(--fond-inverse);
+  color: var(--texte-inverse);
+}
+
+/* ---------- Placer sur le profil (08) et profil (09) ---------- */
+
+.vitrine {
+  position: relative;
+  height: 300px;
+  border: 1px solid var(--trait-fort);
+  overflow: hidden;
+}
+
+.vitrine--court {
+  height: 240px;
+}
+
+.vitrine-affiche {
+  position: absolute;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.reglages {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 12px;
+  margin-top: 24px;
+}
+
+.reglage {
+  display: contents;
+}
+
+.reglage input {
+  grid-column: 1 / -1;
+  width: 100%;
+  margin: 0 0 12px;
+  accent-color: var(--fond-inverse);
+}
+
+.reglage > span:first-child {
+  align-self: center;
+}
+
+.profil-tete {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.avatar {
+  width: 88px;
+  height: 88px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--trait-fort);
+}
+
+.compteurs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 24px;
+  padding: 16px 0;
+  border-top: 1px solid var(--trait-defaut);
+  border-bottom: 1px solid var(--trait-defaut);
+}
+
+.compteur {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lien-droite {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.mini-mur {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+/* ---------- Badges (09, 10) ---------- */
+
+.badges {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px 8px;
+}
+
+.badges--quatre {
+  grid-template-columns: repeat(4, 1fr);
+  margin-top: 16px;
+}
+
+.badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.badge.debloque[data-action] {
+  cursor: pointer;
+}
+
+.badge-carre {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--trait-defaut);
+  color: var(--texte-secondaire);
+}
+
+.badge.debloque .badge-carre {
+  border-color: var(--trait-fort);
+  color: var(--texte-principal);
+}
+
+.badge.choisi .badge-carre {
+  background: var(--fond-inverse);
+  border-color: var(--fond-inverse);
+  color: var(--texte-inverse);
+}
+
+.barre {
+  position: relative;
+  width: 64px;
+  height: 2px;
+  background: var(--trait-defaut);
+}
+
+.barre > span {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: var(--trait-fort);
+}
+
+.apercu-badge {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.notification {
+  flex-shrink: 0;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px 0 16px;
+  background: var(--fond-inverse);
+  color: var(--texte-inverse);
+}
+
+.notification .icone-bouton {
+  color: var(--texte-inverse);
+}
+
+/* ---------- Mes collections (11) ---------- */
+
+.ligne-collection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--trait-defaut);
+}
+
+.barre-progression {
+  height: 2px;
+  background: var(--trait-defaut);
+}
+
+.barre-progression > span {
+  display: block;
+  height: 100%;
+  background: var(--trait-fort);
+}
+
+.vignettes {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.vignette-min .affiche {
+  width: auto;
+  height: 80px;
+}
+
+.emplacement {
+  width: 64px;
+  height: 80px;
+  flex-shrink: 0;
+  border: 1px solid var(--trait-defaut);
+}
+
+.ligne-pied {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* ---------- Toast (retour bref) ---------- */
+
+.toast {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 88px;
+  z-index: 5;
+  padding: 12px 16px;
+  background: var(--fond-inverse);
+  color: var(--texte-inverse);
+  font-size: 14px;
+  line-height: 19px;
+}
+
+/* ---------- Adaptation aux petits écrans ---------- */
+
+@media (max-width: 760px) {
+  .sommaire {
+    display: none;
+  }
+
+  .scene {
+    padding: 0;
+  }
+
+  .ecran {
+    width: 100vw;
+    height: 100dvh;
+    border: 0;
+  }
+}
