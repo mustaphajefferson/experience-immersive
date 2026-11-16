@@ -1,0 +1,38 @@
+{
+  "alta": {
+    "fichier": "assets/affiches/alta.jpg",
+    "ratio": 0.7549
+  },
+  "different": {
+    "fichier": "assets/affiches/different.jpg",
+    "ratio": 0.7063
+  },
+  "white": {
+    "fichier": "assets/affiches/white.jpg",
+    "ratio": 0.7077
+  },
+  "presence": {
+    "fichier": "assets/affiches/presence.jpg",
+    "ratio": 0.707
+  },
+  "habitat": {
+    "fichier": "assets/affiches/habitat.jpg",
+    "ratio": 0.8141
+  },
+  "seb": {
+    "fichier": "assets/affiches/seb.jpg",
+    "ratio": 0.7077
+  },
+  "sanbimu": {
+    "fichier": "assets/affiches/sanbimu.jpg",
+    "ratio": 0.7503
+  },
+  "ozkan": {
+    "fichier": "assets/affiches/ozkan.jpg",
+    "ratio": 0.707
+  },
+  "skeleton": {
+    "fichier": "assets/affiches/skeleton.jpg",
+    "ratio": 0.5924
+  }
+}
