@@ -40,7 +40,7 @@ Dernière mise à jour : 17.11.2026 (v6 : relief partout, scrapbook annotable et
 **Persona :** Inès, 22 ans, étudiante en design, Belleville / 11e (hypothèse, pas de vrais entretiens à ce stade).
 **Références :** Pokémon GO, Flash Invaders, Soundmap, Ingress Prime.
 
-## 3. Écrans — v5 (ordre du parcours, numérotation de référence)
+## 3. Écrans — v6 (ordre du parcours, numérotation de référence)
 
 Le parcours d'Inès (les 11 premiers écrans dessinés) est inclus : 13, 19, 21, 22, 24, 28, 29, 34, 35, 36, 30.
 
