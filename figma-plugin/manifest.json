@@ -1,13 +1,13 @@
 {
-  "name": "Expérience immersive — Maquettes d'Inès",
+  "name": "SCRAP — maquettes v4",
   "id": "experience-immersive-maquettes-v3",
   "api": "1.0.0",
   "main": "code.js",
   "editorType": ["figma"],
   "documentAccess": "dynamic-page",
   "menu": [
-    { "name": "Tout générer (grille de fond + maquettes)", "command": "all" },
-    { "name": "Design system : 09 Grille de fond seule", "command": "grid" },
-    { "name": "Maquettes seules", "command": "screens" }
+    { "name": "Tout générer (sections 09 et 10 + 50 écrans)", "command": "all" },
+    { "name": "Design system seul (09 Grille de fond, 10 Scrap)", "command": "ds" },
+    { "name": "Écrans seuls", "command": "screens" }
   ]
 }

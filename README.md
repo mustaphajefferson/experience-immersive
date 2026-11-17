@@ -1,4 +1,4 @@
-# Expérience immersive
+# SCRAP — Expérience immersive
 
 Projet de Workshop 2 (LISAA, Mastère Direction Artistique) : une app qui fait sortir les gens découvrir leur quartier, en transformant les affiches de la ville en collections à compléter.
 
@@ -11,11 +11,11 @@ Projet de Workshop 2 (LISAA, Mastère Direction Artistique) : une app qui fait s
 | `docs/` | Fiche de référence |
 | `design/tokens.json` | Couleurs, typographie, grille, espacements, grille de fond |
 | `assets/affiches/` | Les 9 affiches du moodboard utilisées dans les maquettes |
-| `figma-plugin/` | Plugin Figma qui génère les 11 maquettes et la section « 09 — Grille de fond » |
+| `figma-plugin/` | Plugin Figma v4 : sections 09 et 10 du design system et les 50 écrans numérotés |
 
 ## Plugin Figma
 
-1. `python3 figma-plugin/build.py` reconstruit `figma-plugin/code.js` à partir de `src/logic.js` et des affiches.
+1. `python3 figma-plugin/build.py` reconstruit `figma-plugin/code.js` à partir de `src/*.js` et des affiches.
 2. Dans Figma : clic droit › Plugins › Development › Import plugin from manifest… › `figma-plugin/manifest.json`.
 
 ## Site prototype
@@ -31,4 +31,5 @@ Le site est déployé sur GitHub Pages par `.github/workflows/pages.yml` à chaq
 
 ## À venir
 
+- Mettre le site au niveau des maquettes v4 : vocabulaire SCRAP, tampon, scrapbook (fonds, scotch, déchirure), lancement animé, écrans 01 à 50.
 - Le plugin Figma lira les mêmes tokens que le site.

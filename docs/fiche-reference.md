@@ -1,8 +1,8 @@
-# Fiche de référence — Expérience immersive
+# Fiche de référence — SCRAP (Expérience immersive)
 
 *À lire au début de chaque nouvelle conversation. C'est la source de vérité du projet : si une décision change, on met cette fiche à jour.*
 
-Dernière mise à jour : 17.11.2026
+Dernière mise à jour : 17.11.2026 (v4 : SCRAP, tampon, scrapbook, 50 écrans)
 
 ---
 
@@ -15,10 +15,21 @@ Dernière mise à jour : 17.11.2026
 
 ## 2. Concept
 
-**Une app qui fait sortir les gens découvrir leur quartier, en transformant les affiches de la ville en collections à compléter.**
+**SCRAP** — « Ta ville en morceaux. » *(accroche à valider)*
 
-- On scanne une affiche dans la rue : elle rejoint sa collection, avec son numéro de scan (« N° 003 » = 3e personne à l'avoir scannée).
-- Les affiches se posent sur un **mur virtuel** personnel (zoomer, déplacer, déchirer, tirer).
+**Une app qui fait sortir les gens découvrir leur quartier, en transformant les affiches de la ville en collections à compléter.** On va dans la rue pour capturer des **scraps**.
+
+| Avant | Maintenant |
+|---|---|
+| Une affiche scannée | **Un scrap** |
+| Scanner une affiche | **Capturer un scrap** (« choper » refusé) |
+| Mur virtuel | **Scrapbook** (onglet « Scrapbook ») |
+| N° 003 · 3e personne | **Scrap N° 003** · 3e à l'avoir capturé |
+| Ajouter au mur | **Coller sur mon scrapbook** |
+| Mur public du profil | **Vitrine** |
+
+- On capture une affiche dans la rue : elle devient un scrap, avec son numéro (« Scrap N° 003 » = 3e personne à l'avoir capturé).
+- Les scraps se collent sur un **scrapbook** personnel, façon moodboard : déplacer, scotcher, déchirer, changer le fond.
 - Elles se regroupent en **collections** (concerts, culture et musique, messages politiques, restaurants…). La carte aide à trouver celles qui manquent.
 - Progression : profil personnalisable, vitrine d'affiches, badges.
 - **Objectif principal :** faire sortir les gens.
@@ -27,21 +38,36 @@ Dernière mise à jour : 17.11.2026
 **Persona :** Inès, 22 ans, étudiante en design, Belleville / 11e (hypothèse, pas de vrais entretiens à ce stade).
 **Références :** Pokémon GO, Flash Invaders, Soundmap, Ingress Prime.
 
-## 3. Parcours d'Inès — écrans (version validée)
+## 3. Écrans — maquettes v4 (ordre du parcours, numérotation de référence)
 
-| # | Écran | Contenu clé |
-|---|-------|-------------|
-| 1 | Carte d'accueil | Carte plein écran, champ de recherche, bouton profil, marqueurs d'affiches (pastille si nouvelle), ma position, aperçu de l'affiche la plus proche, bouton « Scanner une affiche », onglets Carte · Mur · Collection |
-| 2 | Scanner | Mode sombre, caméra plein écran, cadre du scanner, déclencheur, bouton fermer |
-| 3 | Affiche scannée (recto) | Affiche en grand, étiquette N° de scan, « 3e personne à la scanner », état (holo), titre, lieu et date, « ← Glisser pour retourner », bouton « Ajouter au mur » |
-| 4 | Verso (par swipe) | Grand numéro « 003 », tableau Artiste / Lieu / Date / Thème / État / Collection, « Scannée par 128 personnes… », bouton « Ajouter au mur » |
-| 5 | Mur virtuel | Plein écran, affiches posées, une sélectionnée, une déchirée, outils Zoomer / Déplacer / Déchirer / Tirer, « Valider » |
-| 6 | Collection | « Ma collection », « Sélectionner », filtres Dernières · Plus rares · Favoris · Lieu · **État** · Thème, grille 2 colonnes avec légendes |
-| 7 | Sélection | Coches sur les affiches, « Annuler », bouton « Ajouter la dernière au profil » |
-| 8 | Placer sur le profil | Zone vitrine, affiche à placer, réglages taille et rotation, « Valider » |
-| 9 | Profil vu par les autres | Avatar, pseudo, rang, compteurs, affiche mise en avant, mur public, badges, « Suivre » / « Partager » |
-| 10 | Modifier un badge | Notification « Badge débloqué », grille de badges (débloqués / verrouillés avec progression), aperçu sur le profil, « Enregistrer » |
-| 11 | Mes collections | Lignes de collection : progression, « Il manque X affiches », « Voir sur la carte », vignettes et emplacements vides |
+Le parcours d'Inès (les 11 premiers écrans dessinés) est inclus : 13, 19, 21, 22, 24, 28, 29, 34, 35, 36, 30.
+
+**A. Lancement et inscription**
+- 01.1 / 01.2 / 01.3 Lancement animé (2,4 s, sans interaction) : les scraps arrivent, se scotchent, le logo se pose, puis passage seul à 02
+- 02 Bienvenue · 03 Découverte 1 — Sors · 04 Découverte 2 — Capture · 05 Découverte 3 — Colle
+- 06 Accès à la caméra · 07 Accès à la position
+- 08 Créer un compte · 09 Se connecter · 10 Mot de passe oublié · 11 Pseudo et avatar · 12 Collections de départ (3 max)
+
+**B. Carte et capture**
+- 13 Carte d'accueil · 14 Filtres de la carte · 15 Recherche · 16 Scrap repéré (avant capture) · 17 Itinéraire à pied · 18 Carte vide
+- 19 Scanner (mode sombre) · 20 Capture échouée · 21 Scrap capturé — recto (avec tampon) · 22 Scrap capturé — verso · 23 Détail de l'événement
+
+**C. Scrapbook**
+- 24 Mon scrapbook (fond papier à points, scotch, un scrap déchiré, outils Déplacer · Scotch · Déchirer · Fond)
+- 25 Personnaliser — fond · 26 Personnaliser — scotch · 27 Personnaliser — déchirer
+
+**D. Collections**
+- 28 Ma collection (filtres Derniers · Plus rares · Favoris · Lieu · **État** · Thème) · 29 Sélection · 30 Mes collections
+- 31 Fiche d'une collection · 32 Collection complète — scrap exclusif · 33 Badge débloqué
+
+**E. Profil et partage**
+- 34 Placer sur ma vitrine · 35 Profil vu par les autres · 36 Choisir un badge · 37 Modifier le profil · 38 Abonnés et abonnements · 39 Partager un scrap · 40 Lieu partenaire
+
+**F. Réglages**
+- 41 Réglages · 42 Confidentialité · 43 Notifications · 44 Position · 45 Compte · 46 Aide et mentions · 47 Vie privée
+
+**G. États d'erreur**
+- 48 Pas de connexion · 49 Caméra coupée · 50 Erreur de chargement
 
 ## 4. Design system (export « DESIGN SYSTEM — Affiches », v1.0)
 
@@ -103,7 +129,17 @@ L'accent sert uniquement pour : le déclencheur et le cadre du scanner, le bouto
 - Trait à 5 % de texte/principal, lignes marquées à 9 %, repères « + » de 9 px à 50 % de texte/secondaire.
 - Elle passe toujours derrière : affiches, boutons et barres ont un fond plein.
 
+**10 — Scrap (ajoutée) :**
+- **Tampon** : un par scrap, à droite de la légende, jamais sur l'image. Il porte la date de capture et l'arrondissement. Contour = scrap capturé ; plein (fond/inverse) = collection complète. Incliné de 6°, double filet, Texte/Méta, jamais en accent.
+- **Fonds du scrapbook** (au choix) : Papier (défaut, fond/secondaire), Quadrillé (la grille 09), Béton, Liège, Noir. Trame de points 2 px tous les 24 px, repères « + » tous les 96 px.
+- **Scotch** : transparent, kraft, papier, noir. 52 × 16 px, deux bouts maximum par scrap, sur le scrapbook et la vitrine uniquement.
+- **Déchirure** : sur le scrapbook seulement. Le morceau arraché reste dans la collection : on ne perd jamais un scrap.
+- **Logo** : « SCRAP » en Inter Semi Bold, suivi d'un carré rouge (le point de capture, seul accent du logo).
+
 ## 5. Décisions prises
+
+- **Nom : SCRAP.** On capture des scraps. Verbe : **capturer** (« choper » refusé).
+- **Pas de thème** (pêcheur, guetteur…) : on garde le concept tel quel.
 
 - **L'accent est rouge (#FF0000).** L'export l'appelle encore « Bleu capture » : il faudra renommer.
 - **Holo :** l'état holographique est signalé par une étiquette « État · Holo » et une mention dans la légende, pas par un effet sur l'image (règle « affiche intouchable »).
@@ -115,7 +151,7 @@ L'accent sert uniquement pour : le déclencheur et le cadre du scanner, le bouto
 ## 6. Fichiers
 
 - **Figma :** fichier « experience-immersive », partagé avec le binôme. Le connecteur Figma (offre Starter) est limité à 6 appels par mois : il sert à lire, pas à écrire.
-- **Plugin Figma v3 :** génère les 11 maquettes et la section 09. Il se relie aux variables et styles du fichier par leur nom.
+- **Plugin Figma v4 (dépôt, `figma-plugin/`) :** génère les sections 09 et 10 du design system et les 50 écrans. Il se relie aux variables et styles du fichier par leur nom, et réutilise les composants de fond s'ils existent déjà. La prochaine version repart de celle-ci.
 - **Google Doc « experience immersive » :** dossier partagé (recherche, entretiens fictifs, benchmark, persona, parcours, storyboard).
 - **Dépôt GitHub `experience-immersive` :** code du plugin, tokens, affiches, et le site prototype (`site/`, déployé sur GitHub Pages par `.github/workflows/pages.yml`).
 
