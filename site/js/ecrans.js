@@ -19,6 +19,14 @@ const ecran = (id, section, titre, classe, rendu, monter) => { ECRANS[id] = { id
  * fait défiler, les rangées partent sur les côtés, en sens contraire, et le
  * nom et le bouton montent à leur place. Tout se joue sur une seule variable,
  * --s, qui vaut 0 en haut de la page et 1 une fois le mur sorti. */
+/* Le bouton de démo. Volontairement hors charte — liseré pointillé, mention
+ * « DEV » — pour qu'on voie tout de suite qu'il ne fait pas partie de l'app :
+ * il sert à choisir, avant de s'identifier, si on reprend la session en cours
+ * ou si on repart du compte de démo (c'est le seul moyen de revoir les écrans
+ * de fin de collection une fois qu'on les a vus). */
+const marqueDev = () => `<button class="marque-dev" data-action="menuDev">
+  <i></i><span>DEV</span><span class="marque-dev-sous">Réinitialiser la démo</span></button>`;
+
 const MUR_ACCUEIL = [
   ["alta", "rose", "sonda", "skeleton", "seb"],
   ["viudas", "fiasco", "white", "flea", "presence"],
@@ -50,6 +58,7 @@ ecran("01", "A", "Accueil", "grille", () => `
       </div>
     </div>
     <span class="indice-defilement t-texte-meta secondaire">Fais défiler${icone("chevron", 16)}</span>
+    ${marqueDev()}
   </div>`, (r) => {
   const zone = $("#accueil", r);
   if (!zone) return null;
@@ -381,7 +390,7 @@ ecran("19", "B", "Scanner", "sombre", () => `
   <div class="scanner-bas" style="z-index:3">
     <label class="galerie" aria-label="Choisir une photo">${icone("image")}<input type="file" accept="image/*" class="cache" data-change="photoCapture"></label>
     <button class="declencheur" id="jauge-scan" data-action="capturer" aria-label="Capturer"></button>
-    <span style="width:44px"></span>
+    <button class="galerie torche indispo" id="torche" data-action="torche" aria-pressed="false" aria-label="Lampe">${icone("lampe")}</button>
   </div>`, (r) => cameraDemarrer($("#video", r)));
 
 /* 19.1 — on regarde ce qui a été scanné avant de l'identifier. */
@@ -482,7 +491,7 @@ function rectoVerso(verso) {
             ${exclusif
               ? `<div class="face scrap-img face--exclusive">${carteExclusive(exclusif)}</div>`
               : `<img class="face scrap-img" src="${imgScrap(id)}" alt="${esc(s.titre)}" style="aspect-ratio:${s.ratio}">`}
-            <div class="face face--verso verso-carte">
+            <div class="face face--verso"><div class="verso-carte">
               <div class="verso-haut">${logo(15)}<span class="t-texte-meta secondaire">${esc(r.nom)}</span></div>
               <div class="verso-numero">
                 <span class="t-chiffre-capture accent" id="num-verso">${pad3(s.num)}</span>
@@ -496,7 +505,7 @@ function rectoVerso(verso) {
                 <span class="t-texte-meta accent">${esc(s.arr)}</span>
               </div>
               <i class="verso-codebarre" aria-hidden="true"></i>
-            </div>
+            </div></div>
           </div>
         </div>
       </div>
@@ -504,7 +513,7 @@ function rectoVerso(verso) {
       <span class="repere-scrap haut-gauche couche" style="--p:30">${icone("plus", 14)}</span>
       <span class="repere-scrap bas-droit couche" style="--p:40">${icone("plus", 14)}</span>
       <span class="flottant etiquette-flottante couche" style="--p:34">${esc(col ? col.nom : "Exclusif")}</span>
-      <span class="flottant num-flottant couche" style="--p:46">N° ${pad3(s.num)}</span>
+      <span class="flottant num-flottant couche" style="--p:32">N° ${pad3(s.num)}</span>
       <span class="flottant date-flottante couche" style="--p:24">${esc(s.date)}</span>
       <i class="regle-scrap couche" style="--p:16"></i>
       <span class="scrap-tampon couche" style="--p:20">${tampon("Scrap N° " + pad3(s.num), `${s.arr} · ${s.date}`, { grand: true, plein: !col || complete(s.collection), pose: frais })}</span>
@@ -576,8 +585,10 @@ ecran("23", "B", "Détail de l'événement", "grille", () => {
  * 24 a deux modes : Vue (on promène et on zoome, rien ne bouge) et
  * Disposition (on range : déplacer, agrandir, tourner). */
 const FONDS = [["papier", "Papier"], ["grille", "Quadrillé"], ["millimetre", "Millimétré"], ["kraft", "Kraft"],
-  ["beton", "Béton"], ["liege", "Liège"], ["journal", "Journal"], ["noir", "Noir"]];
-const SCOTCHS = [["transparent", "Transparent"], ["kraft", "Kraft"], ["papier", "Papier"], ["noir", "Noir"]];
+  ["beton", "Béton"], ["liege", "Liège"], ["journal", "Journal"], ["noir", "Noir"],
+  ["calque", "Calque"], ["seyes", "Seyès"], ["carton", "Carton"], ["ardoise", "Ardoise"]];
+const SCOTCHS = [["transparent", "Transparent"], ["kraft", "Kraft"], ["papier", "Papier"], ["noir", "Noir"],
+  ["rubalise", "Rubalise"], ["raye", "Rayé"], ["fluo", "Fluo"], ["dore", "Doré"]];
 const modeMur = () => (ETAT.ctx.murMode === "deplacer" ? "deplacer" : "regarder");
 
 const commandesZoom = () => `<div class="mur-commandes">
@@ -624,12 +635,9 @@ function scrapbook(ecranId) {
     "24.3": `<div class="pied filet">
         <div class="rangee entre"><span class="t-titre-m">Dessiner</span>${lien("OK", { action: "fermerOutil" })}</div>
         <p class="t-texte-petit secondaire" style="margin:6px 0 12px">Trace directement sur la page : entoure, souligne, gribouille. Deux doigts zooment toujours.</p>
-        <div class="rangee entre" style="gap:16px">
-          <div class="rangee" style="gap:8px">${[["#111111", "Noir"], ["#FF0000", "Rouge"], ["#FFFFFF", "Blanc"]].map(([c, nom]) =>
-            `<button class="pastille-couleur${(m.dessin && m.dessin.couleur || "#111111") === c ? " choisi" : ""}" style="--c:${c}" data-action="couleurTrait" data-id="${c}" aria-label="${nom}"></button>`).join("")}</div>
-          <div class="rangee" style="gap:8px">${[[2, "Fin"], [4, "Moyen"], [8, "Gros"]].map(([w, nom]) =>
-            `<button class="epaisseur-trait${(m.dessin && m.dessin.w || 4) === w ? " choisi" : ""}" data-action="epaisseurTrait" data-id="${w}" aria-label="${nom}"><i style="height:${w}px"></i></button>`).join("")}</div>
-        </div>
+        ${rangeeCouleurs((m.dessin && m.dessin.couleur) || "#111111", "couleurTrait")}
+        <div class="rangee" style="gap:8px;margin-top:10px">${[[2, "Fin"], [4, "Moyen"], [8, "Gros"], [14, "Marqueur"]].map(([w, nom]) =>
+            `<button class="epaisseur-trait${(m.dessin && m.dessin.w || 4) === w ? " choisi" : ""}" data-action="epaisseurTrait" data-id="${w}" aria-label="${nom}" title="${nom}"><i style="height:${Math.min(w, 10)}px"></i></button>`).join("")}</div>
         <div class="deux-col" style="margin-top:12px">${bouton("Annuler le trait", { type: "secondaire", action: "annulerTrait" })}${bouton("Tout effacer", { type: "secondaire", action: "effacerTraits" })}</div>
         ${outils}</div>`,
     "25": `<div class="pied filet">
@@ -644,13 +652,16 @@ function scrapbook(ecranId) {
         ${m.fond === "photo" && m.fondImage ? `<div class="curseur-ligne" style="margin-top:14px"><span class="t-texte-meta secondaire">Voile</span><span class="t-texte-meta secondaire" id="voile-val">${m.voile || 0} %</span></div>
           <input type="range" min="0" max="80" value="${m.voile || 0}" data-input="voileFond">
           <p class="t-texte-petit secondaire" style="margin:6px 0 0">Un peu de voile et tes affiches ressortent mieux sur la photo.</p>`
-          : `<p class="t-texte-petit secondaire" style="margin:10px 0 0">Le fond ne change que ton scrapbook. Les scraps, eux, restent intacts.</p>`}
+          : `<div class="rangee entre" style="margin-top:16px"><span class="t-texte-meta secondaire">Teinte du papier</span>
+              ${m.teinte ? lien("Enlever", { action: "teinteFond", data: ' data-id=""' }) : ""}</div>
+            ${rangeeCouleurs(m.teinte || "", "teinteFond")}
+            <p class="t-texte-petit secondaire" style="margin:10px 0 0">Le fond ne change que ton scrapbook. Les scraps, eux, restent intacts.</p>`}
         ${outils}</div>`,
     "26": `<div class="pied filet">
         <div class="rangee entre"><span class="t-titre-m">Scotch</span>${lien("OK", { action: "fermerOutil" })}</div>
         <div class="rouleaux" style="margin-top:12px">${SCOTCHS.map(([k, nom]) =>
           `<button class="${(m.scotchType || "kraft") === k ? "choisi" : ""}" data-action="choisirScotch" data-id="${k}"><span class="apercu"><i class="scotch ${k}"></i></span><span class="t-texte-meta${(m.scotchType || "kraft") === k ? "" : " secondaire"}" style="display:block;margin-top:8px">${nom}</span></button>`).join("")}</div>
-        <p class="t-texte-petit secondaire" style="margin:8px 0 0">Touche un coin d'un scrap pour y poser un bout de scotch. Deux bouts au maximum ; touche un bout pour l'enlever.</p>
+        <p class="t-texte-petit secondaire" style="margin:8px 0 0">Touche un scrap là où tu veux le scotch : il se pose à cet endroit et s'incline tout seul selon le bord. Deux bouts au maximum ; touche un bout pour l'enlever.</p>
         ${outils}</div>`,
     "27": `<div class="pied filet">
         <div class="rangee entre"><span class="t-titre-m">Déchirer</span>${lien("OK", { action: "fermerOutil" })}</div>
@@ -676,8 +687,7 @@ function scrapbook(ecranId) {
     <i class="livre-couv gauche"></i><i class="livre-couv droite"></i>
     <span class="livre-titre">${logo(28)}<span class="t-texte-meta">${esc(ETAT.utilisateur.quartier)}</span></span>
   </div>` : ""}
-  <div class="mur-zone fond-${m.fond} mode-${ecranId === "24" ? mode : ecranId}" id="mur" style="${styleFond(m)}">
-    ${m.fond === "photo" && m.voile ? `<i class="voile-fond" style="opacity:${(m.voile || 0) / 100}"></i>` : ""}
+  <div class="mur-zone mode-${ecranId === "24" ? mode : ecranId}" id="mur">
     <div class="mur-plan" id="plan"></div>
     ${commandesZoom()}
     <div class="note-ensemble"><span class="t-texte-meta">Page remplie à ${remplissage} %</span><span class="t-texte-meta secondaire">Il reste de la place : continue à sortir.</span></div>
@@ -787,10 +797,10 @@ function murScraps(ids, o = {}) {
   const dispo = dispoCourante();
   if (!ids.length) return `<p class="t-texte-corps secondaire centre" style="margin-top:40px">Aucun scrap ici pour l'instant.</p>`;
   if (dispo === "liste") {
-    return `<div class="liste">${ids.map((id) => {
+    return `<div class="liste">${ids.map((id, i) => {
       const s = scrap(id), r = rarete(s);
       const sel = o.selection ? o.selection.indexOf(id) : -1;
-      return `<button class="ligne ligne-scrap${sel >= 0 ? " choisie" : ""}" data-action="${o.action || "ouvrirScrap"}" data-id="${id}">
+      return `<button class="ligne ligne-scrap surgit${sel >= 0 ? " choisie" : ""}" data-action="${o.action || "ouvrirScrap"}" data-id="${id}" style="--i:${Math.min(i, 14)}">
         <img src="${imgScrap(id)}" alt="" style="width:44px;height:58px;object-fit:contain;background:var(--fond-secondaire)">
         <span style="flex:1;min-width:0"><span class="t-texte-label" style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.titre)}</span>
           <span class="t-texte-meta secondaire">N° ${pad3(s.num)} · ${esc(s.lieu)}</span></span>
@@ -798,7 +808,7 @@ function murScraps(ids, o = {}) {
         <span class="etiquette etiquette--rarete etiquette--mini">${esc(r.nom)}</span></button>`;
     }).join("")}</div>`;
   }
-  return `<div class="grille-scraps dispo-${dispo}">${ids.map((id) => carteScrap(id, o.carte ? o.carte(id) : {})).join("")}</div>`;
+  return `<div class="grille-scraps dispo-${dispo}">${ids.map((id, i) => carteScrap(id, { i, ...(o.carte ? o.carte(id) : {}) })).join("")}</div>`;
 }
 
 ecran("28", "D", "Ma collection", "grille", () => {
@@ -853,9 +863,9 @@ ecran("30", "D", "Mes collections", "grille", () => {
   return `
   ${grandTitre("Mes collections", `${D.collections.length} collections · ${fin} complète${fin > 1 ? "s" : ""} · ${n} / ${tot} scraps`)}
   <div class="defile">
-    ${D.collections.map((c) => {
+    ${D.collections.map((c, i) => {
       const p = progression(c.id), ok = complete(c.id), manque = p.total - p.n;
-      return `<div class="fond-blanc" style="border-top:1px solid var(--trait-defaut);padding:16px 0 20px;margin:0 calc(-1*var(--marge));padding-left:var(--marge);padding-right:var(--marge)">
+      return `<div class="fond-blanc bloc-collection surgit" style="--i:${Math.min(i, 14)};border-top:1px solid var(--trait-defaut);padding:16px 0 20px;margin:0 calc(-1*var(--marge));padding-left:var(--marge);padding-right:var(--marge)">
         <button style="display:block;width:100%;text-align:left" data-action="ouvrirCollection" data-id="${c.id}">
           <div class="rangee entre"><span class="t-titre-m">${esc(c.nom)}</span>${ok ? tampon("Complète", `${p.total} / ${p.total}`, { plein: true }) : `<span class="t-titre-m">${p.n} / ${p.total}</span>`}</div>
           <div class="t-texte-meta secondaire" style="margin-top:6px">${p.n === 0 ? "Pas commencée" : ok ? "Scrap exclusif débloqué" : manque === 1 ? "Il manque 1 scrap" : `Il manque ${manque} scraps`}</div>
@@ -1159,7 +1169,6 @@ ecran("40", "E", "Lieu partenaire", "grille", () => {
     <p class="t-texte-meta secondaire" style="margin:20px 0 8px">Scraps de ce lieu · ${l.scraps.length} / ${l.total}</p>
     <div class="quatre-col">${l.scraps.map((id) => `<button data-action="ouvrirScrap" data-id="${id}"><img src="${imgScrap(id)}" alt="" style="width:100%;height:116px;object-fit:contain"></button>`).join("")}
       ${Array.from({ length: Math.min(2, l.total - l.scraps.length) }, () => `<span class="vide-case" style="height:116px">${icone("plus")}</span>`).join("")}</div>
-    <p class="t-texte-petit secondaire" style="margin:12px 0 0">Capture les ${l.total} scraps du lieu : une entrée offerte.</p>
   </div>
   ${pied(`<div class="rang">${bouton("Y aller", { action: "itineraireLieu" })}${bouton("Site du lieu", { type: "secondaire", action: "billetterie" })}</div>`)}`;
 });

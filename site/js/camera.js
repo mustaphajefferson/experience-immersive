@@ -19,6 +19,7 @@
 
 let FLUX = null;
 let SCAN = null;                 // boucle d'analyse en cours
+let TORCHE = false;              // état de la lampe (elle s'éteint avec le flux)
 
 /* ═════════ Caméra */
 
@@ -34,6 +35,7 @@ function cameraDemarrer(video) {
       if (arrete) { flux.getTracks().forEach((t) => t.stop()); return; }
       FLUX = flux;
       video.srcObject = flux;
+      majBoutonTorche();
       video.play().then(() => detectionDemarrer(video)).catch(() => {});
     })
     .catch(() => { if (!arrete) aller("49", { remplace: true }); });
@@ -44,6 +46,42 @@ function cameraArreter() {
   detectionArreter();
   if (FLUX) FLUX.getTracks().forEach((t) => t.stop());
   FLUX = null;
+  TORCHE = false;
+}
+
+/* ═════════ La lampe (torche)
+ *
+ * Une affiche collée le soir est presque toujours dans le noir : sans lampe,
+ * la photo sort grise et la détection des contours ne trouve rien. Tous les
+ * téléphones ne l'exposent pas au navigateur (Safari iOS ne le fait pas
+ * encore) : quand ce n'est pas possible, le bouton le dit au lieu de faire
+ * semblant. */
+function torcheDisponible() {
+  if (!FLUX) return false;
+  const p = FLUX.getVideoTracks()[0];
+  if (!p || !p.getCapabilities) return false;
+  try { return !!p.getCapabilities().torch; } catch (e) { return false; }
+}
+
+function basculerTorche() {
+  const p = FLUX && FLUX.getVideoTracks()[0];
+  if (!p || !torcheDisponible()) {
+    toast("Ce téléphone ne donne pas la lampe au navigateur. Éclaire l'affiche autrement.");
+    return;
+  }
+  TORCHE = !TORCHE;
+  p.applyConstraints({ advanced: [{ torch: TORCHE }] })
+    .then(() => { majBoutonTorche(); vibrer(8); })
+    .catch(() => { TORCHE = false; majBoutonTorche(); toast("La lampe n'a pas voulu s'allumer."); });
+}
+
+function majBoutonTorche() {
+  const b = $("#torche");
+  if (!b) return;
+  const ok = torcheDisponible();
+  b.classList.toggle("on", TORCHE);
+  b.classList.toggle("indispo", !ok);
+  b.setAttribute("aria-pressed", String(TORCHE));
 }
 
 /* ═════════ Détection des contours en direct */

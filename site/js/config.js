@@ -38,6 +38,8 @@ window.CONFIG = {
     analysesParSec: 12,
   },
 
-  /* Effet de profondeur lié au gyroscope (écran du scrap). */
-  profondeur: { amplitude: 1, actif: true },
+  /* Effet de profondeur lié au gyroscope.
+   * repos : amplitude de la houle qui anime les couches tant que le capteur
+   * n'est pas branché (0 pour que tout reste parfaitement plat). */
+  profondeur: { amplitude: 1, actif: true, repos: 0.26 },
 };

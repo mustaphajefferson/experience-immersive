@@ -77,6 +77,13 @@ const ICONES = {
   mur3d: "M3 8l9-5 9 5v8l-9 5-9-5zM3 8l9 5 9-5M12 13v8",
   ciseaux: "M7 7a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM7 22a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM9 8.5 20 20M9 15.5 20 4",
   texte: "M5 5h14M12 5v14M8.5 19h7",
+  lampe: "M9 14.5A5.5 5.5 0 1 1 15 14.5V18H9zM10 21h4M12 2v2M4.5 6l1.5 1M19.5 6L18 7",
+  palette: "M12 3a9 9 0 0 0 0 18c1.5 0 2-1 1.4-1.9-.6-1 .1-2.1 1.3-2.1H17a4 4 0 0 0 4-4c0-5-4-10-9-10zM7.5 10.5h.01M11 7.5h.01M15.5 9h.01",
+  postit: "M4 4h16v11l-5 5H4zM20 15h-5v5",
+  trombone: "M16 7v9a4 4 0 0 1-8 0V6.5a2.5 2.5 0 0 1 5 0V16a1 1 0 0 1-2 0V8",
+  ticket: "M3 7h18v4a2 2 0 0 0 0 4v4H3v-4a2 2 0 0 0 0-4zM12 7v2M12 12v2M12 17v2",
+  bulle: "M4 4h16v11H9l-4 4v-4H4zM8.5 9.5h.01M12 9.5h.01M15.5 9.5h.01",
+  gommette: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
 };
 const icone = (nom, t = 24) =>
   `<svg width="${t}" height="${t}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${(1.5 * 24) / t}" stroke-linecap="square" aria-hidden="true"><path d="${ICONES[nom] || ""}"/></svg>`;
@@ -148,6 +155,18 @@ function sauver() {
 function reinitialiser() {
   try { localStorage.removeItem(CLE); } catch (e) { /* rien */ }
   ETAT = etatInitial();
+}
+/* Compte vierge : le premier lancement, carnet vide, rien de capturé.
+ * Sert à rejouer l'inscription et les écrans vides. */
+function reinitialiserVide() {
+  reinitialiser();
+  ETAT.scraps = {};
+  ETAT.mur = { fond: "papier", fondImage: null, voile: 0, notes: [], traits: [], hauteur: 1600, items: [] };
+  ETAT.vitrine = [];
+  ETAT.miseEnAvant = null;
+  ETAT.utilisateur = { ...D.utilisateur, badge: null };
+  ETAT.collectionsDepart = [];
+  sauver();
 }
 charger();
 
@@ -239,9 +258,17 @@ const entete = (titre, o = {}) => `<header class="entete">
 const grandTitre = (titre, meta, droite = "") => `<div class="grand-titre">
   <div class="ligne-titre"><h1 class="t-titre-xl" style="margin:0">${esc(titre)}</h1>${droite}</div>
   ${meta ? `<p class="t-texte-meta secondaire" style="margin:8px 0 0">${esc(meta)}</p>` : ""}</div>`;
-const onglets = (actif) => `<nav class="onglets">
+/* La barre de l'onglet courant ne réapparaît pas d'un coup à sa nouvelle
+ * place : elle glisse depuis l'onglet qu'on vient de quitter. --saut dit de
+ * combien d'onglets elle vient. */
+const onglets = (actif) => {
+  const prec = ETAT.ctx.ongletPrec;
+  const saut = prec === undefined || prec === actif ? 0 : prec - actif;
+  ETAT.ctx.ongletPrec = actif;
+  return `<nav class="onglets" style="--saut:${saut}">
   ${[["13", "Carte"], ["24", "Scrapbook"], ["28", "Collection"]].map(([id, lib], i) =>
-    `<button class="onglet${i === actif ? " actif" : ""}" data-aller="${id}">${lib}</button>`).join("")}</nav>`;
+    `<button class="onglet${i === actif ? " actif" : ""}" data-aller="${id}"><span>${lib}</span></button>`).join("")}</nav>`;
+};
 const pied = (contenu, o = {}) => `<footer class="pied${o.filet ? " filet" : ""}${o.transparent ? " transparent" : ""}">${contenu}</footer>`;
 
 /* Scraps : carte avec légende (numéro, lieu, tampon) */
@@ -251,7 +278,7 @@ const legende = (id) => {
       <span class="t-texte-meta accent">Scrap N° ${pad3(s.num)}</span>${s.holo ? ` <span class="t-texte-meta secondaire">· Holo</span>` : ""}
       <div class="t-texte-petit">${esc(s.lieu)}</div></div>${tamponScrap(id)}</div>`;
 };
-const carteScrap = (id, o = {}) => `<button class="carte-scrap${o.choisie ? " choisie" : ""}" data-action="${o.action || "ouvrirScrap"}" data-id="${id}">
+const carteScrap = (id, o = {}) => `<button class="carte-scrap surgit${o.choisie ? " choisie" : ""}" data-action="${o.action || "ouvrirScrap"}" data-id="${id}" style="--i:${Math.min(o.i || 0, 14)}">
   <img class="scrap-img" src="${imgScrap(id)}" alt="${esc(scrap(id).titre)}" loading="lazy" style="aspect-ratio:${scrap(id).ratio}">
   ${o.coche !== undefined ? `<span class="coche${o.coche ? " num" : ""}">${o.coche ? esc(o.coche) : ""}</span>` : ""}
   ${legende(id)}</button>`;

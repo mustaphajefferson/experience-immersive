@@ -204,7 +204,7 @@ img { display: block; }
 .retourne-int { position: relative; transition: transform .55s cubic-bezier(.3,.7,.3,1); transform-style: preserve-3d; }
 .retourne.verso .retourne-int { transform: rotateY(180deg); }
 .face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
-.face--verso { position: absolute; inset: 0; transform: rotateY(180deg); background: var(--fond-principal); box-shadow: inset 0 0 0 1px var(--trait-fort); padding: 16px; overflow: hidden; }
+.face--verso { position: absolute; inset: 0; transform: rotateY(180deg); background: var(--fond-principal); box-shadow: inset 0 0 0 1px var(--trait-fort); overflow: hidden; }
 
 /* ───────── Listes, champs, interrupteurs */
 .ligne {
@@ -620,26 +620,47 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: v
 .rarete-rare .etiquette--rarete, .rarete-mythique .etiquette--rarete { box-shadow: inset 0 0 0 1px var(--accent-capture); color: var(--accent-capture); }
 .etiquette--mini { height: 18px; font-size: 10px; }
 
-/* ───────── Verso de la carte */
-.verso-carte { display: flex; flex-direction: column; gap: 7px; padding: 14px 14px 26px; }
-.verso-haut { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--trait-defaut); padding-bottom: 7px; }
-.verso-haut .logo { padding: 0; background: none; }
+/* ───────── Verso de la carte
+   Tout est dimensionné en « cqw », c'est-à-dire en part de la largeur de la
+   carte elle-même : le verso d'un scrap étroit et celui d'une grande affiche
+   ont exactement la même composition, et plus rien ne se chevauche en bas. */
+.face--verso { container-type: size; container-name: verso; }
+.verso-carte {
+  height: 100%;
+  display: flex; flex-direction: column; gap: 2.4cqw;
+  padding: 5.4cqw 5.4cqw 4.6cqw;
+  font-size: 3.9cqw;
+}
+.verso-carte .t-texte-meta { font-size: 3.5cqw; line-height: 1.3; letter-spacing: .04em; }
+.verso-haut { display: flex; align-items: center; justify-content: space-between; gap: 2cqw; border-bottom: 1px solid var(--trait-defaut); padding-bottom: 2.4cqw; }
+.verso-haut .logo { padding: 0; background: none; font-size: 5.6cqw !important; }
 .verso-numero { display: flex; flex-direction: column; gap: 0; }
-.verso-numero .t-chiffre-capture { font-variant-numeric: tabular-nums; display: block; font-size: 48px; line-height: 46px; transition: transform .2s; }
-.verso-tableau .ligne { min-height: 0; padding: 4px 0; gap: 8px; }
-.verso-tableau .t-texte-petit { font-size: 13px; line-height: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
-.verso-tableau .cle { width: 34%; }
+.verso-numero .t-chiffre-capture { font-variant-numeric: tabular-nums; display: block; font-size: 18cqw; line-height: .92; transition: transform .2s; }
+.verso-tableau .ligne { min-height: 0; padding: 1.3cqw 0; gap: 2.4cqw; }
+.verso-tableau .t-texte-petit { font-size: 4.4cqw; line-height: 1.32; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; text-align: right; }
+.verso-tableau .cle { width: 34%; flex: none; }
 .verso-numero .t-chiffre-capture.pose { animation: chiffre-pose .34s cubic-bezier(.2, 1.7, .4, 1) both; }
 @keyframes chiffre-pose { from { transform: scale(1.14); } to { transform: none; } }
 .verso-tableau { border-top: 1px solid var(--trait-defaut); }
 .verso-tableau.entre-en-scene .ligne { animation: ligne-arrive .34s ease-out both; animation-delay: calc(360ms + var(--i) * 45ms); }
 @keyframes ligne-arrive { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: none; } }
-.verso-bas { margin-top: auto; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.verso-bas { margin-top: auto; display: flex; align-items: flex-end; justify-content: space-between; gap: 3cqw; }
+.verso-bas .t-texte-meta { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .verso-sticker { display: block; opacity: 0; }
 .verso-sticker.pose { animation: coup .4s cubic-bezier(.2, 1.6, .4, 1) .95s both; }
+/* Le code-barres fait partie de la colonne : il ne passe plus sous la
+   dernière ligne quand la carte est petite. */
 .verso-codebarre {
-  position: absolute; left: 16px; right: 16px; bottom: 6px; height: 12px; opacity: .5;
+  display: block; flex: none; height: 4cqw; margin-top: 2.4cqw; opacity: .5;
   background: repeating-linear-gradient(90deg, var(--texte-principal) 0 1px, transparent 1px 3px, var(--texte-principal) 3px 5px, transparent 5px 9px);
+}
+/* Carte très basse (affiche large) : on resserre encore, et le tableau défile
+   plutôt que de déborder. */
+@container verso (max-aspect-ratio: 0.85) {
+  .verso-carte { gap: 1.6cqw; padding: 4cqw 4.6cqw 3.6cqw; }
+  .verso-numero .t-chiffre-capture { font-size: 13cqw; }
+  .verso-tableau .ligne { padding: .8cqw 0; }
+  .verso-codebarre { height: 3cqw; margin-top: 1.6cqw; }
 }
 
 /* ───────── Favori */
@@ -781,7 +802,9 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: v
 .demo-3d .mur-item { box-shadow: none; }
 
 /* ───────── Les éléments posés sur la page du scrapbook */
-.mur-note { position: absolute; color: var(--texte-principal); touch-action: none; user-select: none; -webkit-user-select: none; white-space: nowrap; }
+/* --c-note est l'encre choisie pour cet élément ; sans elle, l'encre par
+   défaut est celle qui se lit sur le fond de la page. */
+.mur-note { position: absolute; color: var(--c-note, var(--texte-principal)); touch-action: none; user-select: none; -webkit-user-select: none; white-space: nowrap; }
 .mur-note.choisi { outline: 1px solid var(--trait-fort); outline-offset: 5px; }
 .note-titre { font-weight: 600; letter-spacing: -.04em; line-height: 1; text-transform: uppercase; }
 .note-soustitre { font-weight: 600; letter-spacing: -.02em; line-height: 1.1; }
@@ -789,11 +812,11 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: v
   font-weight: 500; letter-spacing: .06em; text-transform: uppercase; line-height: 1;
   padding: 6px 9px; box-shadow: inset 0 0 0 1px currentColor;
 }
-.note-fleche { color: var(--texte-principal); }
+.note-fleche { color: var(--c-note, var(--texte-principal)); }
 .note-fleche svg { display: block; }
-.note-punaise { color: var(--accent-capture); }
+.note-punaise { color: var(--c-note, var(--accent-capture)); }
 .note-ruban { height: 16px; }
-.fond-noir .mur-note, .fond-liege .mur-note { color: #fff; }
+.fond-noir .mur-note, .fond-liege .mur-note, .fond-ardoise .mur-note { color: var(--c-note, #fff); }
 
 .palette { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px var(--gouttiere); }
 .palette button { text-align: center; }
@@ -919,18 +942,30 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: v
     repeating-linear-gradient(calc(46deg + var(--px, 0) * 12deg), rgba(255, 0, 0, .1) 0 1px, transparent 1px 29px);
   background-position: calc(var(--px, 0) * 70px) calc(var(--py, 0) * 70px);
 }
+/* Le prisme ne couvre plus la carte : c'est un liseré, serré sur les quatre
+   bords, qui change de couleur quand on penche. Un film arc-en-ciel posé sur
+   toute la surface donnait un calque collé par-dessus, détaché de la carte ;
+   sur le bord, c'est la tranche du vernis qui joue, et ça tient à l'objet. */
 .holo-prisme {
-  position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen; opacity: .38;
+  position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen; opacity: .5;
   background: conic-gradient(from calc(var(--px, 0) * 90deg),
     #ff0040, #ffc400, #3dffb0, #3a7bff, #ff0040);
-  -webkit-mask: radial-gradient(ellipse 88% 88% at calc(50% + var(--px, 0) * 12%) calc(50% + var(--py, 0) * 12%), transparent 62%, #000 100%);
-  mask: radial-gradient(ellipse 88% 88% at calc(50% + var(--px, 0) * 12%) calc(50% + var(--py, 0) * 12%), transparent 62%, #000 100%);
+  padding: 1.8cqw;
+  -webkit-mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
+  mask-composite: exclude;
 }
+/* Le reflet reste à l'intérieur de la carte : une bande nette qui la balaie,
+   et non un grand voile blanc qui déborde et se promène tout seul. */
 .holo-eclat {
-  position: absolute; inset: -30%; pointer-events: none; mix-blend-mode: screen;
-  background: linear-gradient(calc(104deg + var(--px, 0) * 44deg),
-    transparent 41%, rgba(255, 255, 255, .12) 46%, rgba(255, 255, 255, .66) 50%, rgba(255, 255, 255, .12) 54%, transparent 59%);
-  translate: calc(var(--px, 0) * 72px) calc(var(--py, 0) * 52px);
+  position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen; overflow: hidden;
+}
+.holo-eclat::after {
+  content: ""; position: absolute; inset: -40% -60%;
+  background: linear-gradient(104deg,
+    transparent 44%, rgba(255, 255, 255, .10) 47.5%, rgba(255, 255, 255, .52) 50%, rgba(255, 255, 255, .10) 52.5%, transparent 56%);
+  translate: calc(var(--px, 0) * 46%) 0;
 }
 /* filet rouge sous le grand mot : le même point que dans le logo, étiré */
 .exc-filet { position: absolute; left: 10%; width: 46%; height: 3px; top: 50%; background: var(--accent-capture); }
@@ -1022,6 +1057,10 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: v
 .repere-scrap { position: absolute; color: var(--accent-capture); pointer-events: none; display: block; }
 .repere-scrap.haut-gauche { left: 2%; top: 4%; }
 .repere-scrap.bas-droit { right: 3%; bottom: 20%; }
+/* Les étiquettes qui tournent autour de la carte passent DEVANT elle : posées
+   derrière, elles disparaissaient sous le grand carré noir du verso. */
+.flottant, .repere-scrap { z-index: 5; }
+.regle-scrap, .viseur-scrap { z-index: 1; }
 .flottant {
   position: absolute; pointer-events: none; background: var(--fond-principal);
   font-weight: 500; font-size: 11px; line-height: 14px; letter-spacing: .04em; text-transform: uppercase;
@@ -1108,7 +1147,7 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: v
 .epaisseur-trait.choisi { box-shadow: inset 0 0 0 2px var(--accent-capture); }
 
 /* ───────── Annotations dessinées : le trait se trace tout seul */
-.note-fleche, .note-fleche2, .note-souligne, .note-entoure, .note-etoile { color: var(--texte-principal); }
+.note-fleche, .note-fleche2, .note-souligne, .note-entoure, .note-etoile { color: var(--c-note, var(--texte-principal)); }
 .note-fleche svg, .note-fleche2 svg, .note-souligne svg, .note-entoure svg, .note-etoile svg { display: block; width: 100%; height: auto; overflow: visible; }
 .note-fleche path, .note-fleche2 path, .note-souligne path, .note-entoure path, .note-etoile path {
   stroke-dasharray: 400; stroke-dashoffset: 400;
@@ -1118,7 +1157,9 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: v
 .note-fleche2 path:nth-child(3) { animation-delay: .5s; }
 @keyframes trace-annotation { to { stroke-dashoffset: 0; } }
 .fond-noir .note-fleche, .fond-noir .note-fleche2, .fond-noir .note-souligne,
-.fond-noir .note-entoure, .fond-noir .note-etoile { color: #fff; }
+.fond-noir .note-entoure, .fond-noir .note-etoile,
+.fond-ardoise .note-fleche, .fond-ardoise .note-fleche2, .fond-ardoise .note-souligne,
+.fond-ardoise .note-entoure, .fond-ardoise .note-etoile { color: var(--c-note, #fff); }
 
 /* ───────── Vignette commune : bandeau de la carte et résultats de recherche */
 .mini-cible {
@@ -1133,3 +1174,258 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: v
 .pin.fait { opacity: .55; }
 .pin.fait .pin-tete { color: var(--accent-capture); box-shadow: inset 0 0 0 1.5px var(--accent-capture); }
 .pin.fait .pin-pointe { border-top-color: var(--accent-capture); }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   v8 — LE SCRAPBOOK PLUS PERSONNALISABLE, LA LAMPE, LE BOUTON DE DÉMO
+   C'est le scrapbook qui doit porter l'app : deux pages ne doivent pas se
+   ressembler, même à affiches égales. D'où les matières, les encres, les
+   papiers qu'on pose, et le scotch qui se met où on veut.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* ───────── Quatre nouveaux papiers */
+.fond-calque {
+  background: #E8EDE9;
+  background-image: repeating-linear-gradient(0deg, rgba(17,60,40,.05) 0 1px, transparent 1px 9px),
+    radial-gradient(circle, rgba(17,60,40,.10) 1px, transparent 1.4px);
+  background-size: auto, 24px 24px;
+}
+.fond-seyes {
+  background: #FCFBF5;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(90,120,200,.26) 0 1px, transparent 1px 8px),
+    repeating-linear-gradient(90deg, rgba(200,80,80,.18) 0 1px, transparent 1px 32px);
+}
+.fond-carton {
+  background: #D9C2A0;
+  background-image: repeating-linear-gradient(90deg, rgba(96,70,40,.14) 0 2px, transparent 2px 9px),
+    repeating-linear-gradient(0deg, rgba(96,70,40,.06) 0 1px, transparent 1px 5px);
+}
+.fond-ardoise {
+  background: #1C2321;
+  background-image: radial-gradient(circle, rgba(255,255,255,.16) 1px, transparent 1.4px);
+  background-size: 24px 24px;
+}
+
+/* ───────── Le scotch : posé où on veut, et quatre matières de plus */
+.scotch.libre { left: 0; top: 0; right: auto; bottom: auto; }
+.scotch.rubalise {
+  background: repeating-linear-gradient(68deg, rgba(255,0,0,.88) 0 8px, rgba(255,255,255,.92) 8px 16px);
+}
+.scotch.raye {
+  background: #E2E2DE;
+  background-image: repeating-linear-gradient(74deg, rgba(17,17,17,.42) 0 3px, transparent 3px 9px);
+  box-shadow: inset 0 0 0 1px rgba(17,17,17,.12);
+}
+.scotch.fluo { background: rgba(255,91,160,.78); box-shadow: inset 0 0 0 1px rgba(255,91,160,.5); }
+.scotch.dore {
+  background: linear-gradient(120deg, #C6A04A, #F0DCA0 45%, #B98F32);
+  box-shadow: inset 0 0 0 1px rgba(120,90,20,.3);
+}
+.rouleaux { grid-template-columns: repeat(4, 1fr); row-gap: 14px; }
+
+/* ───────── Deux cadres de plus : coins photo et bois */
+.cadre-bois {
+  padding: 11px;
+  background: linear-gradient(118deg, #A87C47, #8A6436 52%, #B08A50);
+  box-shadow: inset 0 0 0 1px rgba(60,40,16,.45);
+}
+.coin-photo {
+  position: absolute; width: 16%; max-width: 26px; aspect-ratio: 1; z-index: 3; pointer-events: none;
+  background: rgba(33,28,22,.82);
+}
+.coin-photo.hg { left: 0; top: 0; clip-path: polygon(0 0, 100% 0, 0 100%); }
+.coin-photo.hd { right: 0; top: 0; clip-path: polygon(100% 0, 100% 100%, 0 0); }
+.coin-photo.bg { left: 0; bottom: 0; clip-path: polygon(0 100%, 100% 100%, 0 0); }
+.coin-photo.bd { right: 0; bottom: 0; clip-path: polygon(100% 100%, 0 100%, 100% 0); }
+.cadre-apercu.cadre-bois { background: linear-gradient(118deg, #A87C47, #8A6436 52%, #B08A50); }
+.cadre-apercu.cadre-coins { position: relative; }
+.cadre-apercu.cadre-coins::after {
+  content: ""; position: absolute; left: 14%; top: 14%; width: 22%; aspect-ratio: 1;
+  background: rgba(33,28,22,.8); clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+
+/* ───────── Les papiers qu'on pose et qu'on écrit */
+.note-postit {
+  background: var(--c-note, #F2B100); aspect-ratio: 1 / .92;
+  box-shadow: 2px 3px 7px rgba(17,17,17,.16);
+  display: flex; align-items: flex-start; padding: 9%;
+  clip-path: polygon(0 0, 100% 0, 100% 76%, 76% 100%, 0 100%);
+  white-space: normal;
+}
+.note-postit .papier-texte { color: var(--c-texte, #111); font-weight: 500; line-height: 1.25; }
+.note-bulle {
+  box-shadow: inset 0 0 0 2px currentColor; aspect-ratio: 1 / .58;
+  display: flex; align-items: center; justify-content: center; padding: 6% 8%;
+  white-space: normal; text-align: center;
+}
+.note-bulle::after {
+  content: ""; position: absolute; left: 18%; top: 100%; width: 16%; aspect-ratio: 1;
+  background: var(--fond-principal);
+  box-shadow: inset 0 -2px 0 currentColor, inset -2px 0 0 currentColor;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+.note-bulle .papier-texte { font-weight: 500; line-height: 1.2; }
+.note-ticket {
+  background: currentColor; aspect-ratio: 1 / .36;
+  display: flex; align-items: center; padding: 0 7%;
+  -webkit-mask: radial-gradient(circle 6px at 0 50%, transparent 98%, #000) ,
+    radial-gradient(circle 6px at 100% 50%, transparent 98%, #000);
+  -webkit-mask-composite: source-in;
+  mask: radial-gradient(circle 6px at 0 50%, transparent 98%, #000),
+    radial-gradient(circle 6px at 100% 50%, transparent 98%, #000);
+  mask-composite: intersect;
+}
+.note-ticket .papier-texte {
+  color: var(--c-texte, var(--fond-principal)); font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.note-trombone, .note-gommette { color: var(--c-note, var(--texte-principal)); }
+.note-trombone svg, .note-gommette svg { display: block; width: 100%; height: 100%; }
+.note-gommette { color: var(--c-note, #FF5BA0); filter: drop-shadow(1px 2px 2px rgba(17,17,17,.2)); }
+.palette .note-postit, .palette .note-bulle, .palette .note-ticket { position: static; width: 70%; font-size: 8px; }
+.palette .note-trombone, .palette .note-gommette { position: static; width: 26px; height: 40px; }
+
+/* ───────── La rangée d'encres */
+.couleurs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.couleurs .pastille-couleur { width: 26px; height: 26px; }
+.pastille-couleur { transition: transform .12s cubic-bezier(.2,1.6,.4,1); }
+.pastille-couleur:active { transform: scale(.86); }
+.pastille-couleur.choisi { transform: scale(1.12); }
+
+/* ───────── La lampe du scanner */
+.torche { color: #fff; transition: background .18s, color .18s, box-shadow .18s; }
+.torche.on { background: #fff; color: #111; box-shadow: 0 0 22px rgba(255,255,255,.55); }
+.torche.indispo { opacity: .4; }
+
+/* ───────── Le bouton de démo : volontairement hors charte */
+.marque-dev {
+  position: fixed; left: 12px; top: calc(env(safe-area-inset-top) + 22px); z-index: 40;
+  display: flex; align-items: center; gap: 7px;
+  padding: 6px 9px; background: rgba(255,255,255,.86); backdrop-filter: blur(6px);
+  outline: 1px dashed var(--accent-capture); outline-offset: -1px;
+  font-weight: 500; font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--accent-capture);
+}
+.marque-dev i { width: 6px; height: 6px; background: var(--accent-capture); animation: dev-clignote 1.8s ease-in-out infinite; }
+@keyframes dev-clignote { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+.marque-dev-sous { color: var(--texte-secondaire); letter-spacing: .04em; text-transform: none; }
+.marque-dev:active { transform: scale(.97); }
+.voile-dev {
+  position: fixed; inset: 0; z-index: 90; background: rgba(17,17,17,0);
+  display: flex; align-items: flex-end; justify-content: center;
+  max-width: 480px; margin: 0 auto; transition: background .22s ease;
+}
+.voile-dev.entre { background: rgba(17,17,17,.45); }
+.feuille-dev {
+  position: relative; width: 100%; animation: monte .28s cubic-bezier(.2,.9,.3,1) both;
+  outline: 1px dashed var(--accent-capture); outline-offset: -4px;
+}
+.voile-dev.sort { background: rgba(17,17,17,0); }
+.voile-dev.sort .feuille-dev { animation: descend .2s ease-in both; }
+@keyframes descend { to { transform: translateY(100%); } }
+.etiquette-dev {
+  display: inline-block; padding: 3px 7px; background: var(--accent-capture); color: #fff;
+  font-weight: 500; font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   v8 — LE MOUVEMENT DE L'APP
+   Rien n'apparaît plus d'un coup : un écran arrive du côté vers lequel on
+   va, une liste se dépose élément par élément, la barre d'onglet glisse
+   depuis l'onglet qu'on vient de quitter. L'app doit se sentir souple.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --sortie: cubic-bezier(.22, .92, .26, 1);   /* part vite, se pose doucement */
+  --ressort: cubic-bezier(.2, 1.5, .35, 1);   /* un petit dépassement */
+}
+
+/* ───────── Passage d'un écran à l'autre, selon le sens */
+.ecran { animation: ecran-avant .36s var(--sortie) both; }
+.ecran.va-arriere { animation-name: ecran-arriere; }
+.ecran.va-onglet { animation-name: ecran-onglet; }
+.ecran.sans-anim, .ecran.en-fondu { animation: none; }
+@keyframes ecran-avant { from { opacity: 0; transform: translateX(26px); } to { opacity: 1; transform: none; } }
+@keyframes ecran-arriere { from { opacity: 0; transform: translateX(-26px); } to { opacity: 1; transform: none; } }
+@keyframes ecran-onglet { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: none; } }
+
+/* ───────── Les listes se déposent, élément par élément */
+.surgit { animation: surgit .42s var(--sortie) both; animation-delay: calc(var(--i, 0) * 34ms); }
+@keyframes surgit { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+/* la jauge d'une collection se remplit en arrivant */
+.bloc-collection .barre-progression > i { animation: jauge .7s var(--sortie) both; animation-delay: calc(var(--i, 0) * 34ms + 120ms); transform-origin: 0 50%; }
+@keyframes jauge { from { transform: scaleX(0); } to { transform: none; } }
+
+/* ───────── La barre de l'onglet courant glisse depuis l'onglet quitté */
+.onglet > span { display: block; transition: transform .22s var(--ressort); }
+.onglet:active > span { transform: scale(.94); }
+.onglet.actif > span { animation: onglet-mot .36s var(--ressort) both; }
+@keyframes onglet-mot { from { transform: translateY(3px); } to { transform: none; } }
+.onglet.actif::before { animation: onglet-barre .38s var(--sortie) both; }
+@keyframes onglet-barre {
+  from { transform: translateX(calc(var(--saut, 0) * 100%)); opacity: .4; }
+  to { transform: none; opacity: 1; }
+}
+
+/* ───────── Petites réponses au doigt */
+.ligne { transition: background .16s ease; }
+.ligne:active { background: var(--fond-secondaire); }
+.puce, .dispo, .carre-bouton, .icone-bouton { transition: transform .14s var(--ressort), background .16s, color .16s, box-shadow .16s; }
+.puce:active, .dispo:active, .carre-bouton:active, .icone-bouton:active { transform: scale(.93); }
+.carte-scrap { transition: transform .18s var(--sortie); }
+.carte-scrap:active { transform: scale(.975); }
+.bouton { transition: transform .14s var(--ressort), opacity .2s; }
+.bouton:active { transform: scale(.97); }
+.vide-case { transition: color .2s, box-shadow .2s; }
+.vide-case:active { box-shadow: inset 0 0 0 1px var(--accent-capture); color: var(--accent-capture); }
+.badge { transition: transform .2s var(--ressort); }
+.grille-badges button:active .badge { transform: scale(.92); }
+
+/* ───────── Le grand titre d'une page se pose lui aussi */
+.grand-titre .ligne-titre h1 { animation: surgit .46s var(--sortie) both; }
+.entete-gauche { animation: surgit .4s var(--sortie) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ecran, .surgit, .onglet.actif::before, .onglet.actif > span,
+  .grand-titre .ligne-titre h1, .entete-gauche,
+  .bloc-collection .barre-progression > i { animation: none !important; }
+}
+
+/* ───────── Grilles : une colonne ne pousse plus la grille hors de l'écran.
+   Sans minmax(0, …), un mot long comme « SOULIGNEMENT » impose sa largeur à
+   sa colonne et la dernière passe hors cadre. */
+.palette, .nuancier, .rouleaux, .quatre-col, .cadres, .grille-badges, .deux-col {
+  grid-template-columns: repeat(var(--col, 4), minmax(0, 1fr));
+}
+.cadres { --col: 4; row-gap: 12px; }
+.deux-col { --col: 2; }
+.palette .t-texte-meta, .nuancier .t-texte-meta, .rouleaux .t-texte-meta { overflow-wrap: anywhere; hyphens: auto; }
+
+/* ───────── Le verso : les lignes occupent toute la hauteur de la carte au
+   lieu de se tasser en haut et de laisser un grand vide. */
+.verso-tableau { display: flex; flex-direction: column; justify-content: space-evenly; flex: 1 1 auto; }
+/* Les étiquettes restent dans l'écran, houle comprise : elles se décalent
+   avec l'inclinaison, donc on leur laisse la marge de leur amplitude. */
+.num-flottant { right: 12px; rotate: 4deg; }
+.etiquette-flottante { left: 10px; }
+.date-flottante { left: 12px; }
+
+/* ───────── Le liseré de la carte exclusive : plus fin, moins appuyé */
+.holo-prisme { opacity: .36; padding: 1.1cqw; }
+
+/* ───────── La teinte du papier, posée sur la matière du fond */
+.voile-teinte { position: absolute; inset: 0; opacity: .5; pointer-events: none; z-index: 0; }
+.mur-zone > .mur-plan { position: absolute; z-index: 1; }
+
+/* ───────── La page et la table
+   Le papier n'habille plus toute la zone mais la page elle-même : on voit
+   son bord, son ombre, et tout autour la table sur laquelle elle est posée.
+   C'est ce qui permet de s'éloigner très loin sans perdre le nord. */
+.mur-zone { background: #DEDEDA; }
+.sombre .mur-zone { background: #171717; }
+.mur-contenu {
+  box-shadow: 0 1px 2px rgba(17,17,17,.14), 0 10px 30px rgba(17,17,17,.14);
+}
+.mur-contenu > .voile-teinte, .mur-contenu > .voile-fond { z-index: 0; }
+.mur-contenu > *:not(.voile-teinte):not(.voile-fond) { z-index: 1; }
+.mur-zone.ensemble .mur-contenu { box-shadow: 0 2px 4px rgba(17,17,17,.18), 0 18px 50px rgba(17,17,17,.2); }

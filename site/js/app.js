@@ -5,6 +5,11 @@ const APP = document.getElementById("app");
 let courant = null;
 let nettoyer = null;
 const pile = [];
+/* Sens du passage d'un écran à l'autre : on avance, on revient, ou on change
+ * d'onglet. Chacun a son mouvement — c'est ce qui fait qu'on sait toujours où
+ * on est allé, sans avoir à y penser. */
+let sensEcran = "avant";
+const ONGLETS_ID = ["13", "24", "28"];
 
 /* ───────── Navigation (#/13, #/19.1…) */
 function aller(id, o = {}) {
@@ -28,7 +33,8 @@ function rendre(id, o = {}) {
   const s = document.createElement("section");
   const fondu = ETAT.ctx.fondu ? " en-fondu" : "";
   ETAT.ctx.fondu = false;
-  s.className = `ecran ${e.classe || ""}${o.garderDefilement ? " sans-anim" : ""}${fondu}`;
+  const sens = ONGLETS_ID.includes(id) && ONGLETS_ID.includes(courant) ? "onglet" : sensEcran;
+  s.className = `ecran va-${sens} ${e.classe || ""}${o.garderDefilement ? " sans-anim" : ""}${fondu}`;
   s.dataset.ecran = id;
   try { s.innerHTML = e.rendu(); } catch (err) { console.error(err); s.innerHTML = ECRANS["50"].rendu(); }
   APP.replaceChildren(s);
@@ -43,7 +49,8 @@ function rendre(id, o = {}) {
 
 window.addEventListener("hashchange", () => {
   const id = idDuHash() || "01";
-  if (pile.length > 1 && pile[pile.length - 2] === id) pile.pop(); else if (pile[pile.length - 1] !== id) pile.push(id);
+  if (pile.length > 1 && pile[pile.length - 2] === id) { pile.pop(); sensEcran = "arriere"; }
+  else if (pile[pile.length - 1] !== id) { pile.push(id); sensEcran = "avant"; }
   rendre(id);
 });
 
@@ -117,6 +124,7 @@ const ACTIONS = {
   filtreCarte(el) { ETAT.filtres[el.dataset.cle] = el.dataset.val; sauver(); rafraichir(); },
   reinitFiltres() { ETAT.filtres = { rayon: 500, collection: "toutes", etat: "tous" }; ETAT.reglages.rayon = 500; ETAT.reglages.manquants = true; sauver(); rafraichir(); },
   capturer() { cameraCapturer(); },
+  torche() { basculerTorche(); },
   basculerAuto(el) {
     ETAT.reglages.scanAuto = ETAT.reglages.scanAuto === false;
     el.classList.toggle("active", ETAT.reglages.scanAuto !== false);
@@ -231,9 +239,12 @@ const ACTIONS = {
       id: "n" + Date.now(),
       type: t.type,
       texte: t.type === "date" ? aujourdhui().date : t.exemple,
-      x: Math.round(clamp(cx - (estTexte(t.type) ? 90 : t.w / 2), 8, LARGEUR_MUR - 60)),
-      y: Math.round(clamp(cy - 20, 0, ETAT.mur.hauteur - 60)),
+      // l'élément arrive au milieu de ce qu'on regarde, marges comprises :
+      // si on travaille sur le côté de la page, il n'atterrit pas ailleurs
+      x: Math.round(clamp(cx - (estTexte(t.type) ? 90 : t.w / 2), -MARGE_MUR + 20, LARGEUR_MUR + MARGE_MUR - 60)),
+      y: Math.round(clamp(cy - 20, -MARGE_MUR + 20, ETAT.mur.hauteur + MARGE_MUR - 60)),
       w: t.w, rot: Math.round(Math.random() * 6 - 3), devant: true,
+      couleur: t.couleur || null,
     };
     (ETAT.mur.notes || (ETAT.mur.notes = [])).push(n);
     ETAT.ctx.murSel = n.id;
@@ -244,7 +255,20 @@ const ACTIONS = {
   choisirDispo(el) { ETAT.ctx.dispoColl = el.dataset.id; rafraichir(); },
   choisirFond(el) { ETAT.mur.fond = el.dataset.id; sauver(); rafraichir(); vibrer(6); },
   choisirScotch(el) { ETAT.mur.scotchType = el.dataset.id; sauver(); rafraichir(); vibrer(6); },
+  teinteFond(el) { ETAT.mur.teinte = el.dataset.id || null; sauver(); rafraichir(); vibrer(6); },
   choisirDechirure(el) { ETAT.mur.dechireType = el.dataset.id; sauver(); rafraichir(); },
+  couleurNote(el) {
+    const o = trouverElement(ETAT.ctx.murSel);
+    if (!o || !o.type) return;
+    o.couleur = el.dataset.id;
+    sauver(); rafraichir(); vibrer(6);
+  },
+  matiereNote(el) {
+    const o = trouverElement(ETAT.ctx.murSel);
+    if (!o || o.type !== "ruban") return;
+    o.matiere = el.dataset.id;
+    sauver(); rafraichir(); vibrer(6);
+  },
   choisirCadre(el) {
     const it = trouverElement(ETAT.ctx.murSel);
     if (!it || it.type) return;
@@ -362,6 +386,31 @@ const ACTIONS = {
     if (navigator.share) navigator.share({ title: "SCRAP", text: "Regarde ce scrap capturé à Belleville", url }).catch(() => {});
     else ACTIONS.copierLien();
   },
+  /* ───────── Menu de démo (bouton DEV de l'accueil) */
+  menuDev() {
+    if ($(".feuille-dev")) return;
+    const n = totalScraps();
+    const fin = D.collections.filter((c) => complete(c.id)).length;
+    const v = document.createElement("div");
+    v.className = "voile-dev";
+    v.innerHTML = `<div class="feuille feuille-dev">
+      <span class="etiquette-dev">DEV · hors application</span>
+      <span class="t-titre-m" style="display:block;margin-top:12px">Dans quel état veux-tu partir ?</span>
+      <p class="t-texte-petit secondaire" style="margin:8px 0 18px">Session en cours : ${pluriel(n, "scrap")}, ${pluriel(fin, "collection complète", "collections complètes")}.</p>
+      <div class="pile">
+        ${bouton("Reprendre où j'en étais", { action: "devReprendre" })}
+        ${bouton("Repartir de la démo d'Inès", { type: "secondaire", action: "devDemo" })}
+        ${bouton("Compte vierge (premier lancement)", { type: "secondaire", action: "devVide" })}
+      </div>
+      <p class="t-texte-petit secondaire" style="margin:14px 0 0">La démo d'Inès remet 15 scraps, un scrapbook déjà commencé et des collections à finir — de quoi rejouer l'ouverture du pack et le badge.</p>
+    </div>`;
+    document.body.appendChild(v);
+    requestAnimationFrame(() => v.classList.add("entre"));
+    v.addEventListener("click", (e) => { if (e.target === v) fermerDev(); });
+  },
+  devReprendre() { fermerDev(); },
+  devDemo() { reinitialiser(); fermerDev(); aller("01", { remplace: true }); rendre("01"); toast("Démo d'Inès remise à zéro"); },
+  devVide() { reinitialiserVide(); fermerDev(); aller("01", { remplace: true }); rendre("01"); toast("Compte vierge"); },
   bientot() { toast("Disponible dans la vraie app"); },
   effacerHistorique() { toast("Historique des lieux effacé"); },
   exporter() { toast("Export envoyé à " + ETAT.utilisateur.email + " (démo)"); },
@@ -370,6 +419,13 @@ const ACTIONS = {
   reessayer() { if (navigator.onLine) aller("13"); else toast("Toujours pas de réseau"); },
   choisirPhoto() { $("#photo-49").click(); },
 };
+
+function fermerDev() {
+  const v = $(".voile-dev");
+  if (!v) return;
+  v.classList.add("sort");
+  setTimeout(() => v.remove(), 220);
+}
 
 function collerSurMur(id) {
   const m = ETAT.mur;
@@ -406,7 +462,11 @@ document.addEventListener("input", (e) => {
     if (!n || !n.type) return;
     n.texte = e.target.value;
     const el = $(`[data-note="${CSS.escape(n.id)}"]`);
-    if (el) el.firstChild ? (el.childNodes[0].nodeValue = n.texte) : (el.textContent = n.texte);
+    if (!el) return;
+    const dedans = el.querySelector(".papier-texte");
+    if (dedans) dedans.textContent = n.texte;
+    else if (el.firstChild && el.firstChild.nodeType === 3) el.firstChild.nodeValue = n.texte;
+    else el.insertBefore(document.createTextNode(n.texte), el.firstChild);
     return;
   }
   if (k === "voileFond") {
@@ -423,7 +483,15 @@ document.addEventListener("input", (e) => {
       o.w = v;
       const texte = o.type && estTexte(o.type);
       const l = $("#item-taille-val"); if (l) l.textContent = texte ? v + " px" : Math.round((v / 128) * 100) + " %";
-      if (el) { if (texte) el.style.fontSize = v + "px"; else { el.style.width = v + "px"; if (o.type === "punaise") el.style.height = v + "px"; } }
+      if (el) {
+        if (texte) el.style.fontSize = v + "px";
+        else {
+          el.style.width = v + "px";
+          if (o.type === "punaise" || o.type === "gommette") el.style.height = v + "px";
+          if (o.type === "trombone") el.style.height = Math.round(v * 1.9) + "px";
+          if (o.type && estPapier(o.type)) el.style.fontSize = Math.max(8, Math.round(v * (o.type === "ticket" ? 0.105 : 0.145))) + "px";
+        }
+      }
     } else {
       o.rot = v;
       const l = $("#item-rot-val"); if (l) l.textContent = v + "°";

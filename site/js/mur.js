@@ -16,8 +16,9 @@
 "use strict";
 
 const LARGEUR_MUR = 402;
-const MARGE_MUR = 200;          // le vide tout autour de la page
-const ZOOM_MAX = 2.8;
+const MARGE_MUR = 900;          // le vide tout autour de la page : on peut s'éloigner loin
+const ZOOM_MAX = 3.2;
+const ZOOM_MIN_PART = 0.34;     // jusqu'où on peut dézoomer, en part de la vue d'ensemble
 const polyCss = (pts) => `polygon(${pts.map(([x, y]) => `${(x * 100).toFixed(2)}% ${(y * 100).toFixed(2)}%`).join(",")})`;
 
 /* ═════════ Ce qu'il y a sur la page */
@@ -25,7 +26,38 @@ const polyCss = (pts) => `polygon(${pts.map(([x, y]) => `${(x * 100).toFixed(2)}
 const CADRES = [
   ["aucun", "Aucun"], ["filet", "Filet"], ["epais", "Épais"],
   ["passe", "Passe-partout"], ["polaroid", "Polaroïd"], ["noir", "Noir"],
+  ["coins", "Coins photo"], ["bois", "Bois"],
 ];
+
+/* La palette : tout ce qu'on pose sur la page peut changer de couleur, le
+ * dessin comme les titres, les flèches ou les gommettes. Ce sont les encres
+ * d'une trousse — feutres, stylos, surligneurs — pas une roue chromatique :
+ * on choisit vite, et deux scrapbooks ne se ressemblent pas. */
+const COULEURS_MUR = [
+  ["#111111", "Noir"], ["#FF0000", "Rouge"], ["#FFFFFF", "Blanc"],
+  ["#1B4DE4", "Bleu stylo"], ["#0E7A5F", "Vert"], ["#F2B100", "Jaune"],
+  ["#FF5BA0", "Rose fluo"], ["#7A4BD0", "Violet"], ["#C86A2A", "Terre"], ["#6B6B67", "Gris"],
+];
+const couleurNote = (n) => n.couleur || null;
+
+/* Le scotch se pose où on veut : x et y sont la position du centre du bout,
+ * de 0 à 1 dans le repère du scrap, et rot son inclinaison. Les anciens
+ * scraps rangés par coin (["hg","kraft"]) sont convertis à la volée. */
+const COINS_SCOTCH = { hg: [0.02, 0.03, -38], hd: [0.98, 0.03, 38], bg: [0.02, 0.97, 38], bd: [0.98, 0.97, -38] };
+function normScotch(sc) {
+  if (!sc) return [];
+  return sc.map((b) => {
+    if (Array.isArray(b)) {
+      const [x, y, rot] = COINS_SCOTCH[b[0]] || COINS_SCOTCH.hg;
+      return { x, y, rot, type: b[1] || "kraft" };
+    }
+    return b;
+  });
+}
+const scotchHtml = (b, w) => {
+  const l = Math.round(clamp(w * 0.42, 34, 92));
+  return `<i class="scotch libre ${b.type}" style="left:${(b.x * 100).toFixed(1)}%;top:${(b.y * 100).toFixed(1)}%;width:${l}px;transform:translate(-50%,-50%) rotate(${b.rot || 0}deg)"></i>`;
+};
 
 function itemHtml(it, choisi) {
   const s = scrap(it.id);
@@ -37,7 +69,8 @@ function itemHtml(it, choisi) {
     ${it.dechire ? `<i class="bord-dechire" style="${decoupe}"></i>` : ""}
     <div class="mur-papier" style="${decoupe}"><img src="${imgScrap(it.id)}" alt="" draggable="false" style="aspect-ratio:${s.ratio}"></div>
     ${it.cadre === "polaroid" ? `<span class="polaroid-legende t-texte-meta">${esc(s.lieu)}</span>` : ""}
-    ${(it.scotch || []).map(([coin, type]) => `<i class="scotch ${type} ${coin}"></i>`).join("")}
+    ${it.cadre === "coins" ? '<i class="coin-photo hg"></i><i class="coin-photo hd"></i><i class="coin-photo bg"></i><i class="coin-photo bd"></i>' : ""}
+    ${normScotch(it.scotch).map((b) => scotchHtml(b, it.w)).join("")}
     ${choisi ? '<i class="poignee" data-poignee="1"></i>' : ""}
   </div>`;
 }
@@ -48,6 +81,9 @@ const TYPES_NOTE = [
   { type: "soustitre", nom: "Sous-titre", exemple: "Printemps 2026", w: 22, icone: "lettre" },
   { type: "etiquette", nom: "Étiquette", exemple: "Mes préférées", w: 13, icone: "etiquette" },
   { type: "date", nom: "Date", exemple: "", w: 13, icone: "calendrier" },
+  { type: "postit", nom: "Post-it", exemple: "à y retourner", w: 96, icone: "postit", couleur: "#F2B100" },
+  { type: "bulle", nom: "Bulle", exemple: "énorme", w: 110, icone: "bulle" },
+  { type: "ticket", nom: "Ticket", exemple: "ENTRÉE · 21 H", w: 120, icone: "ticket" },
   { type: "fleche", nom: "Flèche", exemple: "", w: 90, icone: "fleche" },
   { type: "fleche2", nom: "Flèche double", exemple: "", w: 100, icone: "fleche" },
   { type: "souligne", nom: "Soulignement", exemple: "", w: 120, icone: "texte" },
@@ -55,8 +91,15 @@ const TYPES_NOTE = [
   { type: "etoile", nom: "Étoile", exemple: "", w: 40, icone: "etoile" },
   { type: "ruban", nom: "Ruban", exemple: "", w: 80, icone: "ruban" },
   { type: "punaise", nom: "Punaise", exemple: "", w: 22, icone: "punaise" },
+  { type: "trombone", nom: "Trombone", exemple: "", w: 34, icone: "trombone" },
+  { type: "gommette", nom: "Gommette", exemple: "", w: 26, icone: "gommette", couleur: "#FF5BA0" },
 ];
+/* Texte écrit : la taille règle la police. Les autres : la taille règle la largeur. */
 const estTexte = (t) => ["titre", "soustitre", "etiquette", "date"].includes(t);
+/* Les papiers qu'on peut écrire dessus : la taille règle leur largeur, mais ils
+ * portent un texte qu'on peut changer. */
+const estPapier = (t) => ["postit", "bulle", "ticket"].includes(t);
+const aDuTexte = (t) => estTexte(t) || estPapier(t);
 
 /* Les annotations dessinées se tracent toutes seules quand elles arrivent :
  * le trait se déroule, comme si on venait de le faire au feutre. */
@@ -70,10 +113,19 @@ const DESSINS_NOTE = {
 
 function noteHtml(n, choisi) {
   const base = `mur-note note-${n.type}${choisi ? " choisi" : ""}`;
-  const pose = `left:${n.x}px;top:${n.y}px;transform:rotate(${n.rot || 0}deg)`;
+  const c = couleurNote(n);
+  const pose = `left:${n.x}px;top:${n.y}px;transform:rotate(${n.rot || 0}deg)${c ? `;--c-note:${c}` : ""}`;
   const poignee = choisi ? '<i class="poignee" data-poignee="1"></i>' : "";
   if (estTexte(n.type)) {
     return `<div class="${base}" data-note="${n.id}" style="${pose};font-size:${n.w}px">${esc(n.texte || "")}${poignee}</div>`;
+  }
+  if (estPapier(n.type)) {
+    // le texte suit la taille du papier : un post-it réduit reste lisible,
+    // et son encre bascule au noir ou au blanc selon la couleur du papier
+    const t = Math.max(8, Math.round(n.w * (n.type === "ticket" ? 0.105 : 0.145)));
+    const fond = c || (TYPES_NOTE.find((x) => x.type === n.type) || {}).couleur || "#111111";
+    return `<div class="${base}" data-note="${n.id}" style="${pose};width:${n.w}px;font-size:${t}px;--c-texte:${contraste(fond)}">
+      <span class="papier-texte">${esc(n.texte || "")}</span>${poignee}</div>`;
   }
   const d = DESSINS_NOTE[n.type];
   if (d) {
@@ -81,7 +133,17 @@ function noteHtml(n, choisi) {
       ${d[0]}<g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">${d[1]}</g></svg>${poignee}</div>`;
   }
   if (n.type === "ruban") {
-    return `<div class="${base}" data-note="${n.id}" style="${pose};width:${n.w}px"><i class="scotch ${ETAT.mur.scotchType || "kraft"}" style="position:static;display:block;width:100%"></i>${poignee}</div>`;
+    return `<div class="${base}" data-note="${n.id}" style="${pose};width:${n.w}px"><i class="scotch ${n.matiere || ETAT.mur.scotchType || "kraft"}" style="position:static;display:block;width:100%"></i>${poignee}</div>`;
+  }
+  if (n.type === "trombone") {
+    return `<div class="${base}" data-note="${n.id}" style="${pose};width:${n.w}px;height:${Math.round(n.w * 1.9)}px">
+      <svg viewBox="0 0 24 46" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round">
+        <path d="M17 10v24a5.6 5.6 0 0 1-11.2 0V8a3.4 3.4 0 0 1 6.8 0v25a1.3 1.3 0 0 1-2.6 0V12"/></svg>${poignee}</div>`;
+  }
+  if (n.type === "gommette") {
+    return `<div class="${base}" data-note="${n.id}" style="${pose};width:${n.w}px;height:${n.w}px">
+      <svg viewBox="0 0 24 24" width="100%" height="100%"><circle cx="12" cy="12" r="11" fill="currentColor"/>
+      <circle cx="12" cy="12" r="6" fill="#fff" opacity=".9"/><circle cx="8.6" cy="8" r="2.4" fill="#fff" opacity=".4"/></svg>${poignee}</div>`;
   }
   return `<div class="${base}" data-note="${n.id}" style="${pose};width:${n.w}px;height:${n.w}px">
     <svg viewBox="0 0 24 24" width="100%" height="100%"><circle cx="12" cy="10" r="7" fill="currentColor"/><circle cx="9.6" cy="7.6" r="2.2" fill="#fff" opacity=".55"/><path d="M12 17v5" stroke="currentColor" stroke-width="1.6"/></svg>${poignee}</div>`;
@@ -93,10 +155,17 @@ const trouverElement = (id) => ETAT.mur.items.find((i) => i.id === id) || notesM
 const estNote = (o) => !!(o && o.type);
 
 /* Les traits dessinés à la main, dans un seul calque SVG. */
+/* Le calque de dessin couvre TOUTE la planche, marges comprises : un trait
+ * commencé sur la page et fini dans la marge n'est plus coupé en deux. Il est
+ * posé en dehors du contenu (d'où le décalage négatif) et son repère reste
+ * celui de la page, donc les points déjà enregistrés ne bougent pas. */
 function traitsHtml() {
   const t = traitsMur();
   if (!t.length) return "";
-  return `<svg class="traits-mur" width="${LARGEUR_MUR}" height="${ETAT.mur.hauteur}" aria-hidden="true">
+  const PW = LARGEUR_MUR + MARGE_MUR * 2;
+  const PH = ETAT.mur.hauteur + MARGE_MUR * 2;
+  return `<svg class="traits-mur" width="${PW}" height="${PH}" viewBox="${-MARGE_MUR} ${-MARGE_MUR} ${PW} ${PH}"
+    style="left:${-MARGE_MUR}px;top:${-MARGE_MUR}px" aria-hidden="true">
     ${t.map((tr) => `<polyline points="${tr.pts.map(([x, y]) => `${x},${y}`).join(" ")}" fill="none"
       stroke="${tr.couleur || "#111111"}" stroke-width="${tr.w || 3}" stroke-linecap="round" stroke-linejoin="round"/>`).join("")}
   </svg>`;
@@ -119,6 +188,11 @@ function styleFond(m) {
   }
   return "";
 }
+
+/* La teinte : une couleur passée sur le papier, par-dessus la matière. Huit
+ * papiers et dix teintes font quatre-vingts pages différentes, et la trame du
+ * papier continue de se voir à travers. */
+const teinteHtml = (m) => (m.teinte ? `<i class="voile-teinte" style="background:${m.teinte}"></i>` : "");
 
 /* ═════════ Dispositions toutes faites
  * Quatre façons de ranger la page d'un coup, parce que placer vingt affiches
@@ -180,10 +254,15 @@ function murMonter(racine, outil) {
   const PW = LARGEUR_MUR + MARGE_MUR * 2;
   const PH = () => m.hauteur + MARGE_MUR * 2;
 
-  /* ───────── Cadrage */
-  const kLarge = () => zone.clientWidth / LARGEUR_MUR;                                  // la page remplit la largeur
-  const kEnsemble = () => Math.min(zone.clientWidth / PW, zone.clientHeight / PH());    // toute la page d'un coup
-  const kMin = () => kEnsemble() * 0.8;
+  /* ───────── Cadrage
+   * kLarge    : la page remplit la largeur de l'écran (l'échelle de travail)
+   * kEnsemble : la page entière d'un coup, avec un peu d'air autour
+   * kMin      : bien plus loin encore — la page devient une vignette posée au
+   *             milieu de la table, et on voit tout ce qu'il reste à remplir */
+  const AIR = 60;
+  const kLarge = () => zone.clientWidth / LARGEUR_MUR;
+  const kEnsemble = () => Math.min(zone.clientWidth / (LARGEUR_MUR + AIR * 2), zone.clientHeight / (m.hauteur + AIR * 2));
+  const kMin = () => kEnsemble() * ZOOM_MIN_PART;
 
   const contraindre = () => {
     const pw = PW * vue.k, ph = PH() * vue.k;
@@ -208,6 +287,13 @@ function murMonter(racine, outil) {
   const centre = () => { const r = zone.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
   // place la page en haut, centrée, à l'échelle « largeur »
   const cadrerDepart = () => { vue.k = kLarge(); vue.x = -MARGE_MUR * vue.k; vue.y = -MARGE_MUR * vue.k; };
+  // met la page au milieu de l'écran, quelle que soit l'échelle
+  const centrerPage = (k) => {
+    vue.k = clamp(k, kMin(), ZOOM_MAX);
+    vue.x = zone.clientWidth / 2 - (MARGE_MUR + LARGEUR_MUR / 2) * vue.k;
+    vue.y = zone.clientHeight / 2 - (MARGE_MUR + m.hauteur / 2) * vue.k;
+    appliquer();
+  };
 
   const choisissable = outil === "deplacer";
   let contenu = null;
@@ -216,7 +302,12 @@ function murMonter(racine, outil) {
     plan.style.height = PH() + "px";
     const sel = choisissable ? ETAT.ctx.murSel : null;
     const notes = notesMur();
-    plan.innerHTML = `<div class="mur-contenu" id="contenu" style="left:${MARGE_MUR}px;top:${MARGE_MUR}px;width:${LARGEUR_MUR}px;height:${m.hauteur}px">
+    /* La matière du papier est posée sur la page elle-même, et non sur toute
+     * la zone : maintenant qu'on peut s'éloigner très loin, on doit voir où
+     * la page commence et où elle finit — une feuille sur une table. */
+    plan.innerHTML = `<div class="mur-contenu fond-${m.fond}" id="contenu" style="left:${MARGE_MUR}px;top:${MARGE_MUR}px;width:${LARGEUR_MUR}px;height:${m.hauteur}px;${styleFond(m)}">
+      ${teinteHtml(m)}
+      ${m.fond === "photo" && m.voile ? `<i class="voile-fond" style="opacity:${(m.voile || 0) / 100}"></i>` : ""}
       ${notes.filter((n) => !n.devant).map((n) => noteHtml(n, n.id === sel)).join("")}
       ${m.items.map((it) => itemHtml(it, it.id === sel)).join("")}
       ${notes.filter((n) => n.devant).map((n) => noteHtml(n, n.id === sel)).join("")}
@@ -256,7 +347,7 @@ function murMonter(racine, outil) {
     if (!b) return;
     e.stopPropagation();
     const [cx, cy] = centre();
-    if (b.dataset.zoom === "ensemble") { vue.k = kEnsemble(); vue.x = 0; vue.y = 0; appliquer(); vibrer(8); }
+    if (b.dataset.zoom === "ensemble") { centrerPage(kEnsemble()); vibrer(8); }
     else cadrer(vue.k * (b.dataset.zoom === "plus" ? 1.35 : 1 / 1.35), cx, cy);
   }, true);
 
@@ -366,10 +457,12 @@ function murMonter(racine, outil) {
     if (geste.taille) {
       const o = geste.obj;
       const d = ((e.clientX - geste.x0) + (e.clientY - geste.y0)) / 2 / vue.k;
-      const bornes = estNote(o) ? (estTexte(o.type) ? [11, 76] : [24, 320]) : [56, 360];
+      const bornes = bornesTaille(o);
       o.w = clamp(Math.round(geste.w0 + d), bornes[0], bornes[1]);
-      if (estTexte(o.type)) geste.el.style.fontSize = o.w + "px"; else geste.el.style.width = o.w + "px";
-      if (estNote(o) && o.type === "punaise") geste.el.style.height = o.w + "px";
+      if (estNote(o) && estTexte(o.type)) geste.el.style.fontSize = o.w + "px"; else geste.el.style.width = o.w + "px";
+      if (estNote(o) && estPapier(o.type)) geste.el.style.fontSize = Math.max(8, Math.round(o.w * (o.type === "ticket" ? 0.105 : 0.145))) + "px";
+      if (estNote(o) && (o.type === "punaise" || o.type === "gommette")) geste.el.style.height = o.w + "px";
+      if (estNote(o) && o.type === "trombone") geste.el.style.height = Math.round(o.w * 1.9) + "px";
       majCurseurs(o);
       return;
     }
@@ -427,7 +520,7 @@ function murMonter(racine, outil) {
       const t = performance.now();
       if (t - dernierTap < 300) {
         const proche = vue.k > kEnsemble() * 1.2;
-        if (proche) { vue.k = kEnsemble(); vue.x = 0; vue.y = 0; appliquer(); }
+        if (proche) centrerPage(kEnsemble());
         else cadrer(kLarge() * 1.4, e.clientX, e.clientY);
         vibrer(8);
       }
@@ -449,14 +542,27 @@ function murMonter(racine, outil) {
       ETAT.ctx.murSel = obj.id; auPremierPlan(obj); dessiner(); majPanneau(); vibrer(6);
       return;
     }
+    /* Le scotch se pose exactement là où le doigt touche — plus de quatre
+     * coins imposés. Toucher un bout déjà posé l'enlève. Deux bouts au
+     * maximum : au-delà, le plus ancien part. */
     if (outil === "scotch") {
       if (estNote(obj)) return;
-      const [lx, ly] = sous.depart;
-      const coin = (ly < 0.5 ? "h" : "b") + (lx < 0.5 ? "g" : "d");
-      const sc = obj.scotch || (obj.scotch = []);
-      const deja = sc.findIndex(([c]) => c === coin);
+      const [lx, ly] = sous.depart.map((v) => clamp(v, 0, 1));
+      const sc = (obj.scotch = normScotch(obj.scotch));
+      const h = hauteurDe(obj) || obj.w;
+      // « proche » se mesure en pixels sur le scrap, pas en proportion :
+      // sinon un bout serait intouchable sur une affiche très allongée
+      const deja = sc.findIndex((b) => Math.hypot((b.x - lx) * obj.w, (b.y - ly) * h) < 26);
       if (deja >= 0) sc.splice(deja, 1);
-      else { if (sc.length >= 2) sc.shift(); sc.push([coin, m.scotchType || "kraft"]); }
+      else {
+        const dx = lx - 0.5, dy = ly - 0.5;
+        const alea = Math.round(Math.random() * 8 - 4);
+        const rot = Math.abs(dx) > 0.26 && Math.abs(dy) > 0.26
+          ? (dx * dy > 0 ? -38 : 38) + alea                 // dans un coin : en diagonale
+          : Math.abs(dy) > Math.abs(dx) ? alea : 90 + alea; // sur un bord : dans le sens du bord
+        if (sc.length >= 2) sc.shift();
+        sc.push({ x: +lx.toFixed(3), y: +ly.toFixed(3), rot, type: m.scotchType || "kraft" });
+      }
       vibrer(10); sauver(); dessiner();
       return;
     }
@@ -526,22 +632,39 @@ function panneauRangements() {
   </div>`;
 }
 
+/* Les bornes de taille d'un élément, selon ce que la taille veut dire pour lui. */
+function bornesTaille(o) {
+  if (!estNote(o)) return [56, 420];
+  if (estTexte(o.type)) return [11, 90];
+  if (estPapier(o.type)) return [48, 420];
+  return [20, 340];
+}
+
+/* Une rangée de pastilles de couleur. Sert à l'élément choisi comme au dessin. */
+const rangeeCouleurs = (actuelle, action) => `<div class="couleurs">${COULEURS_MUR.map(([c, nom]) =>
+  `<button class="pastille-couleur${actuelle === c ? " choisi" : ""}" style="--c:${c}" data-action="${action}" data-id="${c}" aria-label="${nom}" title="${nom}"></button>`).join("")}</div>`;
+
 /* Réglages de l'élément sélectionné */
 function panneauElement(o) {
   const note = estNote(o);
-  const texte = note && estTexte(o.type);
+  const texte = note && aDuTexte(o.type);
   const nom = note ? (TYPES_NOTE.find((t) => t.type === o.type) || {}).nom || "Élément" : `N° ${pad3(scrap(o.id).num)} · ${scrap(o.id).titre}`;
-  const bornes = note ? (texte ? [11, 76] : [24, 320]) : [56, 360];
+  const bornes = bornesTaille(o);
+  const defaut = (TYPES_NOTE.find((t) => t.type === o.type) || {}).couleur || "#111111";
   return `<div class="panneau-item-int">
     <div class="rangee entre">
       <span class="t-texte-meta secondaire">${esc(nom)}</span>
       <button class="bouton-lien t-texte-meta" data-action="deselectionnerItem">Terminé</button>
     </div>
     ${texte ? `<input class="champ-note" id="note-texte" type="text" value="${esc(o.texte || "")}" data-input="noteTexte" placeholder="Ton texte" maxlength="40">` : ""}
+    ${note && o.type === "ruban"
+      ? `<div class="rangee" style="gap:8px;margin-top:10px;flex-wrap:wrap">${SCOTCHS.map(([k, nom2]) =>
+          puce(nom2, (o.matiere || ETAT.mur.scotchType || "kraft") === k, ` data-action="matiereNote" data-id="${k}"`)).join("")}</div>`
+      : note ? rangeeCouleurs(o.couleur || defaut, "couleurNote") : ""}
     ${note ? "" : `<div class="cadres">${CADRES.map(([k, nom2]) =>
       `<button class="cadre-choix${(o.cadre || "aucun") === k ? " choisi" : ""}" data-action="choisirCadre" data-id="${k}" title="${nom2}">
         <span class="cadre-apercu cadre-${k}"><i></i></span><span class="t-texte-meta${(o.cadre || "aucun") === k ? "" : " secondaire"}">${nom2}</span></button>`).join("")}</div>`}
-    <div class="curseur-ligne" style="margin-top:10px"><span class="t-texte-meta secondaire">Taille</span><span class="t-texte-meta secondaire" id="item-taille-val">${texte ? o.w + " px" : Math.round((o.w / 128) * 100) + " %"}</span></div>
+    <div class="curseur-ligne" style="margin-top:10px"><span class="t-texte-meta secondaire">Taille</span><span class="t-texte-meta secondaire" id="item-taille-val">${note && estTexte(o.type) ? o.w + " px" : Math.round((o.w / 128) * 100) + " %"}</span></div>
     <input type="range" min="${bornes[0]}" max="${bornes[1]}" value="${o.w}" data-input="itemTaille" id="item-taille">
     <div class="curseur-ligne" style="margin-top:6px"><span class="t-texte-meta secondaire">Rotation</span><span class="t-texte-meta secondaire" id="item-rot-val">${o.rot || 0}°</span></div>
     <input type="range" min="-25" max="25" value="${o.rot || 0}" data-input="itemRotation">
@@ -632,28 +755,101 @@ const MOTIFS_FOND = {
   liege: ["#C9A77A", "rgba(74,54,32,.32)"],
   journal: ["#EDEAE3", "rgba(17,17,17,.12)"],
   noir: ["#111111", "rgba(255,255,255,.22)"],
+  calque: ["#E8EDE9", "rgba(17,60,40,.1)"],
+  seyes: ["#FCFBF5", "rgba(90,120,200,.26)"],
+  carton: ["#D9C2A0", "rgba(96,70,40,.2)"],
+  ardoise: ["#1C2321", "rgba(255,255,255,.16)"],
 };
+
+/* Couleurs des matières de scotch, pour l'export (le site, lui, les tient
+ * dans la feuille de style). */
+const COULEURS_SCOTCH = {
+  transparent: "rgba(255,255,255,.42)", kraft: "rgba(200,174,134,.9)", papier: "rgba(246,246,242,.95)",
+  noir: "rgba(17,17,17,.92)", rubalise: "rgba(255,0,0,.85)", raye: "rgba(226,226,222,.92)",
+  fluo: "rgba(255,91,160,.8)", dore: "rgba(198,160,74,.9)",
+};
+/* Noir ou blanc, selon ce qui se lit le mieux sur une couleur donnée. */
+function contraste(c) {
+  const h = String(c).replace("#", "");
+  if (h.length < 6) return "#111111";
+  const [r, v, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+  return (r * 0.299 + v * 0.587 + b * 0.114) > 150 ? "#111111" : "#FFFFFF";
+}
+/* Écrit le texte d'un post-it, d'une bulle ou d'un ticket, en le repliant sur
+ * trois lignes au maximum. */
+function texteDansPapier(x, n, taille, px, py, maxL, couleur) {
+  const t = String(n.texte || "").trim();
+  if (!t) return;
+  x.fillStyle = couleur || "#111111";
+  x.font = `500 ${Math.max(7, taille)}px Inter, Arial`;
+  x.textBaseline = "alphabetic";
+  const lignes = [];
+  let courante = "";
+  t.split(/\s+/).forEach((mot) => {
+    const essai = courante ? courante + " " + mot : mot;
+    if (x.measureText(essai).width > maxL && courante) { lignes.push(courante); courante = mot; }
+    else courante = essai;
+  });
+  if (courante) lignes.push(courante);
+  lignes.slice(0, 3).forEach((l, i) => x.fillText(l, px, py + i * taille * 1.25));
+}
+
+/* Ce que la page occupe vraiment, tout compris : les scraps, les éléments
+ * posés et les traits dessinés, même ceux qui débordent dans les marges.
+ * C'est ce rectangle-là qu'on exporte — plus rien n'est coupé au bord. */
+function boiteContenu() {
+  const m = ETAT.mur;
+  let x0 = 0, y0 = 0, x1 = LARGEUR_MUR, y1 = 320;
+  const prendre = (ax, ay, bx, by) => {
+    x0 = Math.min(x0, ax); y0 = Math.min(y0, ay);
+    x1 = Math.max(x1, bx); y1 = Math.max(y1, by);
+  };
+  m.items.forEach((it) => {
+    const s = scrap(it.id);
+    const w = it.w, h = s ? it.w / s.ratio : it.w;
+    if (it.rot) {
+      // tourné : on prend le cercle qui contient le scrap, cadres et scotch compris
+      const r = Math.hypot(w, h) / 2 + 20;
+      prendre(it.x + w / 2 - r, it.y + h / 2 - r, it.x + w / 2 + r, it.y + h / 2 + r);
+    } else prendre(it.x - 20, it.y - 20, it.x + w + 20, it.y + h + 20);
+  });
+  (m.notes || []).forEach((n) => {
+    const estT = estTexte(n.type);
+    const w = estT ? Math.max(40, (n.texte || "").length * n.w * 0.62) : n.w;
+    const h = estT ? n.w * 1.3 : n.type === "trombone" ? n.w * 1.9 : n.w;
+    const r = Math.hypot(w, h) / 2 + 8;
+    prendre(n.x + w / 2 - r, n.y + h / 2 - r, n.x + w / 2 + r, n.y + h / 2 + r);
+  });
+  (m.traits || []).forEach((tr) => tr.pts.forEach(([px, py]) => {
+    const e = (tr.w || 3) / 2 + 2;
+    prendre(px - e, py - e, px + e, py + e);
+  }));
+  return { x0, y0, x1, y1 };
+}
 
 function dessinerMurCanvas(o = {}) {
   const m = ETAT.mur;
   const marge = o.marge === undefined ? 28 : o.marge;
-  const bas = m.items.reduce((h, it) => {
-    const s = scrap(it.id); return Math.max(h, it.y + (s ? it.w / s.ratio : it.w));
-  }, 320) + 24;
-  const hauteur = o.hauteurPage || Math.min(m.hauteur, bas);
-  const k = (o.largeur || 1080) / (LARGEUR_MUR + marge * 2);
+  const b = boiteContenu();
+  const gx = b.x0 - marge, gy = b.y0 - marge;                 // coin haut-gauche de l'image
+  const L = b.x1 - b.x0 + marge * 2;                          // largeur utile
+  const hauteur = o.hauteurPage || (b.y1 - b.y0);
+  const k = (o.largeur || 1080) / L;
   const c = document.createElement("canvas");
-  c.width = Math.round((LARGEUR_MUR + marge * 2) * k);
+  c.width = Math.round(L * k);
   c.height = Math.round((hauteur + marge * 2 + (o.pied ? 86 : 0)) * k);
   const x = c.getContext("2d");
   x.scale(k, k);
+  x.translate(-gx, -gy);                                      // on dessine dans le repère de la page
+  const G = { x: gx, y: gy, w: c.width / k, h: c.height / k };
 
   const [fond, point] = MOTIFS_FOND[m.fond] || MOTIFS_FOND.papier;
   const dessinerFond = () => {
     x.fillStyle = fond;
-    x.fillRect(0, 0, c.width / k, c.height / k);
+    x.fillRect(G.x, G.y, G.w, G.h);
     x.fillStyle = point;
-    for (let yy = 12; yy < c.height / k; yy += 24) for (let xx = 12; xx < c.width / k; xx += 24) x.fillRect(xx, yy, 2, 2);
+    const d0 = (v) => Math.floor(v / 24) * 24 + 12;
+    for (let yy = d0(G.y); yy < G.y + G.h; yy += 24) for (let xx = d0(G.x); xx < G.x + G.w; xx += 24) x.fillRect(xx, yy, 2, 2);
   };
 
   const charger = (src) => new Promise((res) => {
@@ -669,19 +865,23 @@ function dessinerMurCanvas(o = {}) {
   return fondPhoto.then((photo) => {
     if (o.transparent) { /* on laisse le fond vide : l'appelant met une photo dessous */ }
     else if (photo) {
-      const kk = Math.max((c.width / k) / photo.width, (c.height / k) / photo.height);
-      x.drawImage(photo, ((c.width / k) - photo.width * kk) / 2, ((c.height / k) - photo.height * kk) / 2, photo.width * kk, photo.height * kk);
-      if (m.voile) { x.fillStyle = `rgba(255,255,255,${m.voile / 100})`; x.fillRect(0, 0, c.width / k, c.height / k); }
-    } else dessinerFond();
+      const kk = Math.max(G.w / photo.width, G.h / photo.height);
+      x.drawImage(photo, G.x + (G.w - photo.width * kk) / 2, G.y + (G.h - photo.height * kk) / 2, photo.width * kk, photo.height * kk);
+      if (m.voile) { x.fillStyle = `rgba(255,255,255,${m.voile / 100})`; x.fillRect(G.x, G.y, G.w, G.h); }
+    } else {
+      dessinerFond();
+      if (m.teinte) { x.globalAlpha = 0.5; x.fillStyle = m.teinte; x.fillRect(G.x, G.y, G.w, G.h); x.globalAlpha = 1; }
+    }
 
     const notes = ETAT.mur.notes || [];
-    const sombre = m.fond === "noir" || o.transparent;
+    const sombre = m.fond === "noir" || m.fond === "ardoise" || o.transparent;
     const dessinerNote = (n) => {
       x.save();
-      x.translate(marge + n.x, marge + n.y);
+      x.translate(n.x, n.y);
       x.rotate(((n.rot || 0) * Math.PI) / 180);
-      x.fillStyle = sombre ? "#fff" : "#111";
-      x.strokeStyle = x.fillStyle;
+      const encre = n.couleur || (TYPES_NOTE.find((t) => t.type === n.type) || {}).couleur || (sombre ? "#fff" : "#111");
+      x.fillStyle = encre;
+      x.strokeStyle = encre;
       if (n.type === "titre") { x.font = `600 ${n.w}px Inter, Arial`; x.textBaseline = "top"; x.fillText((n.texte || "").toUpperCase(), 0, 0); }
       else if (n.type === "soustitre") { x.font = `600 ${n.w}px Inter, Arial`; x.textBaseline = "top"; x.fillText(n.texte || "", 0, 0); }
       else if (n.type === "etiquette" || n.type === "date") {
@@ -691,9 +891,46 @@ function dessinerMurCanvas(o = {}) {
         x.strokeRect(-6, -5, l + 12, n.w + 10);
         x.fillText((n.texte || "").toUpperCase(), 0, 0);
       } else if (n.type === "ruban") {
-        x.fillStyle = "rgba(200,174,134,.85)"; x.fillRect(0, 0, n.w, n.w * 0.2);
+        x.fillStyle = COULEURS_SCOTCH[n.matiere || ETAT.mur.scotchType || "kraft"] || COULEURS_SCOTCH.kraft;
+        x.fillRect(0, 0, n.w, n.w * 0.2);
       } else if (n.type === "punaise") {
         x.beginPath(); x.arc(n.w / 2, n.w / 2.6, n.w / 2.6, 0, 7); x.fill();
+      } else if (n.type === "gommette") {
+        x.beginPath(); x.arc(n.w / 2, n.w / 2, n.w / 2, 0, 7); x.fill();
+        x.fillStyle = "rgba(255,255,255,.9)";
+        x.beginPath(); x.arc(n.w / 2, n.w / 2, n.w / 4, 0, 7); x.fill();
+      } else if (n.type === "trombone") {
+        const e = n.w / 24;
+        x.lineWidth = 2.6 * e; x.lineCap = "round";
+        x.beginPath();
+        x.moveTo(17 * e, 10 * e); x.lineTo(17 * e, 34 * e);
+        x.arc(11.4 * e, 34 * e, 5.6 * e, 0, Math.PI);
+        x.lineTo(5.8 * e, 8 * e);
+        x.arc(9.2 * e, 8 * e, 3.4 * e, Math.PI, 0);
+        x.lineTo(12.6 * e, 33 * e);
+        x.stroke();
+      } else if (n.type === "postit") {
+        const h = n.w * 0.92, pli = n.w * 0.22;
+        x.beginPath();
+        x.moveTo(0, 0); x.lineTo(n.w, 0); x.lineTo(n.w, h - pli); x.lineTo(n.w - pli, h); x.lineTo(0, h);
+        x.closePath(); x.fill();
+        x.fillStyle = "rgba(0,0,0,.14)";
+        x.beginPath(); x.moveTo(n.w - pli, h); x.lineTo(n.w - pli, h - pli); x.lineTo(n.w, h - pli); x.closePath(); x.fill();
+        texteDansPapier(x, n, n.w * 0.145, n.w * 0.14, n.w * 0.3, n.w * 0.72, contraste(encre));
+      } else if (n.type === "bulle") {
+        const h = n.w * 0.58;
+        x.beginPath();
+        x.moveTo(0, 0); x.lineTo(n.w, 0); x.lineTo(n.w, h); x.lineTo(n.w * 0.32, h);
+        x.lineTo(n.w * 0.18, h + n.w * 0.16); x.lineTo(n.w * 0.2, h); x.lineTo(0, h);
+        x.closePath();
+        x.lineWidth = Math.max(1.6, n.w * 0.022); x.stroke();
+        texteDansPapier(x, n, n.w * 0.145, n.w * 0.1, h * 0.58, n.w * 0.8, encre);
+      } else if (n.type === "ticket") {
+        const h = n.w * 0.36;
+        x.fillRect(0, 0, n.w, h);
+        x.fillStyle = contraste(encre);
+        for (let yy = h * 0.2; yy < h * 0.9; yy += h * 0.26) x.fillRect(n.w * 0.72, yy, n.w * 0.015, h * 0.14);
+        texteDansPapier(x, n, n.w * 0.105, n.w * 0.07, h * 0.6, n.w * 0.6, contraste(encre));
       } else if (DESSINS_NOTE[n.type]) {
         // les annotations dessinées : on les retrace à la main, simplifiées
         const e = n.w / 100;
@@ -718,13 +955,13 @@ function dessinerMurCanvas(o = {}) {
           const s = scrap(it.id);
           const w = it.w, h = w / ((s && s.ratio) || 0.75);
           x.save();
-          x.translate(marge + it.x + w / 2, marge + it.y + h / 2);
+          x.translate(it.x + w / 2, it.y + h / 2);
           x.rotate(((it.rot || 0) * Math.PI) / 180);
           // cadre éventuel, dessiné derrière l'affiche
           const c2 = it.cadre;
-          if (c2 && c2 !== "aucun") {
-            const ep = c2 === "epais" ? 10 : c2 === "passe" ? 16 : c2 === "polaroid" ? 12 : c2 === "noir" ? 8 : 2;
-            x.fillStyle = c2 === "noir" ? "#111" : c2 === "filet" ? "#111" : "#FBFBF8";
+          if (c2 && c2 !== "aucun" && c2 !== "coins") {
+            const ep = c2 === "epais" ? 10 : c2 === "passe" ? 16 : c2 === "polaroid" ? 12 : c2 === "noir" ? 8 : c2 === "bois" ? 11 : 2;
+            x.fillStyle = c2 === "noir" ? "#111" : c2 === "filet" ? "#111" : c2 === "bois" ? "#9B7343" : "#FBFBF8";
             x.fillRect(-w / 2 - ep, -h / 2 - ep, w + ep * 2, h + ep * 2 + (c2 === "polaroid" ? 26 : 0));
           }
           if (it.dechire) {
@@ -737,13 +974,32 @@ function dessinerMurCanvas(o = {}) {
             x.closePath(); x.clip();
           }
           x.drawImage(im, -w / 2, -h / 2, w, h);
+          // coins photo : quatre triangles posés par-dessus les angles
+          if (c2 === "coins") {
+            const t = Math.max(12, Math.min(26, w * 0.14));
+            x.fillStyle = "rgba(33,28,22,.82)";
+            [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sy]) => {
+              const cx = (sx * w) / 2, cy = (sy * h) / 2;
+              x.beginPath();
+              x.moveTo(cx, cy); x.lineTo(cx - sx * t, cy); x.lineTo(cx, cy - sy * t);
+              x.closePath(); x.fill();
+            });
+          }
           x.restore();
-          (it.scotch || []).forEach(([coin, type]) => {
+          // le scotch est posé où la personne l'a mis, dans le repère du scrap
+          normScotch(it.scotch).forEach((bt) => {
+            const l = clamp(w * 0.42, 34, 92);
             x.save();
-            x.translate(marge + it.x + (coin[1] === "g" ? 4 : w - 56), marge + it.y + (coin[0] === "h" ? -6 : h - 10));
-            x.rotate((coin[1] === "g" ? -6 : 6) * Math.PI / 180);
-            x.fillStyle = { transparent: "rgba(255,255,255,.42)", kraft: "rgba(200,174,134,.9)", papier: "rgba(246,246,242,.95)", noir: "rgba(17,17,17,.92)" }[type] || "rgba(200,174,134,.9)";
-            x.fillRect(0, 0, 52, 16);
+            x.translate(it.x + w / 2, it.y + h / 2);
+            x.rotate(((it.rot || 0) * Math.PI) / 180);
+            x.translate((bt.x - 0.5) * w, (bt.y - 0.5) * h);
+            x.rotate(((bt.rot || 0) * Math.PI) / 180);
+            x.fillStyle = COULEURS_SCOTCH[bt.type] || COULEURS_SCOTCH.kraft;
+            x.fillRect(-l / 2, -8, l, 16);
+            if (bt.type === "rubalise" || bt.type === "raye") {
+              x.fillStyle = bt.type === "rubalise" ? "rgba(255,255,255,.9)" : "rgba(17,17,17,.55)";
+              for (let d = -l / 2; d < l / 2; d += 10) x.fillRect(d, -8, 4, 16);
+            }
             x.restore();
           });
         });
@@ -757,21 +1013,21 @@ function dessinerMurCanvas(o = {}) {
           x.strokeStyle = tr.couleur || "#111";
           x.lineWidth = tr.w || 3; x.lineCap = "round"; x.lineJoin = "round";
           x.beginPath();
-          tr.pts.forEach(([px, py], i) => (i ? x.lineTo(marge + px, marge + py) : x.moveTo(marge + px, marge + py)));
+          tr.pts.forEach(([px, py], i) => (i ? x.lineTo(px, py) : x.moveTo(px, py)));
           x.stroke();
           x.restore();
         });
 
         if (o.pied) {
-          const y = hauteur + marge * 2 + 20;
+          const y = gy + hauteur + marge * 2 + 20;
           x.fillStyle = sombre ? "#fff" : "#111";
           x.font = "600 30px Inter, Arial";
-          x.fillText("SCRAP", marge, y + 24);
+          x.fillText("SCRAP", gx + marge, y + 24);
           const l = x.measureText("SCRAP").width;
-          x.fillStyle = "#FF0000"; x.fillRect(marge + l + 7, y + 17, 7, 7);
+          x.fillStyle = "#FF0000"; x.fillRect(gx + marge + l + 7, y + 17, 7, 7);
           x.fillStyle = sombre ? "#9A9A96" : "#6B6B67";
           x.font = "500 20px Inter, Arial";
-          x.fillText(`${ETAT.utilisateur.pseudo} · ${pluriel(m.items.length, "scrap")} · ${ETAT.utilisateur.quartier}`, marge, y + 54);
+          x.fillText(`${ETAT.utilisateur.pseudo} · ${pluriel(m.items.length, "scrap")} · ${ETAT.utilisateur.quartier}`, gx + marge, y + 54);
         }
         return c;
       });

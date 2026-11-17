@@ -33,19 +33,38 @@ function demanderGyro() {
  * l'app. On écrit --px et --py (de -1 à 1) sur la racine du document : toutes
  * les couches de tous les écrans en héritent, sans qu'aucun écran n'ait à
  * brancher quoi que ce soit. Sur ordinateur, la souris remplace le capteur. */
-const INCLINAISON = { x: 0, y: 0, cibleX: 0, cibleY: 0, base: null, branche: false, anim: null };
+const INCLINAISON = { x: 0, y: 0, cibleX: 0, cibleY: 0, base: null, branche: false, anim: null, souris: 0 };
 
 function inclinaisonActive() {
   return !MOINS_ANIM && ETAT.reglages.profondeur !== false && !!(window.CONFIG && CONFIG.profondeur.actif);
+}
+
+/* Tant que le capteur n'est pas branché (autorisation iOS pas encore donnée,
+ * ordinateur sans souris qui bouge), la page respire toute seule : une houle
+ * très lente, deux ondes qui ne tombent jamais en phase. Personne n'a besoin
+ * d'appuyer sur « Activer la 3D » pour voir que ça vit ; le capteur, quand il
+ * arrive, prend simplement le relais. */
+function inclinaisonAuRepos() {
+  if (INCLINAISON.branche) return false;                        // le capteur parle : pas de houle
+  if (performance.now() - INCLINAISON.souris < 2600) return false; // la souris vient de bouger
+  return !!(window.CONFIG && CONFIG.profondeur.repos);
 }
 
 function inclinaisonDemarrer() {
   const racine = document.documentElement;
 
   const boucle = () => {
-    const vise = inclinaisonActive() ? 1 : 0;
-    const dx = INCLINAISON.cibleX * vise - INCLINAISON.x;
-    const dy = INCLINAISON.cibleY * vise - INCLINAISON.y;
+    const actif = inclinaisonActive();
+    let viseX = actif ? INCLINAISON.cibleX : 0;
+    let viseY = actif ? INCLINAISON.cibleY : 0;
+    if (actif && inclinaisonAuRepos()) {
+      const t = performance.now() / 1000;
+      const a = (window.CONFIG && CONFIG.profondeur.repos) || 0.4;
+      viseX = clamp(viseX + Math.sin(t * 0.54) * a + Math.sin(t * 0.23) * a * 0.42, -1, 1);
+      viseY = clamp(viseY + Math.cos(t * 0.41) * a * 0.72 + Math.sin(t * 0.17) * a * 0.34, -1, 1);
+    }
+    const dx = viseX - INCLINAISON.x;
+    const dy = viseY - INCLINAISON.y;
     // quand plus rien ne bouge, on n'écrit rien : le navigateur se repose
     if (Math.abs(dx) > 0.0008 || Math.abs(dy) > 0.0008) {
       INCLINAISON.x += dx * 0.12;
@@ -66,6 +85,8 @@ function inclinaisonDemarrer() {
   };
   window.addEventListener("pointermove", (e) => {
     if (INCLINAISON.branche) return;   // le capteur a la priorité sur la souris
+    if (e.pointerType === "touch") return;  // un doigt qui fait défiler n'est pas une souris
+    INCLINAISON.souris = performance.now();
     INCLINAISON.cibleX = clamp((e.clientX / innerWidth - 0.5) * 2, -1, 1);
     INCLINAISON.cibleY = clamp((e.clientY / innerHeight - 0.5) * 2, -1, 1);
   });
