@@ -9,7 +9,7 @@ const pile = [];
  * d'onglet. Chacun a son mouvement — c'est ce qui fait qu'on sait toujours où
  * on est allé, sans avoir à y penser. */
 let sensEcran = "avant";
-const ONGLETS_ID = ["13", "24", "28"];
+const ONGLETS_ID = ["13", "24", "28", "38"];
 
 /* ───────── Navigation (#/13, #/19.1…) */
 function aller(id, o = {}) {
@@ -98,7 +98,9 @@ const ACTIONS = {
   },
   autoriserPosition() {
     let fait = false;
-    const suite = () => { if (!fait) { fait = true; aller("08"); } };
+    // puis le mouvement (07.1) : c'est la troisième autorisation du parcours,
+    // et elle était purement et simplement sautée
+    const suite = () => { if (!fait) { fait = true; aller("07.1"); } };
     if (!navigator.geolocation) return suite();
     navigator.geolocation.getCurrentPosition(suite, suite, { timeout: 8000 });
     setTimeout(suite, 9000);
@@ -231,10 +233,16 @@ const ACTIONS = {
   /* Poser un titre, une étiquette, une flèche… au milieu de ce qu'on regarde */
   ajouterNote(el) {
     const t = TYPES_NOTE.find((x) => x.type === el.dataset.id); if (!t) return;
+    /* Le milieu de ce qu'on regarde, ramené dans le repère de la PAGE.
+     * La vue est exprimée dans le repère de la planche, qui commence une
+     * marge plus tôt : sans ce décalage, l'élément atterrissait à neuf cents
+     * pixels de la page, donc invisible — c'est ce qui faisait croire que
+     * les flèches, les tickets et les post-it ne marchaient pas. */
     const vue = ETAT.ctx.vue || { k: 1, x: 0, y: 0 };
     const zone = $("#mur");
-    const cx = zone ? (zone.clientWidth / 2 - vue.x) / vue.k : LARGEUR_MUR / 2;
-    const cy = zone ? (zone.clientHeight / 2 - vue.y) / vue.k : 200;
+    const k = vue.k || 1;
+    const cx = zone ? (zone.clientWidth / 2 - vue.x) / k - MARGE_MUR : LARGEUR_MUR / 2;
+    const cy = zone ? (zone.clientHeight / 2 - vue.y) / k - MARGE_MUR : 200;
     const n = {
       id: "n" + Date.now(),
       type: t.type,
@@ -253,10 +261,12 @@ const ACTIONS = {
     aller("24", { remplace: true });
   },
   choisirDispo(el) { ETAT.ctx.dispoColl = el.dataset.id; rafraichir(); },
-  choisirFond(el) { ETAT.mur.fond = el.dataset.id; sauver(); rafraichir(); vibrer(6); },
-  choisirScotch(el) { ETAT.mur.scotchType = el.dataset.id; sauver(); rafraichir(); vibrer(6); },
-  teinteFond(el) { ETAT.mur.teinte = el.dataset.id || null; sauver(); rafraichir(); vibrer(6); },
-  choisirDechirure(el) { ETAT.mur.dechireType = el.dataset.id; sauver(); rafraichir(); },
+  /* Les réglages d'outil ne redessinent que le panneau et le fond : la page,
+   * les affiches et la barre du bas ne rejouent plus leur arrivée à chaque clic. */
+  choisirFond(el) { ETAT.mur.fond = el.dataset.id; sauver(); majPanneauOutil(); vibrer(6); },
+  choisirScotch(el) { ETAT.mur.scotchType = el.dataset.id; sauver(); majPanneauOutil(); vibrer(6); },
+  teinteFond(el) { ETAT.mur.teinte = el.dataset.id || null; sauver(); majPanneauOutil(); vibrer(6); },
+  choisirDechirure(el) { ETAT.mur.dechireType = el.dataset.id; sauver(); majPanneauOutil(); },
   couleurNote(el) {
     const o = trouverElement(ETAT.ctx.murSel);
     if (!o || !o.type) return;
@@ -269,15 +279,9 @@ const ACTIONS = {
     o.matiere = el.dataset.id;
     sauver(); rafraichir(); vibrer(6);
   },
-  choisirCadre(el) {
-    const it = trouverElement(ETAT.ctx.murSel);
-    if (!it || it.type) return;
-    it.cadre = el.dataset.id;
-    sauver(); rafraichir(); vibrer(6);
-  },
   rangerMur(el) { rangerMur(el.dataset.id); ETAT.ctx.murSel = null; ETAT.ctx.vue = null; rafraichir(); toast("Page rangée"); },
-  couleurTrait(el) { (ETAT.mur.dessin || (ETAT.mur.dessin = {})).couleur = el.dataset.id; sauver(); rafraichir(); },
-  epaisseurTrait(el) { (ETAT.mur.dessin || (ETAT.mur.dessin = {})).w = +el.dataset.id; sauver(); rafraichir(); },
+  couleurTrait(el) { (ETAT.mur.dessin || (ETAT.mur.dessin = {})).couleur = el.dataset.id; sauver(); majPanneauOutil(); vibrer(5); },
+  epaisseurTrait(el) { (ETAT.mur.dessin || (ETAT.mur.dessin = {})).w = +el.dataset.id; sauver(); majPanneauOutil(); vibrer(5); },
   annulerTrait() {
     const t = ETAT.mur.traits || [];
     if (!t.length) { toast("Rien à annuler"); return; }
@@ -377,6 +381,51 @@ const ACTIONS = {
   ongletAbo(el) { ETAT.ctx.ongletAbo = el.dataset.id; rafraichir(); },
   voirPersonne(el) { ETAT.ctx.personne = +el.dataset.id; aller("35"); },
   suivre(el) { const p = ETAT.personnes[+el.dataset.id]; p.suivi = !p.suivi; sauver(); rafraichir(); },
+  /* ───────── Passage de relais : un scrap qui change de main, en vrai */
+  ouvrirEchange(el) {
+    ETAT.ctx.echange = { ami: +el.dataset.id || ETAT.ctx.personne || 0, etape: "choix", donne: null };
+    aller("51");
+  },
+  choisirDon(el) {
+    (ETAT.ctx.echange || (ETAT.ctx.echange = { ami: 0 })).donne = el.dataset.id;
+    rafraichir(); vibrer(6);
+  },
+  lancerEchange() {
+    const e = ETAT.ctx.echange;
+    if (!e || !e.donne) return;
+    e.etape = "approche";
+    aller("51", { remplace: true });
+  },
+  conclureEchange() {
+    const e = ETAT.ctx.echange;
+    if (!e || e.etape === "fait") return;
+    const ami = ETAT.personnes[e.ami] || ETAT.personnes[0];
+    const id = "don-" + ami.pseudo.replace(/\W/g, "");
+    if (!ETAT.scraps[id]) {
+      const { date, heure } = aujourdhui();
+      // le scrap reçu garde le nom de celui qui l'a donné : c'est ce qui en
+      // fait autre chose qu'une image de plus
+      ETAT.scraps[id] = {
+        titre: "Club Fiasco — tirage de " + ami.pseudo, artiste: "Échangé en main propre",
+        ratio: 0.7503, num: 6, lieu: ami.quartier, arr: "Paris 20e", date, heure,
+        collection: "concerts", themes: ["Échange", "Club"], scans: 44, murs: 2,
+        img: "assets/affiches/fiasco.jpg", offert: ami.pseudo,
+      };
+    }
+    e.recu = id;
+    e.etape = "fait";
+    sauver();
+    aller("51", { remplace: true });
+  },
+  collerRecu() {
+    const e = ETAT.ctx.echange || {};
+    if (!e.recu) return aller("24");
+    ETAT.ctx.scrap = e.recu;
+    collerSurMur(e.recu);
+    ETAT.ctx.murMode = "regarder";
+    sauver();
+    aller("24");
+  },
   copierLien() {
     const url = location.origin + location.pathname + "#/21";
     (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(() => toast("Lien copié"), () => toast("Lien : " + url));

@@ -347,12 +347,17 @@ ecran("17", "B", "Itinéraire à pied", "", () => {
       <div class="rangee entre"><span class="t-titre-m">Vers ${esc(c.titre)}</span>${lien("Arrêter", { aller: "13" })}</div>
       <span class="t-texte-meta secondaire">${distanceTxt(c)} · ${minutes(c)} min à pied</span></div></div>
     <div class="carte-bas">
-      <div class="panneau" style="padding:16px">${icone("position")}<span style="flex:1"><span class="t-texte-label" style="display:block">Continue tout droit sur 120 m</span><span class="t-texte-meta secondaire">Puis à gauche, ${esc(c.adresse)}</span></span></div>
+      ${boussoleHtml(c)}
       ${bouton("Capturer un scrap", { type: "capture", aller: "19" })}
     </div>
   </div>
   ${onglets(0)}`;
-}, (r) => carteMonter($("#carte", r), { cible: cibleCourante(), itineraire: true }));
+}, (r) => {
+  const c = cibleCourante();
+  const n1 = carteMonter($("#carte", r), { cible: c, itineraire: true });
+  const n2 = boussoleMonter(r, c);
+  return () => { n1 && n1(); n2 && n2(); };
+});
 
 ecran("18", "B", "Carte vide", "", () => `
   <div class="carte" id="carte"></div>
@@ -473,7 +478,8 @@ function rectoVerso(verso) {
   const r = rarete(s);
   const exclusif = s.collection === "exclusifs" ? (s.exclusif || "concerts") : null;
   const lignes = [["Artiste", s.artiste || "—"], ["Lieu", `${s.lieu}, ${s.arr.replace("Paris ", "")}`],
-    ["Capturé le", `${s.date} · ${s.heure}`], ["Tags", (s.themes || []).join(" · ") || "—"],
+    [s.offert ? "Reçu le" : "Capturé le", `${s.date} · ${s.heure}`],
+    ...(s.offert ? [["Donné par", s.offert]] : [["Tags", (s.themes || []).join(" · ") || "—"]]),
     ["État", s.holo ? "Holo" : "Normal"], ["Rareté", r.nom],
     ["Collection", col ? `${col.nom} · ${p.n} / ${p.total}` : "Exclusif"]];
   return `
@@ -540,7 +546,10 @@ function rectoVerso(verso) {
   ${pied(surMur ? bouton("Voir sur mon scrapbook", { aller: "24" }) : bouton("Coller sur mon scrapbook", { action: "coller" }))}`;
 }
 const monterRecto = (r) => {
+  const toutNeuf = ETAT.ctx.frais === ETAT.ctx.scrap;
   ETAT.ctx.frais = null;
+  // le tampon frappe : l'à-coup se voit et se sent
+  if (toutNeuf) setTimeout(() => vibrer([16, 40, 12]), 220);
   const s = scrap(ETAT.ctx.scrap);
   const n1 = glisser($("#retourne", r), () => ACTIONS.retourner(), () => ACTIONS.retourner());
   const n2 = profondeur($("#scene-scrap", r), { amplitude: s && rarete(s).cle === "commune" ? 0.6 : 1.15 });
@@ -606,70 +615,121 @@ const DECHIRURES = [
   ["mesure", "Sur mesure", "Glisse ton doigt à travers le scrap."],
 ];
 
+/* La rangée d'outils, commune à tous les écrans du scrapbook. */
+const OUTILS_SCRAPBOOK = (ecranId) => {
+  const mode = modeMur();
+  return `<div class="outils">
+    ${puce("Vue", ecranId === "24" && mode === "regarder", ' data-action="modeMur" data-id="regarder"')}
+    ${puce("Disposition", ecranId === "24" && mode === "deplacer", ' data-action="modeMur" data-id="deplacer"')}
+    ${puce("Ajouter", ecranId === "24.1", ' data-aller="24.1" data-remplace="1"')}
+    ${puce("Dessiner", ecranId === "24.3", ' data-aller="24.3" data-remplace="1"')}
+    ${puce("Scotch", ecranId === "26", ' data-aller="26" data-remplace="1"')}
+    ${puce("Déchirer", ecranId === "27", ' data-aller="27" data-remplace="1"')}
+    ${puce("Fond", ecranId === "25", ' data-aller="25" data-remplace="1"')}
+  </div>`;
+};
+
+/* Les panneaux d'outils tiennent en deux rangées au maximum : le scrapbook
+ * est le sujet de la page, un panneau qui mange les deux tiers de l'écran
+ * empêche de voir ce qu'on fabrique. Tout ce qui se choisit défile donc
+ * horizontalement, et les explications tiennent sur une ligne.
+ *
+ * Ils sont aussi autonomes : changer de scotch ou de fond ne redessine que
+ * le panneau et le fond, jamais la page entière — sinon les affiches et la
+ * barre du bas rejouaient leur animation d'arrivée à chaque réglage. */
+function panneauOutil(ecranId, outils) {
+  const m = ETAT.mur;
+  const dechirure = m.dechireType || "coin";
+  const tete = (titre, aide) => `<div class="outil-tete">
+    <span class="t-texte-label">${titre}</span>
+    <span class="t-texte-meta secondaire une-ligne">${aide}</span>
+    ${lien("OK", { action: "fermerOutil" })}</div>`;
+
+  const corps = {
+    "24.1": `${tete("Ajouter", "touche un élément, il arrive au milieu")}
+      <div class="palette">${TYPES_NOTE.map((t) => `<button data-action="ajouterNote" data-id="${t.type}">
+        <span class="palette-apercu note-${t.type}">${estTexte(t.type) ? esc((t.exemple || "Texte").slice(0, 3)) : icone(t.icone, 20)}</span>
+        <span class="t-texte-meta">${t.nom}</span></button>`).join("")}</div>`,
+
+    "24.3": `${tete("Dessiner", "trace au doigt, deux doigts zooment")}
+      ${rangeeCouleurs((m.dessin && m.dessin.couleur) || "#111111", "couleurTrait")}
+      <div class="rangee" style="gap:8px;margin-top:8px">
+        ${[[2, "Fin"], [4, "Moyen"], [8, "Gros"], [14, "Marqueur"]].map(([w, nom]) =>
+          `<button class="epaisseur-trait${(m.dessin && m.dessin.w || 4) === w ? " choisi" : ""}" data-action="epaisseurTrait" data-id="${w}" aria-label="${nom}" title="${nom}"><i style="height:${Math.min(w, 10)}px"></i></button>`).join("")}
+        <span style="flex:1"></span>
+        <button class="puce" data-action="annulerTrait">Annuler</button>
+        <button class="puce" data-action="effacerTraits">Effacer</button>
+      </div>`,
+
+    "25": `${tete("Fond", "la matière du papier, puis sa teinte")}
+      <div class="nuancier">${FONDS.map(([k, nom]) =>
+        `<button class="${m.fond === k ? "choisi" : ""}" data-action="choisirFond" data-id="${k}"><span class="apercu fond-${k}"></span><span class="t-texte-meta${m.fond === k ? "" : " secondaire"}">${nom}</span></button>`).join("")}
+        <label class="${m.fond === "photo" ? "choisi" : ""}">
+          <span class="apercu apercu-photo" ${m.fondImage ? `style="background-image:url(${m.fondImage})"` : ""}>${m.fondImage ? "" : icone("image", 18)}</span>
+          <span class="t-texte-meta${m.fond === "photo" ? "" : " secondaire"}">Ta photo</span>
+          <input type="file" accept="image/*" class="cache" data-change="fondPhoto"></label>
+      </div>
+      ${m.fond === "photo" && m.fondImage
+        ? `<div class="curseur-ligne" style="margin-top:8px"><span class="t-texte-meta secondaire">Voile</span><span class="t-texte-meta secondaire" id="voile-val">${m.voile || 0} %</span></div>
+           <input type="range" min="0" max="80" value="${m.voile || 0}" data-input="voileFond">`
+        : `<div class="rangee" style="gap:8px;margin-top:8px">
+             ${rangeeCouleurs(m.teinte || "", "teinteFond")}
+             ${m.teinte ? `<button class="puce" data-action="teinteFond" data-id="">Sans teinte</button>` : ""}
+           </div>`}`,
+
+    "26": `${tete("Scotch", "touche un scrap où tu veux le poser")}
+      <div class="rouleaux">${SCOTCHS.map(([k, nom]) =>
+        `<button class="${(m.scotchType || "kraft") === k ? "choisi" : ""}" data-action="choisirScotch" data-id="${k}"><span class="apercu"><i class="scotch ${k}"></i></span><span class="t-texte-meta${(m.scotchType || "kraft") === k ? "" : " secondaire"}">${nom}</span></button>`).join("")}</div>`,
+
+    "27": `${tete("Déchirer", esc((DECHIRURES.find((d) => d[0] === dechirure) || [])[2] || ""))}
+      <div class="puces" style="margin-top:2px">${DECHIRURES.map(([k, nom]) =>
+        puce(nom, dechirure === k, ` data-action="choisirDechirure" data-id="${k}"`)).join("")}</div>
+      <div class="rangee" style="gap:8px;margin-top:8px">
+        <span class="t-texte-meta secondaire une-ligne" style="flex:1">Le morceau arraché reste dans ta collection.</span>
+        <button class="puce" data-action="annulerDechirure">Annuler</button>
+        <button class="puce" data-action="recollerTout">Recoller</button>
+      </div>`,
+  };
+  return `<div class="pied filet panneau-outil" id="panneau-outil">${corps[ecranId] || ""}${outils || OUTILS_SCRAPBOOK(ecranId)}</div>`;
+}
+
+/* Ne redessiner que le panneau (et le fond, s'il a changé) */
+function majPanneauOutil() {
+  const ec = $(".ecran");
+  const p = $("#panneau-outil");
+  if (!ec || !p) return rafraichir();
+  p.outerHTML = panneauOutil(ec.dataset.ecran, OUTILS_SCRAPBOOK(ec.dataset.ecran));
+  majFondMur();
+}
+function majFondMur() {
+  const z = $("#mur");
+  if (!z) return;
+  const m = ETAT.mur;
+  FONDS.forEach(([k]) => z.classList.remove("fond-" + k));
+  z.classList.remove("fond-photo");
+  z.classList.add("fond-" + m.fond);
+  z.setAttribute("style", styleFond(m));
+  const t = $(".voile-teinte", z);
+  if (m.teinte) {
+    if (t) t.style.background = m.teinte;
+    else z.insertAdjacentHTML("afterbegin", teinteHtml(m));
+  } else if (t) t.remove();
+}
+
 function scrapbook(ecranId) {
   const m = ETAT.mur;
   const mode = modeMur();
   const remplissage = Math.round(remplissageMur() * 100);
-  const dechirure = m.dechireType || "coin";
-  const outils = `
-    <div class="outils">
-      ${puce("Vue", ecranId === "24" && mode === "regarder", ' data-action="modeMur" data-id="regarder"')}
-      ${puce("Disposition", ecranId === "24" && mode === "deplacer", ' data-action="modeMur" data-id="deplacer"')}
-      ${puce("Ajouter", ecranId === "24.1", ' data-aller="24.1" data-remplace="1"')}
-      ${puce("Dessiner", ecranId === "24.3", ' data-aller="24.3" data-remplace="1"')}
-      ${puce("Scotch", ecranId === "26", ' data-aller="26" data-remplace="1"')}
-      ${puce("Déchirer", ecranId === "27", ' data-aller="27" data-remplace="1"')}
-      ${puce("Fond", ecranId === "25", ' data-aller="25" data-remplace="1"')}
-    </div>`;
+  const outils = OUTILS_SCRAPBOOK(ecranId);
 
   const panneaux = {
-    "24": `${mode === "deplacer" ? '<div class="panneau-item vide" id="panneau-item"></div>' : `<p class="astuce t-texte-petit secondaire">Promène-toi : un doigt déplace la page, deux doigts zooment. Touche un scrap pour l'ouvrir en grand.</p>`}
+    "24": `${mode === "deplacer" ? '<div class="panneau-item vide" id="panneau-item"></div>' : `<p class="astuce t-texte-meta secondaire">Un doigt promène la page · deux doigts zooment · touche un scrap pour l'ouvrir</p>`}
       ${outils}${onglets(1)}`,
-    "24.1": `<div class="pied filet">
-        <div class="rangee entre"><span class="t-titre-m">Ajouter un élément</span>${lien("OK", { action: "fermerOutil" })}</div>
-        <p class="t-texte-petit secondaire" style="margin:6px 0 12px">Annote ta page comme un carnet : un grand titre par quartier, une étiquette, une flèche vers ton scrap préféré.</p>
-        <div class="palette">${TYPES_NOTE.map((t) => `<button data-action="ajouterNote" data-id="${t.type}">
-          <span class="palette-apercu note-${t.type}">${estTexte(t.type) ? esc(t.exemple || "Texte") : icone(t.icone, 22)}</span>
-          <span class="t-texte-meta">${t.nom}</span></button>`).join("")}</div>
-        ${outils}</div>`,
-    "24.3": `<div class="pied filet">
-        <div class="rangee entre"><span class="t-titre-m">Dessiner</span>${lien("OK", { action: "fermerOutil" })}</div>
-        <p class="t-texte-petit secondaire" style="margin:6px 0 12px">Trace directement sur la page : entoure, souligne, gribouille. Deux doigts zooment toujours.</p>
-        ${rangeeCouleurs((m.dessin && m.dessin.couleur) || "#111111", "couleurTrait")}
-        <div class="rangee" style="gap:8px;margin-top:10px">${[[2, "Fin"], [4, "Moyen"], [8, "Gros"], [14, "Marqueur"]].map(([w, nom]) =>
-            `<button class="epaisseur-trait${(m.dessin && m.dessin.w || 4) === w ? " choisi" : ""}" data-action="epaisseurTrait" data-id="${w}" aria-label="${nom}" title="${nom}"><i style="height:${Math.min(w, 10)}px"></i></button>`).join("")}</div>
-        <div class="deux-col" style="margin-top:12px">${bouton("Annuler le trait", { type: "secondaire", action: "annulerTrait" })}${bouton("Tout effacer", { type: "secondaire", action: "effacerTraits" })}</div>
-        ${outils}</div>`,
-    "25": `<div class="pied filet">
-        <div class="rangee entre"><span class="t-titre-m">Fond</span>${lien("OK", { action: "fermerOutil" })}</div>
-        <div class="nuancier" style="margin-top:12px">${FONDS.map(([k, nom]) =>
-          `<button class="${m.fond === k ? "choisi" : ""}" data-action="choisirFond" data-id="${k}"><span class="apercu fond-${k}"></span><span class="t-texte-meta${m.fond === k ? "" : " secondaire"}">${nom}</span></button>`).join("")}
-          <label class="${m.fond === "photo" ? "choisi" : ""}" style="cursor:pointer">
-            <span class="apercu apercu-photo" ${m.fondImage ? `style="background-image:url(${m.fondImage})"` : ""}>${m.fondImage ? "" : icone("image", 20)}</span>
-            <span class="t-texte-meta${m.fond === "photo" ? "" : " secondaire"}">Ta photo</span>
-            <input type="file" accept="image/*" class="cache" data-change="fondPhoto"></label>
-        </div>
-        ${m.fond === "photo" && m.fondImage ? `<div class="curseur-ligne" style="margin-top:14px"><span class="t-texte-meta secondaire">Voile</span><span class="t-texte-meta secondaire" id="voile-val">${m.voile || 0} %</span></div>
-          <input type="range" min="0" max="80" value="${m.voile || 0}" data-input="voileFond">
-          <p class="t-texte-petit secondaire" style="margin:6px 0 0">Un peu de voile et tes affiches ressortent mieux sur la photo.</p>`
-          : `<div class="rangee entre" style="margin-top:16px"><span class="t-texte-meta secondaire">Teinte du papier</span>
-              ${m.teinte ? lien("Enlever", { action: "teinteFond", data: ' data-id=""' }) : ""}</div>
-            ${rangeeCouleurs(m.teinte || "", "teinteFond")}
-            <p class="t-texte-petit secondaire" style="margin:10px 0 0">Le fond ne change que ton scrapbook. Les scraps, eux, restent intacts.</p>`}
-        ${outils}</div>`,
-    "26": `<div class="pied filet">
-        <div class="rangee entre"><span class="t-titre-m">Scotch</span>${lien("OK", { action: "fermerOutil" })}</div>
-        <div class="rouleaux" style="margin-top:12px">${SCOTCHS.map(([k, nom]) =>
-          `<button class="${(m.scotchType || "kraft") === k ? "choisi" : ""}" data-action="choisirScotch" data-id="${k}"><span class="apercu"><i class="scotch ${k}"></i></span><span class="t-texte-meta${(m.scotchType || "kraft") === k ? "" : " secondaire"}" style="display:block;margin-top:8px">${nom}</span></button>`).join("")}</div>
-        <p class="t-texte-petit secondaire" style="margin:8px 0 0">Touche un scrap là où tu veux le scotch : il se pose à cet endroit et s'incline tout seul selon le bord. Deux bouts au maximum ; touche un bout pour l'enlever.</p>
-        ${outils}</div>`,
-    "27": `<div class="pied filet">
-        <div class="rangee entre"><span class="t-titre-m">Déchirer</span>${lien("OK", { action: "fermerOutil" })}</div>
-        <div class="puces retour-ligne" style="margin:10px 0 8px">${DECHIRURES.map(([k, nom]) =>
-          puce(nom, dechirure === k, ` data-action="choisirDechirure" data-id="${k}"`)).join("")}</div>
-        <p class="t-texte-petit secondaire" style="margin:0 0 12px">${esc((DECHIRURES.find((d) => d[0] === dechirure) || [])[2] || "")} ${dechirure === "mesure" ? "" : "Touche ensuite le scrap à déchirer."} Le morceau arraché reste dans ta collection : tu ne perds jamais un scrap.</p>
-        <div class="deux-col">${bouton("Annuler", { type: "secondaire", action: "annulerDechirure" })}${bouton("Recoller tout", { type: "secondaire", action: "recollerTout" })}</div>
-        ${outils}</div>`,
+    "24.1": panneauOutil("24.1", outils),
+    "24.3": panneauOutil("24.3", outils),
+    "25": panneauOutil("25", outils),
+    "26": panneauOutil("26", outils),
+    "27": panneauOutil("27", outils),
   };
 
   const nomOutil = { "24.1": "Ajouter", "24.3": "Dessiner", 25: "Fond", 26: "Scotch", 27: "Déchirer" }[ecranId];
@@ -687,7 +747,9 @@ function scrapbook(ecranId) {
     <i class="livre-couv gauche"></i><i class="livre-couv droite"></i>
     <span class="livre-titre">${logo(28)}<span class="t-texte-meta">${esc(ETAT.utilisateur.quartier)}</span></span>
   </div>` : ""}
-  <div class="mur-zone mode-${ecranId === "24" ? mode : ecranId}" id="mur">
+  <div class="mur-zone fond-${m.fond} mode-${ecranId === "24" ? mode : ecranId}" id="mur" style="${styleFond(m)}">
+    ${teinteHtml(m)}
+    ${m.fond === "photo" && m.voile ? `<i class="voile-fond" style="opacity:${(m.voile || 0) / 100}"></i>` : ""}
     <div class="mur-plan" id="plan"></div>
     ${commandesZoom()}
     <div class="note-ensemble"><span class="t-texte-meta">Page remplie à ${remplissage} %</span><span class="t-texte-meta secondaire">Il reste de la place : continue à sortir.</span></div>
@@ -901,16 +963,34 @@ ecran("31", "D", "Fiche d'une collection", "grille", () => {
   ${manque ? pied(bouton("Voir le dernier sur la carte", { action: "chercherCollection", data: ` data-id="${cid}"` })) : ""}`;
 });
 
+/* La carte exclusive telle qu'elle est collée dans le scrapbook : du papier
+ * holographique figé, encre noire, comme un vrai sticker foil. La version
+ * vivante (écran 32) ajoute les reflets qui bougent. */
 const svgExclusif = (cid) => {
   const c = collection(cid);
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1000" viewBox="0 0 720 1000"><rect width="720" height="1000" fill="#111"/>
-    <rect x="40" y="40" width="640" height="920" fill="none" stroke="#fff" stroke-width="3"/>
-    <text x="70" y="140" fill="#fff" font-family="Inter,Arial" font-weight="600" font-size="34" letter-spacing="2">SCRAP · ÉDITION EXCLUSIVE</text>
-    <text x="64" y="470" fill="#fff" font-family="Inter,Arial" font-weight="700" font-size="150" textLength="590" lengthAdjust="spacingAndGlyphs">${c.nom.split(" ")[0].toUpperCase()}</text>
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1000" viewBox="0 0 720 1000">
+    <defs>
+      <radialGradient id="foil" cx="50%" cy="46%" r="78%">
+        <stop offset="0%" stop-color="#ffffff"/><stop offset="18%" stop-color="#ffe3f0"/>
+        <stop offset="34%" stop-color="#d9fff2"/><stop offset="50%" stop-color="#fff7d2"/>
+        <stop offset="66%" stop-color="#d7e6ff"/><stop offset="82%" stop-color="#f0d9ff"/>
+        <stop offset="100%" stop-color="#d4fff0"/>
+      </radialGradient>
+      <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="38%" stop-color="#ffffff" stop-opacity="0"/>
+        <stop offset="50%" stop-color="#ffffff" stop-opacity=".75"/>
+        <stop offset="62%" stop-color="#ffffff" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <rect width="720" height="1000" fill="url(#foil)"/>
+    <rect width="720" height="1000" fill="url(#sheen)"/>
+    <rect x="40" y="40" width="640" height="920" fill="none" stroke="#111" stroke-width="3"/>
+    <text x="70" y="140" fill="#111" font-family="Inter,Arial" font-weight="600" font-size="34" letter-spacing="2">SCRAP · ÉDITION EXCLUSIVE</text>
+    <text x="64" y="470" fill="#111" font-family="Inter,Arial" font-weight="700" font-size="150" textLength="590" lengthAdjust="spacingAndGlyphs">${c.nom.split(" ")[0].toUpperCase()}</text>
     <rect x="70" y="520" width="80" height="80" fill="#FF0000"/>
-    <text x="70" y="690" fill="#fff" font-family="Inter,Arial" font-weight="500" font-size="40">${c.zone.toUpperCase()}</text>
-    <text x="70" y="744" fill="#fff" font-family="Inter,Arial" font-weight="500" font-size="40">COLLECTION COMPLÈTE</text>
-    <text x="70" y="900" fill="#fff" font-family="Inter,Arial" font-weight="600" font-size="120" letter-spacing="-6">N° 001</text></svg>`;
+    <text x="70" y="690" fill="#111" font-family="Inter,Arial" font-weight="500" font-size="40">${c.zone.toUpperCase()}</text>
+    <text x="70" y="744" fill="#555" font-family="Inter,Arial" font-weight="500" font-size="40">COLLECTION COMPLÈTE</text>
+    <text x="70" y="900" fill="#111" font-family="Inter,Arial" font-weight="600" font-size="120" letter-spacing="-6">N° 001</text></svg>`;
   return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
 };
 /* La carte exclusive n'est pas une affiche de la rue : c'est SCRAP qui la
@@ -1072,7 +1152,7 @@ ecran("35", "E", "Profil vu par les autres", "grille", () => {
   </div>
   ${autre ? "" : onglets(-1)}
   ${pied(autre
-    ? `<div class="rang">${bouton(autre.suivi ? "Suivi" : "Suivre", { type: autre.suivi ? "secondaire" : "", action: "suivre", data: ` data-id="${ETAT.ctx.personne}"` })}${bouton("Partager", { type: "secondaire", aller: "39" })}</div>`
+    ? `<div class="rang">${bouton(autre.suivi ? "Suivi" : "Suivre", { type: autre.suivi ? "secondaire" : "", action: "suivre", data: ` data-id="${ETAT.ctx.personne}"` })}${bouton("Échanger en vrai", { action: "ouvrirEchange", data: ` data-id="${ETAT.ctx.personne}"` })}</div>`
     : `<div class="rang">${bouton("Modifier le profil", { aller: "37" })}${bouton("Réglages", { type: "secondaire", aller: "41" })}</div>`)}`;
 }, (r) => vitrineMonter($("#vitrine", r), false));
 
@@ -1114,15 +1194,29 @@ ecran("37", "E", "Modifier le profil", "grille", () => {
   </div>`;
 });
 
-ecran("38", "E", "Abonnés et abonnements", "grille", () => {
+/* 38 — Amis. Quatrième onglet : les gens avec qui on colle.
+ * C'est d'ici qu'on ouvre le profil de quelqu'un, et depuis son profil qu'on
+ * lui passe un scrap en main propre (écran 51). */
+ecran("38", "E", "Amis", "grille", () => {
   const o = ETAT.ctx.ongletAbo || "abonnes";
+  const proches = ETAT.personnes.filter((p) => p.suivi).slice(0, 3);
   return `
-  ${entete(ETAT.utilisateur.pseudo)}
+  ${grandTitre("Amis", `${ETAT.personnes.filter((p) => p.suivi).length} suivis · ${ETAT.personnes.length} autour de toi`)}
   <div class="defile">
+    ${proches.length ? `<p class="t-texte-meta secondaire" style="margin:0 0 10px">Dans ton quartier en ce moment</p>
+      <div class="rangee proches">${proches.map((p) => {
+        const i = ETAT.personnes.indexOf(p);
+        return `<button class="proche" data-action="voirPersonne" data-id="${i}">
+          ${avatar(54, p.initiales)}
+          <span class="t-texte-meta une-ligne">${esc(p.pseudo)}</span>
+          <span class="t-texte-meta secondaire une-ligne">${esc(p.quartier)}</span></button>`;
+      }).join("")}</div>
+      <p class="t-texte-petit secondaire" style="margin:10px 0 18px">Croise-les dehors pour échanger un scrap en main propre.</p>` : ""}
     <div class="puces">${puce("Abonnés · 24", o === "abonnes", ' data-action="ongletAbo" data-id="abonnes"')}${puce("Abonnements · 31", o === "abonnements", ' data-action="ongletAbo" data-id="abonnements"')}</div>
     <div class="recherche" style="margin:16px 0 4px">${icone("recherche")}<input id="q-abo" type="search" placeholder="Rechercher" autocomplete="off"></div>
     <div id="liste-abo">${listePersonnes("")}</div>
-  </div>`;
+  </div>
+  ${onglets(3)}`;
 }, (r) => { const q = $("#q-abo", r); q.addEventListener("input", () => { $("#liste-abo", r).innerHTML = listePersonnes(q.value); }); });
 
 function listePersonnes(q) {
@@ -1174,6 +1268,83 @@ ecran("40", "E", "Lieu partenaire", "grille", () => {
 });
 
 /* ═════════ F. Réglages */
+/* 51 — Le passage de relais.
+ *
+ * Un scrap ne s'échange qu'en vrai, deux téléphones côte à côte. Pas d'envoi
+ * à distance, pas de marché : c'est la seule fonction sociale de l'app qui
+ * demande de se croiser dehors, et c'est voulu — tout le reste de SCRAP
+ * pousse à sortir, l'échange ne pouvait pas être le contraire.
+ *
+ * Trois temps : on choisit le double qu'on donne, on approche les
+ * téléphones, le scrap change de main et garde le nom de qui l'a donné. */
+ecran("51", "E", "Passage de relais", "grille", () => {
+  const e = ETAT.ctx.echange || {};
+  const ami = ETAT.personnes[e.ami] || ETAT.personnes[0];
+  const etape = e.etape || "choix";
+  const donne = e.donne && scrap(e.donne);
+
+  if (etape === "fait") {
+    const recu = scrap(e.recu);
+    return `
+    ${entete("Échangé", { fermer: true })}
+    <div class="defile centre" id="scene-echange">
+      <i class="decor-halo couche" style="--p:26"></i>
+      <p class="t-texte-meta secondaire" style="margin:8px 0 0">Reçu de ${esc(ami.pseudo)}, en main propre</p>
+      <div class="echange-recu couche" style="--p:10">
+        <img src="${imgScrap(e.recu)}" alt="" style="width:62%;margin:0 auto">
+      </div>
+      <h1 class="t-titre-l" style="margin:18px 0 4px">${esc(recu ? recu.titre : "")}</h1>
+      <p class="t-texte-petit secondaire" style="margin:0 0 16px">Scrap N° ${pad3(recu ? recu.num : 1)} · ${esc(recu ? rarete(recu).nom : "")}</p>
+      ${tampon("Passage de relais", `${esc(ami.quartier)} · ${aujourdhui().date}`, { grand: true, plein: true, pose: true })}
+      <p class="t-texte-petit secondaire" style="margin:20px auto 0;max-width:280px">Ton double est parti chez ${esc(ami.pseudo)}. Un scrap échangé garde le nom de celui qui l'a donné.</p>
+    </div>
+    ${pied(bouton("Coller sur mon scrapbook", { action: "collerRecu" }) + lien("Plus tard", { aller: "38", centre: true }))}`;
+  }
+
+  if (etape === "approche") {
+    return `
+    ${entete("Approchez vos téléphones", { fermer: true })}
+    <div class="defile centre echange-scene" id="scene-echange">
+      <div class="echange-duo">
+        <span class="echange-tel gauche"><img src="${imgScrap(e.donne)}" alt=""></span>
+        <i class="echange-onde"></i><i class="echange-onde" style="animation-delay:.45s"></i>
+        <span class="echange-tel droite">${avatar(44, ami.initiales)}</span>
+      </div>
+      <h1 class="t-titre-m" style="margin:28px 0 6px">Dos à dos, à quelques centimètres</h1>
+      <p class="t-texte-corps secondaire" style="margin:0 auto;max-width:290px">L'échange ne se fait que comme ça : les deux téléphones doivent être au même endroit, au même moment.</p>
+      <p class="t-texte-meta secondaire" style="margin:22px 0 0" id="echange-etat">Recherche de ${esc(ami.pseudo)}…</p>
+    </div>
+    ${pied(lien("Annuler", { aller: "38", centre: true }), { transparent: true })}`;
+  }
+
+  const doubles = idsScraps().filter((id) => scrap(id).collection !== "exclusifs").slice(0, 12);
+  return `
+  ${entete("Passage de relais", { fermer: true })}
+  <div class="defile">
+    <div class="rangee" style="margin-bottom:16px">${avatar(44, ami.initiales)}
+      <span><span class="t-texte-label" style="display:block">${esc(ami.pseudo)}</span>
+        <span class="t-texte-meta secondaire">${ami.scraps} scraps · ${esc(ami.quartier)}</span></span></div>
+    <p class="t-texte-petit secondaire" style="margin:0 0 16px">Choisis le scrap que tu lui donnes. Tu gardes le tien : c'est le double qui part, avec ton pseudo dessus.</p>
+    <div class="grille-scraps dispo-dense">${doubles.map((id, i) =>
+      carteScrap(id, { i, action: "choisirDon", choisie: e.donne === id })).join("")}</div>
+  </div>
+  ${pied(`<button class="bouton" data-action="lancerEchange"${donne ? "" : " disabled"}>${donne ? "Approcher les téléphones" : "Choisis un scrap"}</button>`)}`;
+}, (r) => {
+  const e = ETAT.ctx.echange || {};
+  if (e.etape === "approche") {
+    // la rencontre se joue en quelques secondes : on la laisse respirer
+    const etat = $("#echange-etat", r);
+    const t1 = setTimeout(() => { if (etat) etat.textContent = "Téléphone trouvé · ne bougez plus"; vibrer(12); }, 1500);
+    const t2 = setTimeout(() => ACTIONS.conclureEchange(), 2900);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }
+  if (e.etape === "fait") {
+    revelation(["PASSAGE", "DE RELAIS"], { duree: 1500 });
+    setTimeout(() => vibrer([16, 50, 16]), 300);
+  }
+  return profondeur($("#scene-echange", r), { amplitude: 1.1 });
+});
+
 ecran("41", "F", "Réglages", "grille", () => {
   const u = ETAT.utilisateur;
   return `

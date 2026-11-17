@@ -266,7 +266,7 @@ const onglets = (actif) => {
   const saut = prec === undefined || prec === actif ? 0 : prec - actif;
   ETAT.ctx.ongletPrec = actif;
   return `<nav class="onglets" style="--saut:${saut}">
-  ${[["13", "Carte"], ["24", "Scrapbook"], ["28", "Collection"]].map(([id, lib], i) =>
+  ${[["13", "Carte"], ["24", "Scrapbook"], ["28", "Collection"], ["38", "Amis"]].map(([id, lib], i) =>
     `<button class="onglet${i === actif ? " actif" : ""}" data-aller="${id}"><span>${lib}</span></button>`).join("")}</nav>`;
 };
 const pied = (contenu, o = {}) => `<footer class="pied${o.filet ? " filet" : ""}${o.transparent ? " transparent" : ""}">${contenu}</footer>`;

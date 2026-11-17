@@ -76,12 +76,26 @@ function inclinaisonDemarrer() {
   };
   boucle();
 
+  /* La position neutre n'est pas fixée une fois pour toutes : elle suit
+   * lentement la façon dont la personne tient son téléphone. Sans ça, la
+   * première mesure fait loi — si elle est prise téléphone à plat sur une
+   * table, tenir l'appareil normalement (60° ou 70°) met l'effet en butée et
+   * tout reste penché à fond. Ici, le repos revient toujours au milieu, et
+   * seul le MOUVEMENT compte, ce qui est exactement ce qu'on veut. */
   INCLINAISON.surOrientation = (e) => {
     if (e.gamma === null || e.gamma === undefined) return;
     if (!INCLINAISON.base) INCLINAISON.base = { g: e.gamma, b: e.beta };
+    const base = INCLINAISON.base;
+    // changement brutal (on retourne le téléphone, on s'allonge) : on réancre
+    if (Math.abs(e.beta - base.b) > 50 || Math.abs(e.gamma - base.g) > 50) { base.g = e.gamma; base.b = e.beta; }
     const amp = (window.CONFIG && CONFIG.profondeur.amplitude) || 1;
-    INCLINAISON.cibleX = clamp(((e.gamma - INCLINAISON.base.g) / 24) * amp, -1, 1);
-    INCLINAISON.cibleY = clamp(((e.beta - INCLINAISON.base.b) / 24) * amp, -1, 1);
+    const port = (window.CONFIG && CONFIG.profondeur.portee) || 20;
+    INCLINAISON.cibleX = clamp(((e.gamma - base.g) / port) * amp, -1, 1);
+    INCLINAISON.cibleY = clamp(((e.beta - base.b) / port) * amp, -1, 1);
+    // dérive douce du neutre : une inclinaison tenue revient au repos
+    const suite = (window.CONFIG && CONFIG.profondeur.recentrage) || 0.012;
+    base.g += (e.gamma - base.g) * suite;
+    base.b += (e.beta - base.b) * suite;
   };
   window.addEventListener("pointermove", (e) => {
     if (INCLINAISON.branche) return;   // le capteur a la priorité sur la souris

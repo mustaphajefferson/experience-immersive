@@ -39,7 +39,18 @@ window.CONFIG = {
   },
 
   /* Effet de profondeur lié au gyroscope.
-   * repos : amplitude de la houle qui anime les couches tant que le capteur
-   * n'est pas branché (0 pour que tout reste parfaitement plat). */
-  profondeur: { amplitude: 1, actif: true, repos: 0.26 },
+   * repos      : amplitude de la houle qui anime les couches tant que le
+   *              capteur n'est pas branché (0 pour que tout reste plat) ;
+   * portee     : inclinaison, en degrés, qui pousse l'effet à fond ;
+   * recentrage : vitesse à laquelle la position neutre suit la façon dont on
+   *              tient le téléphone (0 = neutre figé à la première mesure,
+   *              ce qui met l'effet en butée dès qu'on redresse l'appareil). */
+  profondeur: { amplitude: 1, actif: true, repos: 0.26, portee: 20, recentrage: 0.012 },
+
+  /* Boussole de capture (écran 17).
+   * marcheSimulee : quand le téléphone ne bouge pas (test assis, démo devant
+   * un jury), la distance se rapproche toute seule à vitesse de marche, pour
+   * que la montée en cadence soit visible. Dès que la vraie position bouge,
+   * c'est elle qui commande. À mettre à false pour une vraie sortie. */
+  boussole: { marcheSimulee: true, vitesse: 1.25 },
 };

@@ -115,17 +115,21 @@ window.DONNEES = {
     ],
     /* La page est beaucoup plus grande que l'écran : en vue d'ensemble on voit
      * tout ce qu'il reste à remplir. */
+    /* Les neuf premiers scraps sont posés petits et éparpillés sur toute la
+     * hauteur : en arrivant, on voit surtout la place qui reste. Un carnet
+     * déjà bien rempli donnerait l'impression qu'il n'y a plus rien à faire,
+     * alors que l'app sert justement à ressortir. */
     hauteur: 1600,
     items: [
-      { id: "alta", x: 22, y: 62, w: 122, rot: -3, scotch: [["hg", "transparent"], ["hd", "transparent"]] },
-      { id: "rose", x: 162, y: 50, w: 104, rot: 2, scotch: [["hd", "kraft"]] },
-      { id: "presence", x: 286, y: 72, w: 92, rot: 4, scotch: [["hg", "noir"]] },
-      { id: "ozkan", x: 26, y: 232, w: 100, rot: 0, scotch: [["hg", "papier"]], dechire: [[0, 0], [1, 0], [1, 0.55], [0.82, 0.62], [0.9, 0.7], [0.68, 0.78], [0.76, 0.86], [0.55, 1], [0, 1]] },
-      { id: "sanbimu", x: 140, y: 214, w: 146, rot: -1, scotch: [["hd", "kraft"]] },
-      { id: "skeleton", x: 300, y: 236, w: 84, rot: 3, scotch: [["hg", "transparent"]] },
-      { id: "flea", x: 30, y: 430, w: 112, rot: 2, scotch: [["hg", "kraft"], ["hd", "kraft"]] },
-      { id: "viudas", x: 170, y: 446, w: 104, rot: -4, scotch: [["hd", "papier"]] },
-      { id: "white", x: 292, y: 420, w: 88, rot: 1, scotch: [["hg", "papier"]] },
+      { id: "alta", x: 28, y: 74, w: 78, rot: -5, scotch: [["hg", "transparent"], ["hd", "transparent"]] },
+      { id: "rose", x: 214, y: 46, w: 64, rot: 3, scotch: [["hd", "kraft"]] },
+      { id: "presence", x: 316, y: 180, w: 56, rot: 6, scotch: [["hg", "noir"]] },
+      { id: "ozkan", x: 42, y: 338, w: 62, rot: -2, scotch: [["hg", "papier"]], dechire: [[0, 0], [1, 0], [1, 0.55], [0.82, 0.62], [0.9, 0.7], [0.68, 0.78], [0.76, 0.86], [0.55, 1], [0, 1]] },
+      { id: "sanbimu", x: 196, y: 288, w: 86, rot: 2, scotch: [["hd", "kraft"]] },
+      { id: "skeleton", x: 128, y: 524, w: 54, rot: -7, scotch: [["hg", "transparent"]] },
+      { id: "flea", x: 286, y: 462, w: 70, rot: 4, scotch: [["hg", "kraft"], ["hd", "kraft"]] },
+      { id: "viudas", x: 36, y: 686, w: 66, rot: 5, scotch: [["hd", "papier"]] },
+      { id: "white", x: 232, y: 742, w: 60, rot: -3, scotch: [["hg", "papier"]] },
     ],
   },
 

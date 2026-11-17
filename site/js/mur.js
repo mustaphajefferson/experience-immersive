@@ -23,11 +23,10 @@ const polyCss = (pts) => `polygon(${pts.map(([x, y]) => `${(x * 100).toFixed(2)}
 
 /* ═════════ Ce qu'il y a sur la page */
 
-const CADRES = [
-  ["aucun", "Aucun"], ["filet", "Filet"], ["epais", "Épais"],
-  ["passe", "Passe-partout"], ["polaroid", "Polaroïd"], ["noir", "Noir"],
-  ["coins", "Coins photo"], ["bois", "Bois"],
-];
+/* Les cadres (filet, passe-partout, polaroïd, bois, coins photo) ont été
+ * retirés : ils encadraient l'affiche au lieu de la laisser vivre sur la
+ * page, et ils mangeaient la moitié du panneau. Le scotch et la déchirure
+ * disent mieux le même geste. */
 
 /* La palette : tout ce qu'on pose sur la page peut changer de couleur, le
  * dessin comme les titres, les flèches ou les gommettes. Ce sont les encres
@@ -63,13 +62,10 @@ function itemHtml(it, choisi) {
   const s = scrap(it.id);
   if (!s) return "";
   const decoupe = it.dechire ? `clip-path:${polyCss(it.dechire)}` : "";
-  const cadre = it.cadre && it.cadre !== "aucun" ? ` cadre-${it.cadre}` : "";
-  return `<div class="mur-item${choisi ? " choisi" : ""}${it.dechire ? " dechire" : ""}${cadre}" data-item="${it.id}"
+  return `<div class="mur-item${choisi ? " choisi" : ""}${it.dechire ? " dechire" : ""}" data-item="${it.id}"
     style="left:${it.x}px;top:${it.y}px;width:${it.w}px;transform:rotate(${it.rot || 0}deg)">
     ${it.dechire ? `<i class="bord-dechire" style="${decoupe}"></i>` : ""}
     <div class="mur-papier" style="${decoupe}"><img src="${imgScrap(it.id)}" alt="" draggable="false" style="aspect-ratio:${s.ratio}"></div>
-    ${it.cadre === "polaroid" ? `<span class="polaroid-legende t-texte-meta">${esc(s.lieu)}</span>` : ""}
-    ${it.cadre === "coins" ? '<i class="coin-photo hg"></i><i class="coin-photo hd"></i><i class="coin-photo bg"></i><i class="coin-photo bd"></i>' : ""}
     ${normScotch(it.scotch).map((b) => scotchHtml(b, it.w)).join("")}
     ${choisi ? '<i class="poignee" data-poignee="1"></i>' : ""}
   </div>`;
@@ -302,12 +298,10 @@ function murMonter(racine, outil) {
     plan.style.height = PH() + "px";
     const sel = choisissable ? ETAT.ctx.murSel : null;
     const notes = notesMur();
-    /* La matière du papier est posée sur la page elle-même, et non sur toute
-     * la zone : maintenant qu'on peut s'éloigner très loin, on doit voir où
-     * la page commence et où elle finit — une feuille sur une table. */
-    plan.innerHTML = `<div class="mur-contenu fond-${m.fond}" id="contenu" style="left:${MARGE_MUR}px;top:${MARGE_MUR}px;width:${LARGEUR_MUR}px;height:${m.hauteur}px;${styleFond(m)}">
-      ${teinteHtml(m)}
-      ${m.fond === "photo" && m.voile ? `<i class="voile-fond" style="opacity:${(m.voile || 0) / 100}"></i>` : ""}
+    /* Le papier couvre toute la zone, pas seulement la page : on travaille
+     * sur une grande surface, sans bord ni table qui viennent dire « tu es
+     * sorti ». La page n'est qu'un repère de coordonnées. */
+    plan.innerHTML = `<div class="mur-contenu" id="contenu" style="left:${MARGE_MUR}px;top:${MARGE_MUR}px;width:${LARGEUR_MUR}px;height:${m.hauteur}px">
       ${notes.filter((n) => !n.devant).map((n) => noteHtml(n, n.id === sel)).join("")}
       ${m.items.map((it) => itemHtml(it, it.id === sel)).join("")}
       ${notes.filter((n) => n.devant).map((n) => noteHtml(n, n.id === sel)).join("")}
@@ -419,7 +413,8 @@ function murMonter(racine, outil) {
     if (el && selectionne) {
       e.preventDefault();
       geste = { obj, el, x0: e.clientX, y0: e.clientY, ix: obj.x, iy: obj.y, bouge: false, deplace: true };
-      el.classList.add("tire");
+      el.classList.add("tire");   // un coin se soulève : on décolle, on ne glisse pas
+      vibrer(7);
       return;
     }
     geste = {
@@ -622,13 +617,12 @@ const RANGEMENTS = [["grille", "Grille"], ["colonne", "Colonne"], ["mosaique", "
 function panneauRangements() {
   return `<div class="panneau-item-int">
     <div class="rangee entre">
-      <span class="t-texte-meta secondaire">Ranger la page d'un coup</span>
+      <span class="t-texte-meta secondaire">Touche un scrap, ou range la page d'un coup</span>
       <button class="bouton-lien t-texte-meta" data-action="modeMur" data-id="regarder">Terminé</button>
     </div>
-    <div class="puces retour-ligne" style="margin-top:10px">
+    <div class="puces" style="margin-top:8px">
       ${RANGEMENTS.map(([k, nom]) => `<button class="puce" data-action="rangerMur" data-id="${k}">${nom}</button>`).join("")}
     </div>
-    <p class="t-texte-petit secondaire" style="margin:8px 0 0">Ou touche un scrap pour le déplacer, l'agrandir, le tourner et l'encadrer.</p>
   </div>`;
 }
 
@@ -653,23 +647,26 @@ function panneauElement(o) {
   const defaut = (TYPES_NOTE.find((t) => t.type === o.type) || {}).couleur || "#111111";
   return `<div class="panneau-item-int">
     <div class="rangee entre">
-      <span class="t-texte-meta secondaire">${esc(nom)}</span>
+      <span class="t-texte-meta secondaire une-ligne">${esc(nom)}</span>
       <button class="bouton-lien t-texte-meta" data-action="deselectionnerItem">Terminé</button>
     </div>
     ${texte ? `<input class="champ-note" id="note-texte" type="text" value="${esc(o.texte || "")}" data-input="noteTexte" placeholder="Ton texte" maxlength="40">` : ""}
     ${note && o.type === "ruban"
-      ? `<div class="rangee" style="gap:8px;margin-top:10px;flex-wrap:wrap">${SCOTCHS.map(([k, nom2]) =>
+      ? `<div class="puces" style="margin-top:8px">${SCOTCHS.map(([k, nom2]) =>
           puce(nom2, (o.matiere || ETAT.mur.scotchType || "kraft") === k, ` data-action="matiereNote" data-id="${k}"`)).join("")}</div>`
       : note ? rangeeCouleurs(o.couleur || defaut, "couleurNote") : ""}
-    ${note ? "" : `<div class="cadres">${CADRES.map(([k, nom2]) =>
-      `<button class="cadre-choix${(o.cadre || "aucun") === k ? " choisi" : ""}" data-action="choisirCadre" data-id="${k}" title="${nom2}">
-        <span class="cadre-apercu cadre-${k}"><i></i></span><span class="t-texte-meta${(o.cadre || "aucun") === k ? "" : " secondaire"}">${nom2}</span></button>`).join("")}</div>`}
-    <div class="curseur-ligne" style="margin-top:10px"><span class="t-texte-meta secondaire">Taille</span><span class="t-texte-meta secondaire" id="item-taille-val">${note && estTexte(o.type) ? o.w + " px" : Math.round((o.w / 128) * 100) + " %"}</span></div>
-    <input type="range" min="${bornes[0]}" max="${bornes[1]}" value="${o.w}" data-input="itemTaille" id="item-taille">
-    <div class="curseur-ligne" style="margin-top:6px"><span class="t-texte-meta secondaire">Rotation</span><span class="t-texte-meta secondaire" id="item-rot-val">${o.rot || 0}°</span></div>
-    <input type="range" min="-25" max="25" value="${o.rot || 0}" data-input="itemRotation">
-    <div class="rangee" style="gap:8px;margin-top:10px;flex-wrap:wrap">
-      <button class="puce" data-action="itemDevant">Mettre devant</button>
+    <div class="deux-curseurs">
+      <div>
+        <div class="curseur-ligne"><span class="t-texte-meta secondaire">Taille</span><span class="t-texte-meta secondaire" id="item-taille-val">${note && estTexte(o.type) ? o.w + " px" : Math.round((o.w / 128) * 100) + " %"}</span></div>
+        <input type="range" min="${bornes[0]}" max="${bornes[1]}" value="${o.w}" data-input="itemTaille" id="item-taille">
+      </div>
+      <div>
+        <div class="curseur-ligne"><span class="t-texte-meta secondaire">Rotation</span><span class="t-texte-meta secondaire" id="item-rot-val">${o.rot || 0}°</span></div>
+        <input type="range" min="-25" max="25" value="${o.rot || 0}" data-input="itemRotation">
+      </div>
+    </div>
+    <div class="puces" style="margin-top:8px">
+      <button class="puce" data-action="itemDevant">Devant</button>
       <button class="puce" data-action="itemAligner">Redresser</button>
       ${note ? "" : '<button class="puce" data-action="ouvrirSelection">Observer</button>'}
       <button class="puce" data-action="itemRetirer">Retirer</button>
@@ -827,21 +824,37 @@ function boiteContenu() {
   return { x0, y0, x1, y1 };
 }
 
+/* Le rectangle à exporter : il se cale sur ce qui est réellement rempli,
+ * puis s'étire au format demandé en ajoutant du papier autour — jamais une
+ * bande d'une autre couleur. Si on n'a collé que dans un coin, l'image est
+ * ce coin-là, pas un grand vide avec un petit tas d'affiches dedans. */
+function rectExport(format) {
+  const b = boiteContenu();
+  const l = Math.max(60, b.x1 - b.x0), h = Math.max(60, b.y1 - b.y0);
+  const marge = clamp(Math.min(l, h) * 0.07, 20, 90);
+  let x0 = b.x0 - marge, y0 = b.y0 - marge, x1 = b.x1 + marge, y1 = b.y1 + marge;
+  const cible = { story: 1080 / 1920, carre: 1, mur: 1080 / 1920 }[format];
+  if (cible) {
+    const L = x1 - x0, H = y1 - y0;
+    if (L / H > cible) { const nh = L / cible; y0 -= (nh - H) / 2; y1 += (nh - H) / 2; }
+    else { const nl = H * cible; x0 -= (nl - L) / 2; x1 += (nl - L) / 2; }
+  }
+  return { x0, y0, x1, y1 };
+}
+
 function dessinerMurCanvas(o = {}) {
   const m = ETAT.mur;
-  const marge = o.marge === undefined ? 28 : o.marge;
-  const b = boiteContenu();
-  const gx = b.x0 - marge, gy = b.y0 - marge;                 // coin haut-gauche de l'image
-  const L = b.x1 - b.x0 + marge * 2;                          // largeur utile
-  const hauteur = o.hauteurPage || (b.y1 - b.y0);
+  const r = o.rect || rectExport("page");
+  const gx = r.x0, gy = r.y0;                                 // coin haut-gauche de l'image
+  const L = r.x1 - r.x0, H = r.y1 - r.y0;
   const k = (o.largeur || 1080) / L;
   const c = document.createElement("canvas");
   c.width = Math.round(L * k);
-  c.height = Math.round((hauteur + marge * 2 + (o.pied ? 86 : 0)) * k);
+  c.height = Math.round(H * k);
   const x = c.getContext("2d");
   x.scale(k, k);
   x.translate(-gx, -gy);                                      // on dessine dans le repère de la page
-  const G = { x: gx, y: gy, w: c.width / k, h: c.height / k };
+  const G = { x: gx, y: gy, w: L, h: H };
 
   const [fond, point] = MOTIFS_FOND[m.fond] || MOTIFS_FOND.papier;
   const dessinerFond = () => {
@@ -957,13 +970,6 @@ function dessinerMurCanvas(o = {}) {
           x.save();
           x.translate(it.x + w / 2, it.y + h / 2);
           x.rotate(((it.rot || 0) * Math.PI) / 180);
-          // cadre éventuel, dessiné derrière l'affiche
-          const c2 = it.cadre;
-          if (c2 && c2 !== "aucun" && c2 !== "coins") {
-            const ep = c2 === "epais" ? 10 : c2 === "passe" ? 16 : c2 === "polaroid" ? 12 : c2 === "noir" ? 8 : c2 === "bois" ? 11 : 2;
-            x.fillStyle = c2 === "noir" ? "#111" : c2 === "filet" ? "#111" : c2 === "bois" ? "#9B7343" : "#FBFBF8";
-            x.fillRect(-w / 2 - ep, -h / 2 - ep, w + ep * 2, h + ep * 2 + (c2 === "polaroid" ? 26 : 0));
-          }
           if (it.dechire) {
             x.save();
             x.beginPath();
@@ -974,17 +980,6 @@ function dessinerMurCanvas(o = {}) {
             x.closePath(); x.clip();
           }
           x.drawImage(im, -w / 2, -h / 2, w, h);
-          // coins photo : quatre triangles posés par-dessus les angles
-          if (c2 === "coins") {
-            const t = Math.max(12, Math.min(26, w * 0.14));
-            x.fillStyle = "rgba(33,28,22,.82)";
-            [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sy]) => {
-              const cx = (sx * w) / 2, cy = (sy * h) / 2;
-              x.beginPath();
-              x.moveTo(cx, cy); x.lineTo(cx - sx * t, cy); x.lineTo(cx, cy - sy * t);
-              x.closePath(); x.fill();
-            });
-          }
           x.restore();
           // le scotch est posé où la personne l'a mis, dans le repère du scrap
           normScotch(it.scotch).forEach((bt) => {
@@ -1018,16 +1013,19 @@ function dessinerMurCanvas(o = {}) {
           x.restore();
         });
 
+        /* La signature est posée DANS l'image, en bas à gauche, sur le
+         * papier : plus de bande ajoutée sous la page. */
         if (o.pied) {
-          const y = gy + hauteur + marge * 2 + 20;
+          const e = Math.max(18, L * 0.028);
+          const bx = gx + e, by = gy + H - e;
           x.fillStyle = sombre ? "#fff" : "#111";
-          x.font = "600 30px Inter, Arial";
-          x.fillText("SCRAP", gx + marge, y + 24);
+          x.font = `600 ${(e * 1.5).toFixed(0)}px Inter, Arial`;
+          x.fillText("SCRAP", bx, by - e * 1.1);
           const l = x.measureText("SCRAP").width;
-          x.fillStyle = "#FF0000"; x.fillRect(gx + marge + l + 7, y + 17, 7, 7);
+          x.fillStyle = "#FF0000"; x.fillRect(bx + l + e * 0.35, by - e * 1.95, e * 0.34, e * 0.34);
           x.fillStyle = sombre ? "#9A9A96" : "#6B6B67";
-          x.font = "500 20px Inter, Arial";
-          x.fillText(`${ETAT.utilisateur.pseudo} · ${pluriel(m.items.length, "scrap")} · ${ETAT.utilisateur.quartier}`, gx + marge, y + 54);
+          x.font = `500 ${(e * 0.95).toFixed(0)}px Inter, Arial`;
+          x.fillText(`${ETAT.utilisateur.pseudo} · ${pluriel(m.items.length, "scrap")} · ${ETAT.utilisateur.quartier}`, bx, by);
         }
         return c;
       });
@@ -1037,16 +1035,20 @@ function dessinerMurCanvas(o = {}) {
 /* Recadre le scrapbook dans un format de réseau social.
  * « mur » pose la page sur la photo d'un vrai mur prise avec la caméra. */
 function exporterMur(format) {
-  const tailles = { story: [1080, 1920], carre: [1080, 1080], mur: [1080, 1920] };
   const surMur = format === "mur" && ETAT.mur.photoMur;
-  return dessinerMurCanvas({ largeur: 1080, pied: !surMur, transparent: !!surMur }).then((src) => {
-    if (format === "page" || !tailles[format]) return src;
-    const [W, H] = tailles[format];
+  /* Une seule passe de dessin, dans le rectangle du format demandé : le
+   * papier couvre toute l'image et le contenu occupe toute la place. Avant,
+   * on dessinait la page puis on la recollait au milieu d'un aplat, d'où
+   * les affiches minuscules dans un coin. */
+  const rect = rectExport(surMur ? "page" : format);
+  return dessinerMurCanvas({ largeur: 1080, rect, pied: !surMur, transparent: !!surMur }).then((src) => {
+    if (!surMur) return src;
+    const [W, H] = [1080, 1920];
     const c = document.createElement("canvas");
     c.width = W; c.height = H;
     const x = c.getContext("2d");
 
-    if (surMur) {
+    {
       return new Promise((ok) => {
         const im = new Image();
         im.onload = () => {
@@ -1074,12 +1076,6 @@ function exporterMur(format) {
         im.src = ETAT.mur.photoMur;
       });
     }
-
-    x.fillStyle = (MOTIFS_FOND[ETAT.mur.fond] || MOTIFS_FOND.papier)[0];
-    x.fillRect(0, 0, W, H);
-    const k = Math.min((W - 80) / src.width, (H - 160) / src.height);
-    x.drawImage(src, (W - src.width * k) / 2, (H - src.height * k) / 2, src.width * k, src.height * k);
-    return c;
   });
 }
 
