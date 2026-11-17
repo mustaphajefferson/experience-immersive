@@ -39,7 +39,7 @@ Dernière mise à jour : 17.11.2026 (v5 : scan automatique, profondeur au gyrosc
 **Persona :** Inès, 22 ans, étudiante en design, Belleville / 11e (hypothèse, pas de vrais entretiens à ce stade).
 **Références :** Pokémon GO, Flash Invaders, Soundmap, Ingress Prime.
 
-## 3. Écrans — maquettes v4 (ordre du parcours, numérotation de référence)
+## 3. Écrans — v5 (ordre du parcours, numérotation de référence)
 
 Le parcours d'Inès (les 11 premiers écrans dessinés) est inclus : 13, 19, 21, 22, 24, 28, 29, 34, 35, 36, 30.
 
@@ -116,7 +116,7 @@ L'accent sert uniquement pour : le déclencheur et le cadre du scanner, le bouto
 - puce (active = noir) ;
 - étiquette (catégorie en contour, numéro en accent) ;
 - pastille 8 × 8 ;
-- marqueur carte ;
+- pin de carte (tête carrée, icône de la collection, pointe) ;
 - champ de recherche (filet sous le texte) ;
 - notification (barre noire) ;
 - ligne de collection ;
@@ -133,7 +133,7 @@ L'accent sert uniquement pour : le déclencheur et le cadre du scanner, le bouto
 
 **10 — Scrap (ajoutée) :**
 - **Tampon** : un par scrap, à droite de la légende, jamais sur l'image. Il porte la date de capture et l'arrondissement. Contour = scrap capturé ; plein (fond/inverse) = collection complète. Incliné de 6°, double filet, Texte/Méta, jamais en accent.
-- **Fonds du scrapbook** (au choix) : Papier (défaut, fond/secondaire), Quadrillé (la grille 09), Béton, Liège, Noir. Trame de points 2 px tous les 24 px, repères « + » tous les 96 px.
+- **Fonds du scrapbook** (au choix) : Papier (défaut, fond/secondaire), Quadrillé (la grille 09), Millimétré, Kraft, Béton, Liège, Journal, Noir. Trame de points 2 px tous les 24 px, repères « + » tous les 96 px.
 - **Scotch** : transparent, kraft, papier, noir. 52 × 16 px, deux bouts maximum par scrap, sur le scrapbook et la vitrine uniquement.
 - **Déchirure** : sur le scrapbook seulement. Le morceau arraché reste dans la collection : on ne perd jamais un scrap.
 - **Logo** : « SCRAP » en Inter Semi Bold, suivi d'un carré rouge (le point de capture, seul accent du logo).
