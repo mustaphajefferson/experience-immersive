@@ -18,11 +18,21 @@ window.DONNEES = {
     avatar: null,
   },
 
+  /* Les collections proposées au départ (écran 12) et suivies ensuite.
+   * teinte : la couleur de la pastille de la collection dans les listes. */
   collections: [
-    { id: "concerts", nom: "Concerts", total: 8, icone: "note", zone: "Belleville", recompense: "Badge Concerts et un scrap exclusif" },
-    { id: "expos", nom: "Expos et culture", total: 9, icone: "etoile", zone: "Est parisien", recompense: "Badge Expos" },
-    { id: "marches", nom: "Marchés et food", total: 6, icone: "couvert", zone: "Belleville", recompense: "Badge Marchés" },
-    { id: "messages", nom: "Messages politiques", total: 10, icone: "megaphone", zone: "20e", recompense: "Badge Messages" },
+    { id: "concerts", nom: "Concerts", total: 8, icone: "note", zone: "Belleville", teinte: "#111111", resume: "Salles, caves, bars à concert", recompense: "Badge Concerts et un scrap exclusif" },
+    { id: "expos", nom: "Expos et culture", total: 9, icone: "etoile", zone: "Est parisien", resume: "Galeries, musées, vernissages", recompense: "Badge Expos et un scrap exclusif" },
+    { id: "marches", nom: "Marchés et food", total: 6, icone: "couvert", zone: "Belleville", resume: "Marchés, cantines, food trucks", recompense: "Badge Marchés" },
+    { id: "messages", nom: "Messages politiques", total: 10, icone: "megaphone", zone: "20e", resume: "Tracts, syndicats, collages", recompense: "Badge Messages" },
+    { id: "street", nom: "Street art et graff", total: 12, icone: "bombe", zone: "Dénoyez / Ménilmontant", resume: "Collages, pochoirs, fresques", recompense: "Badge Street art et un scrap exclusif" },
+    { id: "theatre", nom: "Théâtre et danse", total: 7, icone: "masque", zone: "Est parisien", resume: "Salles, compagnies, impros", recompense: "Badge Théâtre" },
+    { id: "cinema", nom: "Cinéma et ciné-clubs", total: 8, icone: "pellicule", zone: "19e / 20e", resume: "Salles d'art et essai, séances en plein air", recompense: "Badge Cinéma" },
+    { id: "fetes", nom: "Soirées et fêtes", total: 9, icone: "verre", zone: "Oberkampf", resume: "Clubs, after, fêtes de quartier", recompense: "Badge Soirées" },
+    { id: "sport", nom: "Sport et assos", total: 6, icone: "ballon", zone: "Belleville", resume: "Clubs, tournois, salles de quartier", recompense: "Badge Sport" },
+    { id: "vintage", nom: "Brocantes et vintage", total: 5, icone: "cintre", zone: "Est parisien", resume: "Vide-greniers, friperies, puces", recompense: "Badge Brocantes" },
+    { id: "typo", nom: "Typo et graphisme", total: 8, icone: "lettre", zone: "Partout", resume: "Belles affiches, pour la lettre", recompense: "Badge Typo" },
+    { id: "disparues", nom: "Affiches disparues", total: 4, icone: "fantome", zone: "Partout", resume: "Arrachées ou recouvertes depuis ta capture", recompense: "Badge Disparues, le plus rare" },
   ],
 
   /* Scraps déjà capturés. num = rang de capture (N° 003 = 3e personne). */
@@ -57,6 +67,15 @@ window.DONNEES = {
     { id: "c7", titre: "Expo gravure", collection: "expos", lat: 48.8771, lng: 2.3812, adresse: "Rue des Pyrénées", scans: 27 },
     { id: "c8", titre: "Food truck — samedi", collection: "marches", lat: 48.8688, lng: 2.3726, adresse: "Rue du Faubourg-du-Temple", scans: 15 },
     { id: "c9", titre: "Affiche syndicale", collection: "messages", lat: 48.8730, lng: 2.3702, adresse: "Boulevard de la Villette", scans: 6 },
+    { id: "c10", titre: "Collage rue Dénoyez", collection: "street", lat: 48.8713, lng: 2.3758, adresse: "Rue Dénoyez", nouveau: true, scans: 4 },
+    { id: "c11", titre: "Fresque — mur de Ménilmontant", collection: "street", lat: 48.8702, lng: 2.3846, adresse: "Rue de Ménilmontant", scans: 46 },
+    { id: "c12", titre: "Théâtre de la Colline — saison", collection: "theatre", lat: 48.8669, lng: 2.3889, adresse: "Rue Malte-Brun", scans: 38 },
+    { id: "c13", titre: "Ciné-club en plein air", collection: "cinema", lat: 48.8757, lng: 2.3831, adresse: "Place des Fêtes", nouveau: true, scans: 11 },
+    { id: "c14", titre: "Nuit Oberkampf", collection: "fetes", lat: 48.8669, lng: 2.3772, adresse: "Rue Oberkampf", scans: 88 },
+    { id: "c15", titre: "Tournoi du gymnase", collection: "sport", lat: 48.8741, lng: 2.3818, adresse: "Rue de la Mare", scans: 7 },
+    { id: "c16", titre: "Vide-grenier du Jourdain", collection: "vintage", lat: 48.8761, lng: 2.3864, adresse: "Rue du Jourdain", scans: 23 },
+    { id: "c17", titre: "Affiche typographique", collection: "typo", lat: 48.8694, lng: 2.3791, adresse: "Rue Julien-Lacroix", nouveau: true, scans: 2 },
+    { id: "c18", titre: "Mur recouvert — hier encore", collection: "disparues", lat: 48.8726, lng: 2.3733, adresse: "Rue Rébeval", scans: 1 },
   ],
 
   lieu: {
@@ -72,13 +91,23 @@ window.DONNEES = {
     { id: "expos", nom: "Expos et culture", icone: "collection", collection: "expos" },
     { id: "marches", nom: "Marchés et food", icone: "couvert", collection: "marches" },
     { id: "messages", nom: "Messages politiques", icone: "megaphone", collection: "messages" },
+    { id: "street", nom: "Street art", icone: "bombe", collection: "street" },
+    { id: "theatre", nom: "Théâtre", icone: "masque", collection: "theatre" },
+    { id: "cinema", nom: "Cinéma", icone: "pellicule", collection: "cinema" },
+    { id: "fetes", nom: "Soirées", icone: "verre", collection: "fetes" },
+    { id: "sport", nom: "Sport", icone: "ballon", collection: "sport" },
+    { id: "vintage", nom: "Brocantes", icone: "cintre", collection: "vintage" },
+    { id: "typo", nom: "Typo", icone: "lettre", collection: "typo" },
+    { id: "disparues", nom: "Disparues", icone: "fantome", collection: "disparues" },
     { id: "cinquante", nom: "50 scraps", icone: "mur", objectif: 50 },
   ],
 
   /* Scrapbook : positions en px sur un plan de 402 px de large. */
   mur: {
     fond: "papier",
-    hauteur: 760,
+    /* La page est beaucoup plus grande que l'écran : en vue d'ensemble on voit
+     * tout ce qu'il reste à remplir. */
+    hauteur: 1600,
     items: [
       { id: "alta", x: 22, y: 34, w: 122, rot: -3, scotch: [["hg", "transparent"], ["hd", "transparent"]] },
       { id: "rose", x: 162, y: 22, w: 104, rot: 2, scotch: [["hd", "kraft"]] },

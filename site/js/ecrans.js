@@ -12,15 +12,29 @@ const ecran = (id, section, titre, classe, rendu, monter) => { ECRANS[id] = { id
 
 /* ═════════ A. Lancement et inscription */
 
-ecran("01", "A", "Lancement animé", "grille", () => `
-  <div class="lancement">
-    <div class="frag frag-1"><img src="assets/affiches/seb.jpg" alt=""></div>
-    <div class="frag frag-2"><img src="assets/affiches/fiasco.jpg" alt=""></div>
-    <div class="frag frag-3"><img src="assets/affiches/skeleton.jpg" alt=""></div>
-    <i class="scotch kraft s1"></i><i class="scotch transparent s2"></i><i class="scotch papier s3"></i>
-    <div class="logo-bloc">${logo(76)}<p class="t-texte-corps secondaire accroche-lancement" style="margin:12px 0 0">Ta ville en morceaux.</p></div>
+/* Lancement : on colle des affiches les unes sur les autres, elles tombent,
+ * et le nom se relève lettre par lettre dessous. Toucher l'écran passe. */
+const PILE_LANCEMENT = [
+  ["sonda", -6, -14, "kraft"], ["white", 5, 10, "transparent"], ["viudas", -3, 6, "papier"],
+  ["fiasco", 7, -8, "kraft"], ["skeleton", -8, 12, "noir"], ["rose", 4, -6, "transparent"],
+  ["seb", -4, 8, "kraft"], ["alta", 2, 0, "papier"],
+];
+ecran("01", "A", "Lancement animé", "", () => `
+  <div class="lancement" data-action="passerLancement">
+    <div class="pile-lancement">
+      ${PILE_LANCEMENT.map(([id, rot, dx, sc], i) => `
+        <div class="pile-affiche" style="--i:${i};--rot:${rot}deg;--dx:${dx}px">
+          <img src="assets/affiches/${id}.jpg" alt="">
+          <i class="scotch ${sc} ${i % 2 ? "hd" : "hg"}"></i>
+        </div>`).join("")}
+    </div>
+    <div class="lancement-logo">
+      <span class="mot">${"SCRAP".split("").map((l, i) => `<span class="lettre" style="--i:${i}"><b>${l}</b></span>`).join("")}<i class="point"></i></span>
+      <p class="accroche t-texte-corps secondaire"><span>Ta ville en morceaux.</span></p>
+    </div>
+    <span class="t-texte-meta secondaire passer-lancement">Toucher pour passer</span>
   </div>`, () => {
-  const t = setTimeout(() => aller("02", { remplace: true }), 2900);
+  const t = setTimeout(() => aller("02", { remplace: true }), 3400);
   return () => clearTimeout(t);
 });
 
@@ -50,9 +64,9 @@ ecran("03", "A", "Découverte 1 — Sors", "grille", () => decouverte(1, `
   <div class="illus fond-blanc" style="background:var(--fond-secondaire)">
     ${[[0, 30, 100, 3, 0], [0, 64, 100, 4, 0], [24, 0, 3, 100, 0], [68, 0, 3, 100, 0], [-10, 48, 120, 2, -14]].map(([l, t, w, h, r]) =>
       `<i style="position:absolute;left:${l}%;top:${t}%;width:${w}%;height:${h}%;background:#fff;transform:rotate(${r}deg)"></i>`).join("")}
-    ${[[16, 18, 1], [48, 40, 0], [80, 22, 1], [38, 76, 0], [82, 72, 0]].map(([l, t, n]) =>
-      `<span class="marqueur" style="left:${l}%;top:${t}%">${n ? '<i class="pastille"></i>' : ""}</span>`).join("")}
-    <span class="ma-position" style="position:absolute;left:52%;top:56%"></span>
+    ${[[16, 18, "concerts", 1], [48, 36, "expos", 0], [80, 22, "marches", 1], [38, 74, "messages", 0], [82, 70, "expos", 0]].map(([l, t, col, n], i) =>
+      `<span style="position:absolute;left:${l}%;top:${t}%">${pinHtml({ collection: col, nouveau: !!n, scans: 40 }, { index: i })}</span>`).join("")}
+    <span class="ma-position" style="position:absolute;left:52%;top:56%"><i></i></span>
   </div>`, "Sors. Les scraps sont dehors.", "La carte montre les affiches collées autour de toi. Chaque affiche est un scrap à capturer.", "04", "Suivant"));
 
 ecran("04", "A", "Découverte 2 — Capture", "grille", () => decouverte(2, `
@@ -148,20 +162,31 @@ ecran("11", "A", "Pseudo et avatar", "grille", () => `
 
 ecran("12", "A", "Collections de départ", "grille", () => {
   const n = ETAT.collectionsDepart.length;
+  const proches = ["concerts", "street", "marches"];
+  const carte = (c, i) => {
+    const on = ETAT.collectionsDepart.includes(c.id);
+    return `<button class="carte-collection${on ? " choisie" : ""}" data-action="choisirDepart" data-id="${c.id}" style="--i:${i}">
+      <span class="carte-collection-haut">
+        <span class="carte-collection-icone">${icone(c.icone, 22)}</span>
+        <span class="coche${on ? " active" : ""}">${on ? icone("valider", 18) : ""}</span>
+      </span>
+      <span class="t-texte-label carte-collection-nom">${esc(c.nom)}</span>
+      <span class="t-texte-meta secondaire carte-collection-sous">${c.total} scraps${proches.includes(c.id) ? " · près de toi" : ""}</span>
+      <span class="t-texte-petit secondaire carte-collection-resume">${esc(c.resume || c.zone)}</span>
+    </button>`;
+  };
   return `
   ${entete("Tes collections", { droite: `<span class="t-texte-meta secondaire">2 / 2</span>` })}
   <div class="defile">
     <h1 class="t-titre-l" style="margin:8px 0 8px">Par quoi tu commences ?</h1>
-    <p class="t-texte-petit secondaire" style="margin:0 0 20px">Trois au maximum, pour qu'elles restent faisables à pied.</p>
-    <div class="liste">${D.collections.map((c) => {
-      const on = ETAT.collectionsDepart.includes(c.id);
-      return `<button class="ligne" data-action="choisirDepart" data-id="${c.id}" style="min-height:72px">
-        <span class="coche${on ? " active" : ""}">${on ? icone("valider") : ""}</span>
-        <span style="flex:1"><span class="t-texte-label" style="display:block">${esc(c.nom)}</span>
-        <span class="t-texte-meta secondaire">${c.total} scraps · ${esc(c.zone)}</span></span></button>`;
-    }).join("")}</div>
+    <p class="t-texte-petit secondaire" style="margin:0 0 4px">Trois au maximum, pour qu'elles restent faisables à pied. Tu pourras en ouvrir d'autres plus tard.</p>
+    <div class="compteur-choix"><i style="width:${(n / 3) * 100}%"></i></div>
+    <p class="t-texte-meta secondaire" style="margin:16px 0 10px">Autour de Belleville</p>
+    <div class="grille-collections">${D.collections.filter((c) => proches.includes(c.id)).map(carte).join("")}</div>
+    <p class="t-texte-meta secondaire" style="margin:24px 0 10px">Tout le reste</p>
+    <div class="grille-collections">${D.collections.filter((c) => !proches.includes(c.id)).map((c, i) => carte(c, i + 3)).join("")}</div>
   </div>
-  ${pied(`<button class="bouton" data-aller="13"${n ? "" : " disabled"}>Commencer · ${pluriel(n, "collection")}</button>`)}`;
+  ${pied(`<button class="bouton" data-aller="13"${n ? "" : " disabled"}>Commencer · ${pluriel(n, "collection")}</button>`, { filet: true })}`;
 });
 
 /* ═════════ B. Carte et capture */
@@ -299,37 +324,77 @@ ecran("18", "B", "Carte vide", "", () => `
   </div>
   ${onglets(0)}`, (r) => carteMonter($("#carte", r), { marqueurs: false }));
 
+/* 19 — le scanner. Les contours de l'affiche sont suivis en direct ; dès que
+ * le cadre ne bouge plus, la photo part toute seule (voir js/camera.js). */
 ecran("19", "B", "Scanner", "sombre", () => `
   <video class="camera" id="video" playsinline autoplay muted></video>
-  <div class="viseur" id="viseur">${"<i></i>".repeat(4)}</div>
+  <svg class="cadre-scan" id="cadre-scan" viewBox="0 0 100 160" preserveAspectRatio="none" aria-hidden="true">
+    <path class="voile-scan" fill-rule="evenodd"></path>
+    <polygon vector-effect="non-scaling-stroke"></polygon>
+    ${'<circle class="coin-scan" r="2.4" opacity="0" vector-effect="non-scaling-stroke"></circle>'.repeat(4)}
+  </svg>
+  <i class="balayage-scan"></i>
   <header class="entete transparent" style="color:#fff;z-index:6"><div class="entete-ligne">
     <button class="icone-bouton" data-action="retour" aria-label="Fermer">${icone("fermer")}</button>
-    <span class="entete-titre t-texte-meta">Cadre l'affiche</span><span></span></div></header>
-  <p class="t-texte-petit centre" id="consigne" style="position:absolute;left:14%;right:14%;bottom:calc(19% + env(safe-area-inset-bottom));color:#9A9A96;margin:0;z-index:2">L'affiche entière dans le cadre, téléphone bien droit.</p>
+    <span class="entete-titre t-texte-meta">Vise une affiche</span>
+    <button class="puce puce--sombre${ETAT.reglages.scanAuto === false ? "" : " active"}" data-action="basculerAuto">Auto</button>
+  </div></header>
+  <div class="etat-scan" id="etat-scan-boite">
+    <span class="t-texte-meta" id="etat-scan">Cherche une affiche…</span>
+  </div>
+  <p class="t-texte-petit centre" id="consigne">Pas besoin d'appuyer : garde l'affiche dans le champ, la photo se prend toute seule.</p>
   <div class="scanner-bas" style="z-index:3">
     <label class="galerie" aria-label="Choisir une photo">${icone("image")}<input type="file" accept="image/*" class="cache" data-change="photoCapture"></label>
-    <button class="declencheur" data-action="capturer" aria-label="Capturer"></button>
+    <button class="declencheur" id="jauge-scan" data-action="capturer" aria-label="Capturer"></button>
     <span style="width:44px"></span>
   </div>`, (r) => cameraDemarrer($("#video", r)));
 
-ecran("19.1", "B", "Identifier le scrap", "grille", () => {
+/* 19.1 — on regarde ce qui a été scanné avant de l'identifier. */
+ecran("19.1", "B", "Vérifier le scan", "sombre", () => {
+  const p = ETAT.ctx.capture;
+  if (!p) return `${entete("Vérifier le scan")}<div class="defile"><p class="t-texte-corps secondaire">Aucune capture en cours.</p>${bouton("Capturer un scrap", { type: "capture", aller: "19" })}</div>`;
+  return `
+  <header class="entete transparent" style="color:#fff;z-index:6"><div class="entete-ligne">
+    <button class="icone-bouton" data-aller="19" aria-label="Reprendre">${icone("fermer")}</button>
+    <span class="entete-titre t-texte-meta">${p.scanne ? "Contours redressés" : "Photo importée"}</span><span></span>
+  </div></header>
+  <div class="verif-zone">
+    <div class="verif-scrap" id="verif-scrap">
+      <i class="verif-lueur couche" style="--p:18"></i>
+      <div class="verif-image couche" style="--p:5"><img src="${p.img}" alt="Scrap scanné"></div>
+    </div>
+    <div class="verif-infos">
+      <span class="t-texte-meta accent">Scrap N° ${pad3(p.num)}</span>
+      <span class="t-texte-meta" style="color:#9A9A96">${p.scanne ? "Détouré et remis droit" : "Importé de la galerie"} · ${rarete(p).nom.toLowerCase()}</span>
+    </div>
+  </div>
+  <div class="verif-question">
+    <span class="t-titre-m" style="color:#fff">Ce scan te plaît ?</span>
+    <p class="t-texte-petit" style="color:#9A9A96;margin:6px 0 0">S'il est flou ou de travers, reprends-le : l'affiche garde le même numéro.</p>
+  </div>
+  ${pied(`<div class="rang">
+    <button class="bouton bouton--secondaire bouton--sombre" data-action="reprendreScan">${icone("reprendre", 20)}Reprendre</button>
+    <button class="bouton bouton--capture" data-action="garderScan">${icone("valider", 20)}Garder</button></div>`, { transparent: true })}`;
+}, (r) => profondeur($("#verif-scrap", r), { amplitude: 1 }));
+
+ecran("19.2", "B", "Identifier le scrap", "grille", () => {
   const p = ETAT.ctx.capture;
   if (!p) return `${entete("Identifier le scrap")}<div class="defile"><p class="t-texte-corps secondaire">Aucune capture en cours.</p>${bouton("Capturer un scrap", { type: "capture", aller: "19" })}</div>`;
   const tags = ["Concert", "Club", "Expo", "Musique", "Marché", "Politique", "Street art", "Soirée", ...(p.tagsPerso || [])];
   return `
-  ${entete("Identifier le scrap", { retourVers: "19" })}
+  ${entete("Identifier le scrap", { retourVers: "19.1" })}
   <div class="defile">
     <div style="display:grid;grid-template-columns:120px 1fr;gap:16px;align-items:start">
-      <img src="${p.img}" alt="" style="width:120px;background:var(--fond-secondaire)">
+      <button data-aller="19.1" style="display:block"><img src="${p.img}" alt="" style="width:120px;background:var(--fond-secondaire)"></button>
       <div><span class="t-texte-meta accent">Scrap N° ${pad3(p.num)}</span>
-        <p class="t-texte-petit" style="margin:4px 0 0">Tu es le ${rangTxt(p.num)} à le capturer.</p>
+        <p class="t-texte-petit" style="margin:4px 0 0">Tu es le ${rangTxt(p.num)} à le capturer. ${esc(rarete(p).texte)}.</p>
         <p class="t-texte-petit secondaire" style="margin:8px 0 0">L'app ne reconnaît pas encore toute seule : nomme et classe ton scrap.</p></div>
     </div>
     <div style="height:24px"></div>
     ${champ("Titre", p.titre || "", { id: "titre-capture", placeholder: "Ex. Concert au Studio Belleville" })}
     ${champ("Lieu", p.lieu || "Rue de Belleville", { id: "lieu-capture" })}
     <p class="t-texte-meta secondaire" style="margin:4px 0 10px">Collection</p>
-    <div class="puces retour-ligne">${D.collections.map((c) => puce(`${c.nom} · ${progression(c.id).n}/${c.total}`, p.collection === c.id, ` data-action="captureCollection" data-id="${c.id}"`)).join("")}</div>
+    <div class="puces retour-ligne">${collectionsOrdonnees().map((c) => puce(`${c.nom} · ${progression(c.id).n}/${c.total}`, p.collection === c.id, ` data-action="captureCollection" data-id="${c.id}"`)).join("")}</div>
     <p class="t-texte-meta secondaire" style="margin:20px 0 10px">Tags</p>
     <div class="puces retour-ligne" id="tags">${tags.map((t) => puce(t, (p.themes || []).includes(t), ` data-action="captureTag" data-id="${esc(t)}"`)).join("")}
       <button class="puce" data-action="ajouterTag">+ Tag</button></div>
@@ -349,7 +414,10 @@ ecran("20", "B", "Capture échouée", "sombre", () => `
     <div class="pile">${bouton("Signaler l'affiche", { type: "secondaire", action: "signaler" })}${bouton("Réessayer", { aller: "19" })}</div>
   </div>`);
 
-/* Recto (21) et verso (22) : un seul écran, la carte se retourne */
+/* Recto (21) et verso (22) : un seul écran, la carte se retourne.
+ * Le décor derrière la carte suit l'inclinaison du téléphone (gyroscope), et
+ * l'effet est d'autant plus fort que le scrap est rare : être le 3e à capturer
+ * une affiche se voit, être le 300e beaucoup moins. */
 function rectoVerso(verso) {
   const id = ETAT.ctx.scrap && scrap(ETAT.ctx.scrap) ? ETAT.ctx.scrap : "alta";
   ETAT.ctx.scrap = id;
@@ -358,43 +426,84 @@ function rectoVerso(verso) {
   const p = col ? progression(s.collection) : null;
   const surMur = ETAT.mur.items.some((it) => it.id === id);
   const frais = ETAT.ctx.frais === id;
+  const r = rarete(s);
+  const lignes = [["Artiste", s.artiste || "—"], ["Lieu", `${s.lieu}, ${s.arr.replace("Paris ", "")}`],
+    ["Capturé le", `${s.date} · ${s.heure}`], ["Tags", (s.themes || []).join(" · ") || "—"],
+    ["État", s.holo ? "Holo" : "Normal"], ["Rareté", r.nom],
+    ["Collection", col ? `${col.nom} · ${p.n} / ${p.total}` : "Exclusif"]];
   return `
   ${entete("Scrap capturé", { droite: `<button class="icone-bouton" data-aller="39" aria-label="Partager">${icone("partager")}</button>` })}
-  <div class="defile">
-    <div class="retourne${verso ? " verso" : ""}" id="retourne" data-action="retourner">
-      <div class="retourne-int">
-        <img class="face scrap-img" src="${imgScrap(id)}" alt="${esc(s.titre)}" style="aspect-ratio:${s.ratio}">
-        <div class="face face--verso">
-          <div class="t-chiffre-capture accent">${pad3(s.num)}</div>
-          <span class="t-texte-meta secondaire">Ton numéro de scrap</span>
-          <div class="tableau" style="margin-top:16px;border-top:1px solid var(--trait-defaut)">
-            ${[["Artiste", s.artiste || "—"], ["Lieu", `${s.lieu}, ${s.arr.replace("Paris ", "")}`], ["Capturé le", `${s.date} · ${s.heure}`],
-              ["Tags", (s.themes || []).join(" · ") || "—"], ["État", s.holo ? "Holo" : "Normal"], ["Collection", col ? `${col.nom} · ${p.n} / ${p.total}` : "Exclusif"]]
-              .map(([k, v]) => `<div class="ligne"><span class="cle t-texte-meta secondaire">${k}</span><span class="t-texte-petit">${esc(v)}</span></div>`).join("")}
+  <div class="defile scrap-page rarete-${r.cle}">
+    <div class="scrap-scene" id="scene-scrap">
+      <i class="decor-halo couche" style="--p:26"></i>
+      <i class="decor-rayons couche" style="--p:38"></i>
+      <i class="decor-trame couche" style="--p:12"></i>
+      <div class="scrap-inclinaison">
+        <div class="retourne${verso ? " verso" : ""}" id="retourne" data-action="retourner">
+          <div class="retourne-int">
+            <img class="face scrap-img" src="${imgScrap(id)}" alt="${esc(s.titre)}" style="aspect-ratio:${s.ratio}">
+            <div class="face face--verso verso-carte">
+              <div class="verso-haut">${logo(15)}<span class="t-texte-meta secondaire">${esc(r.nom)}</span></div>
+              <div class="verso-numero">
+                <span class="t-chiffre-capture accent" id="num-verso">${pad3(s.num)}</span>
+                <span class="t-texte-meta secondaire">${rangTxt(s.num)} à l'avoir capturé</span>
+              </div>
+              <div class="tableau verso-tableau">
+                ${lignes.map(([k, v], i) => `<div class="ligne" style="--i:${i}"><span class="cle t-texte-meta secondaire">${k}</span><span class="t-texte-petit">${esc(v)}</span></div>`).join("")}
+              </div>
+              <div class="verso-bas">
+                <span class="t-texte-meta secondaire">${s.scans} captures<br>${pluriel(s.murs, "scrapbook")}</span>
+                <span class="verso-sticker" id="sticker-verso">${tampon("N° " + pad3(s.num), `${s.arr} · ${s.date}`, { plein: !col || complete(s.collection) })}</span>
+              </div>
+              <i class="verso-codebarre" aria-hidden="true"></i>
+            </div>
           </div>
-          <p class="t-texte-petit" style="margin:12px 0 0">Capturé par ${s.scans} personnes. Collé sur ${s.murs} scrapbooks.</p>
         </div>
       </div>
+      <span class="scrap-tampon couche" style="--p:20">${tampon("Scrap N° " + pad3(s.num), `${s.arr} · ${s.date}`, { grand: true, plein: !col || complete(s.collection), pose: frais })}</span>
     </div>
-    <div class="rangee" style="margin-top:14px;gap:8px">${etiquette("Scrap N° " + pad3(s.num), true)}<span class="t-texte-meta secondaire">${rangTxt(s.num)} à l'avoir capturé</span></div>
-    <div class="rangee entre" style="margin-top:10px;align-items:flex-start">
+
+    <div class="rangee" style="margin-top:20px;gap:8px;flex-wrap:wrap">
+      ${etiquette("Scrap N° " + pad3(s.num), true)}
+      <span class="etiquette etiquette--rarete">${esc(r.nom)}</span>
+      ${s.holo ? etiquette("Holo") : ""}
+    </div>
+    <div class="rangee entre" style="margin-top:10px;align-items:flex-start;gap:12px">
       <div style="min-width:0">
         <h1 class="t-titre-l" style="margin:0 0 4px">${esc(s.titre)}</h1>
-        <p class="t-texte-petit secondaire" style="margin:0 0 10px">${esc(s.lieu)}</p>
-        <div class="rangee" style="gap:8px">${s.holo ? etiquette("Holo") : ""}
-          <button class="bouton-lien t-texte-petit" data-action="favori">${s.favori ? "Retirer des favoris" : "Ajouter aux favoris"}</button></div>
+        <p class="t-texte-petit secondaire" style="margin:0">${esc(s.lieu)} · ${esc(r.texte.toLowerCase())}</p>
       </div>
-      ${tampon("Scrap N° " + pad3(s.num), `${s.arr} · ${s.date}`, { grand: true, plein: !col || complete(s.collection), pose: frais })}
+      <button class="coeur${s.favori ? " on" : ""}" data-action="favori" aria-pressed="${!!s.favori}" aria-label="${s.favori ? "Retirer des favoris" : "Ajouter aux favoris"}">
+        ${icone("coeur", 24)}<span class="t-texte-meta">Favori</span></button>
     </div>
-    <p class="t-texte-meta secondaire centre" style="margin:20px 0 0">Touche ou glisse la carte pour la retourner</p>
+    <div class="rangee entre" style="margin-top:18px">
+      <span class="t-texte-meta secondaire">Touche la carte pour la retourner</span>${boutonGyro()}
+    </div>
     <div class="centre">${lien("Voir l'événement", { aller: "23", centre: true })}</div>
   </div>
   ${pied(surMur ? bouton("Voir sur mon scrapbook", { aller: "24" }) : bouton("Coller sur mon scrapbook", { action: "coller" }))}`;
 }
 const monterRecto = (r) => {
   ETAT.ctx.frais = null;
-  return glisser($("#retourne", r), () => ACTIONS.retourner(), () => ACTIONS.retourner());
+  const s = scrap(ETAT.ctx.scrap);
+  const n1 = glisser($("#retourne", r), () => ACTIONS.retourner(), () => ACTIONS.retourner());
+  const n2 = profondeur($("#scene-scrap", r), { amplitude: s && rarete(s).cle === "commune" ? 0.6 : 1.15 });
+  if ($("#retourne", r) && $("#retourne", r).classList.contains("verso")) setTimeout(animerVerso, 120);
+  return () => { n1 && n1(); n2 && n2(); };
 };
+/* Le verso s'anime à chaque fois qu'on le découvre : le numéro défile en
+ * chiffres au hasard avant de se poser, puis le petit tampon se pose dessus. */
+function animerVerso() {
+  const el = $("#num-verso");
+  if (!el) return;
+  const s = scrap(ETAT.ctx.scrap);
+  el.classList.remove("pose");
+  compteurAnime(el, s ? s.num : 0, { duree: 1000 });
+  const st = $("#sticker-verso");
+  if (st) { st.classList.remove("pose"); void st.offsetWidth; st.classList.add("pose"); }
+  const t = $(".verso-tableau");
+  if (t) { t.classList.remove("entre-en-scene"); void t.offsetWidth; t.classList.add("entre-en-scene"); }
+}
 ecran("21", "B", "Scrap capturé — recto", "grille", () => rectoVerso(false), monterRecto);
 ecran("22", "B", "Scrap capturé — verso", "grille", () => rectoVerso(true), monterRecto);
 
@@ -418,36 +527,70 @@ ecran("23", "B", "Détail de l'événement", "grille", () => {
   ${pied(bouton("Voir l'événement", { action: "billetterie" }) + bouton("Itinéraire", { type: "secondaire", action: "itineraireLieu" }))}`;
 });
 
-/* ═════════ C. Scrapbook (24 à 27 : même écran, outil différent) */
-const OUTILS = [["24", "Déplacer"], ["26", "Scotch"], ["27", "Déchirer"], ["25", "Fond"]];
-function scrapbook(outil) {
+/* ═════════ C. Scrapbook (24 à 27 : même page, outil différent)
+ * 24 a deux modes : Vue (on promène et on zoome, rien ne bouge) et
+ * Disposition (on range : déplacer, agrandir, tourner). */
+const FONDS = [["papier", "Papier"], ["grille", "Quadrillé"], ["millimetre", "Millimétré"], ["kraft", "Kraft"],
+  ["beton", "Béton"], ["liege", "Liège"], ["journal", "Journal"], ["noir", "Noir"]];
+const SCOTCHS = [["transparent", "Transparent"], ["kraft", "Kraft"], ["papier", "Papier"], ["noir", "Noir"]];
+const modeMur = () => (ETAT.ctx.murMode === "deplacer" ? "deplacer" : "regarder");
+
+const commandesZoom = () => `<div class="mur-commandes">
+  <button data-zoom="plus" aria-label="Zoomer">${icone("plus", 20)}</button>
+  <button data-zoom="moins" aria-label="Dézoomer">${icone("zoomMoins", 20)}</button>
+  <button data-zoom="ensemble" aria-label="Vue d'ensemble">${icone("vue", 20)}</button>
+  <span class="t-texte-meta secondaire" id="zoom-valeur">100 %</span>
+</div>`;
+
+function scrapbook(ecranId) {
   const m = ETAT.mur;
+  const mode = modeMur();
+  const remplissage = Math.round(remplissageMur() * 100);
+  const outils = `
+    <div class="outils">
+      ${puce("Vue", ecranId === "24" && mode === "regarder", ' data-action="modeMur" data-id="regarder"')}
+      ${puce("Disposition", ecranId === "24" && mode === "deplacer", ' data-action="modeMur" data-id="deplacer"')}
+      ${puce("Scotch", ecranId === "26", ' data-aller="26" data-remplace="1"')}
+      ${puce("Déchirer", ecranId === "27", ' data-aller="27" data-remplace="1"')}
+      ${puce("Fond", ecranId === "25", ' data-aller="25" data-remplace="1"')}
+    </div>`;
+
   const panneaux = {
-    "24": `<div class="outils">${OUTILS.map(([id, nom]) => puce(nom, id === "24", ` data-aller="${id}" data-remplace="1"`)).join("")}</div>${onglets(1)}`,
+    "24": `${mode === "deplacer" ? '<div class="panneau-item vide" id="panneau-item"></div>' : `<p class="astuce t-texte-petit secondaire">Pince pour zoomer, glisse pour te promener, touche un scrap pour l'ouvrir.</p>`}
+      ${outils}${onglets(1)}`,
     "25": `<div class="pied filet">
-        <div class="rangee entre"><span class="t-titre-m">Fond</span>${lien("OK", { aller: "24" })}</div>
-        <div class="nuancier" style="margin-top:12px">${[["papier", "Papier"], ["grille", "Quadrillé"], ["beton", "Béton"], ["liege", "Liège"], ["noir", "Noir"]]
-          .map(([k, nom]) => `<button class="${m.fond === k ? "choisi" : ""}" data-action="choisirFond" data-id="${k}"><span class="apercu fond-${k}" style="display:block;background-size:12px 12px"></span><span class="t-texte-meta${m.fond === k ? "" : " secondaire"}" style="display:block;margin-top:8px">${nom}</span></button>`).join("")}</div>
-        <p class="t-texte-petit secondaire" style="margin:8px 0 0">Le fond ne change que ton scrapbook. Les scraps, eux, restent intacts.</p></div>`,
+        <div class="rangee entre"><span class="t-titre-m">Fond</span>${lien("OK", { action: "fermerOutil" })}</div>
+        <div class="nuancier" style="margin-top:12px">${FONDS.map(([k, nom]) =>
+          `<button class="${m.fond === k ? "choisi" : ""}" data-action="choisirFond" data-id="${k}"><span class="apercu fond-${k}"></span><span class="t-texte-meta${m.fond === k ? "" : " secondaire"}">${nom}</span></button>`).join("")}</div>
+        <p class="t-texte-petit secondaire" style="margin:10px 0 0">Le fond ne change que ton scrapbook. Les scraps, eux, restent intacts.</p>
+        ${outils}</div>`,
     "26": `<div class="pied filet">
-        <div class="rangee entre"><span class="t-titre-m">Scotch</span>${lien("OK", { aller: "24" })}</div>
-        <div class="rouleaux" style="margin-top:12px">${[["transparent", "Transparent"], ["kraft", "Kraft"], ["papier", "Papier"], ["noir", "Noir"]]
-          .map(([k, nom]) => `<button class="${(m.scotchType || "kraft") === k ? "choisi" : ""}" data-action="choisirScotch" data-id="${k}"><span class="apercu"><i class="scotch ${k}"></i></span><span class="t-texte-meta${(m.scotchType || "kraft") === k ? "" : " secondaire"}" style="display:block;margin-top:8px">${nom}</span></button>`).join("")}</div>
-        <p class="t-texte-petit secondaire" style="margin:8px 0 0">Touche un coin d'un scrap pour y poser un bout de scotch. Deux bouts au maximum par scrap ; touche un bout pour l'enlever.</p></div>`,
+        <div class="rangee entre"><span class="t-titre-m">Scotch</span>${lien("OK", { action: "fermerOutil" })}</div>
+        <div class="rouleaux" style="margin-top:12px">${SCOTCHS.map(([k, nom]) =>
+          `<button class="${(m.scotchType || "kraft") === k ? "choisi" : ""}" data-action="choisirScotch" data-id="${k}"><span class="apercu"><i class="scotch ${k}"></i></span><span class="t-texte-meta${(m.scotchType || "kraft") === k ? "" : " secondaire"}" style="display:block;margin-top:8px">${nom}</span></button>`).join("")}</div>
+        <p class="t-texte-petit secondaire" style="margin:8px 0 0">Touche un coin d'un scrap pour y poser un bout de scotch. Deux bouts au maximum ; touche un bout pour l'enlever.</p>
+        ${outils}</div>`,
     "27": `<div class="pied filet">
-        <div class="rangee entre"><span class="t-titre-m">Déchirer</span>${lien("OK", { aller: "24" })}</div>
+        <div class="rangee entre"><span class="t-titre-m">Déchirer</span>${lien("OK", { action: "fermerOutil" })}</div>
         <p class="t-texte-petit secondaire" style="margin:8px 0 12px">Glisse ton doigt à travers un scrap pour le déchirer. Le morceau arraché reste dans ta collection : tu ne perds jamais un scrap.</p>
-        <div class="deux-col">${bouton("Annuler", { type: "secondaire", action: "annulerDechirure" })}${bouton("Recoller tout", { type: "secondaire", action: "recollerTout" })}</div></div>`,
+        <div class="deux-col">${bouton("Annuler", { type: "secondaire", action: "annulerDechirure" })}${bouton("Recoller tout", { type: "secondaire", action: "recollerTout" })}</div>
+        ${outils}</div>`,
   };
+
   return `
   <header class="entete"><div class="entete-ligne">
-    <div class="entete-gauche"><span class="t-titre-m">Mon scrapbook</span><span class="t-texte-meta secondaire">${esc(ETAT.utilisateur.quartier)} · ${pluriel(m.items.length, "scrap")}</span></div>
-    ${outil === "24" ? lien("Valider", { action: "validerMur" }) : `<span class="t-texte-meta secondaire">${OUTILS.find((o) => o[0] === outil)[1]}</span>`}
+    <div class="entete-gauche"><span class="t-titre-m">Mon scrapbook</span>
+      <span class="t-texte-meta secondaire">${esc(ETAT.utilisateur.quartier)} · ${pluriel(m.items.length, "scrap")} · page remplie à ${remplissage} %</span></div>
+    ${ecranId === "24" && mode === "deplacer" ? lien("Valider", { action: "validerMur" }) : `<span class="t-texte-meta secondaire">${ecranId === "24" ? "Vue" : { 25: "Fond", 26: "Scotch", 27: "Déchirer" }[ecranId]}</span>`}
   </div></header>
-  <div class="mur-zone fond-${m.fond}" id="mur"><div class="mur-plan" id="plan" style="height:${m.hauteur}px"></div></div>
-  ${panneaux[outil]}`;
+  <div class="mur-zone fond-${m.fond} mode-${ecranId === "24" ? mode : ecranId}" id="mur">
+    <div class="mur-plan" id="plan"></div>
+    ${commandesZoom()}
+    <div class="note-ensemble"><span class="t-texte-meta">Page remplie à ${remplissage} %</span><span class="t-texte-meta secondaire">Il reste de la place : continue à sortir.</span></div>
+  </div>
+  ${panneaux[ecranId]}`;
 }
-ecran("24", "C", "Mon scrapbook", "", () => scrapbook("24"), (r) => murMonter(r, "deplacer"));
+ecran("24", "C", "Mon scrapbook", "", () => scrapbook("24"), (r) => murMonter(r, modeMur()));
 ecran("25", "C", "Personnaliser — fond", "", () => scrapbook("25"), (r) => murMonter(r, "aucun"));
 ecran("26", "C", "Personnaliser — scotch", "", () => scrapbook("26"), (r) => murMonter(r, "scotch"));
 ecran("27", "C", "Personnaliser — déchirer", "", () => scrapbook("27"), (r) => murMonter(r, "dechirer"));
@@ -472,15 +615,44 @@ function scrapsTries() {
 }
 const quartiers = () => new Set(idsScraps().map((id) => scrap(id).arr)).size;
 
+/* Dispositions de la collection : on range ses scraps comme on veut. */
+const DISPOS = [["mosaique", "grille4", "Mosaïque"], ["dense", "grille9", "Serré"], ["liste", "liste", "Liste"], ["plein", "empile", "En grand"]];
+const dispoCourante = () => ETAT.ctx.dispoColl || "mosaique";
+const choixDispo = () => `<div class="dispos">${DISPOS.map(([id, ic, nom]) =>
+  `<button class="dispo${dispoCourante() === id ? " active" : ""}" data-action="choisirDispo" data-id="${id}" aria-label="${nom}" title="${nom}">${icone(ic, 20)}</button>`).join("")}</div>`;
+
+function murScraps(ids, o = {}) {
+  const dispo = dispoCourante();
+  if (!ids.length) return `<p class="t-texte-corps secondaire centre" style="margin-top:40px">Aucun scrap ici pour l'instant.</p>`;
+  if (dispo === "liste") {
+    return `<div class="liste">${ids.map((id) => {
+      const s = scrap(id), r = rarete(s);
+      const sel = o.selection ? o.selection.indexOf(id) : -1;
+      return `<button class="ligne ligne-scrap${sel >= 0 ? " choisie" : ""}" data-action="${o.action || "ouvrirScrap"}" data-id="${id}">
+        <img src="${imgScrap(id)}" alt="" style="width:44px;height:58px;object-fit:contain;background:var(--fond-secondaire)">
+        <span style="flex:1;min-width:0"><span class="t-texte-label" style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.titre)}</span>
+          <span class="t-texte-meta secondaire">N° ${pad3(s.num)} · ${esc(s.lieu)}</span></span>
+        ${s.favori ? `<span class="coeur-mini on">${icone("coeur", 16)}</span>` : ""}
+        <span class="etiquette etiquette--rarete etiquette--mini">${esc(r.nom)}</span></button>`;
+    }).join("")}</div>`;
+  }
+  return `<div class="grille-scraps dispo-${dispo}">${ids.map((id) => carteScrap(id, o.carte ? o.carte(id) : {})).join("")}</div>`;
+}
+
 ecran("28", "D", "Ma collection", "grille", () => {
   const ids = scrapsTries();
   const enCours = D.collections.filter((c) => !complete(c.id)).length;
   return `
   ${grandTitre("Ma collection", `${pluriel(totalScraps(), "scrap")} · ${pluriel(quartiers(), "quartier")}`, lien("Sélectionner", { aller: "29" }))}
   <div class="defile">
-    <div class="puces">${FILTRES_COLL.map(([id, nom]) => puce(nom, (ETAT.ctx.filtreColl || "derniers") === id, ` data-action="filtreColl" data-id="${id}"`)).join("")}</div>
-    <div style="margin:12px 0 20px">${ligne("Mes collections", { aller: "30", valeur: `${enCours} en cours` })}</div>
-    ${ids.length ? `<div class="grille-scraps">${ids.map((id) => carteScrap(id)).join("")}</div>` : `<p class="t-texte-corps secondaire centre" style="margin-top:40px">Aucun scrap ici pour l'instant.</p>`}
+    <div class="rangee entre" style="gap:12px;align-items:center">
+      <div class="puces" style="flex:1">${FILTRES_COLL.map(([id, nom]) => puce(nom, (ETAT.ctx.filtreColl || "derniers") === id, ` data-action="filtreColl" data-id="${id}"`)).join("")}</div>
+    </div>
+    <div class="rangee entre" style="margin:12px 0 4px">
+      <span class="t-texte-meta secondaire">${pluriel(ids.length, "scrap")} affiché${ids.length > 1 ? "s" : ""}</span>${choixDispo()}
+    </div>
+    <div style="margin:8px 0 20px">${ligne("Mes collections", { aller: "30", valeur: `${enCours} en cours` })}</div>
+    ${murScraps(ids)}
   </div>
   ${onglets(2)}`;
 });
@@ -491,8 +663,12 @@ ecran("29", "D", "Sélection", "grille", () => {
   return `
   ${grandTitre("Sélection", sel.length ? `${pluriel(sel.length, "sélectionné")} · le dernier : N° ${pad3(scrap(der).num)}` : "Touche les scraps à mettre en avant", lien("Annuler", { action: "annulerSelection" }))}
   <div class="defile">
-    <div class="puces" style="margin-bottom:20px">${FILTRES_COLL.map(([id, nom]) => puce(nom, (ETAT.ctx.filtreColl || "derniers") === id, ` data-action="filtreColl" data-id="${id}"`)).join("")}</div>
-    <div class="grille-scraps">${scrapsTries().map((id) => { const i = sel.indexOf(id); return carteScrap(id, { action: "choisirSel", coche: i >= 0 ? String(i + 1).padStart(2, "0") : "", choisie: i >= 0 }); }).join("")}</div>
+    <div class="puces" style="margin-bottom:12px">${FILTRES_COLL.map(([id, nom]) => puce(nom, (ETAT.ctx.filtreColl || "derniers") === id, ` data-action="filtreColl" data-id="${id}"`)).join("")}</div>
+    <div class="rangee entre" style="margin-bottom:16px"><span class="t-texte-meta secondaire">Disposition</span>${choixDispo()}</div>
+    ${murScraps(scrapsTries(), {
+      action: "choisirSel", selection: sel,
+      carte: (id) => { const i = sel.indexOf(id); return { action: "choisirSel", coche: i >= 0 ? String(i + 1).padStart(2, "0") : "", choisie: i >= 0 }; },
+    })}
   </div>
   ${pied(`<button class="bouton" data-action="ajouterVitrine"${sel.length ? "" : " disabled"}>Ajouter le dernier au profil</button>`, { filet: true })}
   ${onglets(2)}`;
@@ -547,7 +723,7 @@ ecran("31", "D", "Fiche d'une collection", "grille", () => {
       ${Array.from({ length: manque }, () => `<button class="vide-case" style="height:116px" data-action="chercherCollection" data-id="${cid}">${icone("plus")}</button>`).join("")}
     </div>
     <p class="t-texte-meta secondaire" style="margin:28px 0 12px">À la clé</p>
-    <div class="rangee" style="align-items:flex-start"><span class="badge${complete(cid) ? " choisi" : ""}">${icone(c.icone)}</span>
+    <div class="rangee" style="align-items:flex-start">${badgeHtml(D.badges.find((b) => b.collection === cid) || { id: cid, icone: c.icone }, { ok: complete(cid), choisi: complete(cid) })}
       <span class="t-texte-petit secondaire" style="flex:1">${esc(c.recompense)}, réservé à ceux qui finissent la collection.</span></div>
   </div>
   ${manque ? pied(bouton("Voir le dernier sur la carte", { action: "chercherCollection", data: ` data-id="${cid}"` })) : ""}`;
@@ -573,13 +749,21 @@ ecran("32", "D", "Collection complète — scrap exclusif", "grille", () => {
   <div class="defile">
     <span class="t-texte-meta secondaire">Collection complète</span>
     <h1 class="t-titre-xl" style="margin:8px 0 24px">${esc(c.nom)}</h1>
-    <div style="position:relative;width:56%;margin:0 auto"><img src="${svgExclusif(cid)}" alt="Scrap exclusif" style="width:100%"><i class="scotch noir" style="left:-18px;top:2px;transform:rotate(-38deg)"></i><i class="scotch noir" style="right:-18px;top:2px;transform:rotate(38deg)"></i></div>
+    <div class="scene-exclusif" id="scene-exclusif">
+      <i class="decor-halo couche" style="--p:30"></i>
+      <i class="decor-rayons couche" style="--p:44"></i>
+      <div class="exclusif-carte couche" style="--p:6"><img src="${svgExclusif(cid)}" alt="Scrap exclusif" style="width:100%"><i class="scotch noir" style="left:-18px;top:2px;transform:rotate(-38deg)"></i><i class="scotch noir" style="right:-18px;top:2px;transform:rotate(38deg)"></i></div>
+    </div>
     <div class="rangee entre" style="margin-top:24px;align-items:flex-start">
       <div>${etiquette("Scrap exclusif")}<p class="t-texte-petit secondaire" style="margin:10px 0 0;max-width:180px">Réservé aux 64 personnes qui ont fini la collection.</p></div>
       ${tampon(`Complète · ${c.total} / ${c.total}`, `${aujourdhui().date} · Paris`, { grand: true, plein: true, pose: true })}
     </div>
   </div>
   ${pied(bouton("Coller sur mon scrapbook", { action: "collerExclusif" }) + lien("Voir mon badge", { aller: "33", centre: true }))}`;
+}, (r) => {
+  const c = collection(ETAT.ctx.collection || "concerts");
+  revelation(["COLLECTION", "COMPLÈTE"], { sous: c ? c.nom.toUpperCase() : "", duree: 1700 });
+  return profondeur($("#scene-exclusif", r), { amplitude: 1.2 });
 });
 
 ecran("33", "D", "Badge débloqué", "grille", () => {
@@ -588,14 +772,21 @@ ecran("33", "D", "Badge débloqué", "grille", () => {
   const c = collection(cid);
   return `
   ${entete("", { fermer: true })}
-  <div class="defile centre" style="padding-top:48px">
-    <span class="badge grand choisi" style="margin:0 auto">${icone(b.icone, 48)}</span>
+  <div class="defile centre badge-page" id="scene-badge" style="padding-top:40px">
+    <i class="decor-halo couche" style="--p:28"></i>
+    <i class="decor-rayons couche" style="--p:40"></i>
+    <div class="badge-vitrine couche" style="--p:8" id="badge-pose">${badgeHtml(b, { ok: true, choisi: true, taille: 136, pose: true })}</div>
     <p class="t-texte-meta secondaire" style="margin:28px 0 8px">Badge débloqué</p>
     <h1 class="t-titre-l" style="margin:0">${esc(b.nom)}</h1>
     <p class="t-texte-corps secondaire" style="margin:12px 0 28px">Tu as capturé les ${c.total} scraps de la collection ${esc(c.nom)}.</p>
     ${tampon("Badge · " + b.nom, `${c.zone} · ${aujourdhui().date}`, { grand: true, plein: true, pose: true })}
   </div>
   ${pied(bouton("Afficher sur mon profil", { action: "choisirBadge", data: ` data-id="${b.id}"` }) + lien("Plus tard", { aller: "24", centre: true }))}`;
+}, (r) => {
+  const b = D.badges.find((x) => x.collection === (ETAT.ctx.collection || "concerts")) || D.badges[3];
+  revelation(["BADGE", "DÉBLOQUÉ"], { sous: b.nom.toUpperCase(), sombre: true, duree: 1600 });
+  setTimeout(() => eclat($("#badge-pose", r), { n: 14 }), 1750);
+  return profondeur($("#scene-badge", r), { amplitude: 1.1 });
 });
 
 /* ═════════ E. Profil et partage */
@@ -625,29 +816,44 @@ ecran("35", "E", "Profil vu par les autres", "grille", () => {
   const nom = autre ? autre.pseudo.replace("@", "") : u.nom;
   const badgesOk = D.badges.filter(badgeDebloque).slice(0, 4);
   const choisi = D.badges.find((b) => b.id === u.badge);
+  const fond = ETAT.mur.fond || "papier";
+  const rep = repartitionRarete();
   return `
   ${entete("Profil", { droite: `<button class="icone-bouton" data-aller="39" aria-label="Partager">${icone("partager")}</button>` })}
-  <div class="defile">
-    <div class="rangee" style="align-items:flex-start;gap:16px">
-      ${avatar(88, autre ? autre.initiales : u.initiales, autre ? null : u.avatar)}
-      <div><h1 class="t-titre-l" style="margin:4px 0 6px">${esc(nom)}</h1>
-        <span class="t-texte-meta secondaire">${esc(autre ? autre.quartier : u.quartier)} · rang ${autre ? 30 : u.rang}</span>
-        ${!autre && choisi ? `<div style="margin-top:8px">${etiquette(choisi.nom)}</div>` : ""}
-        ${autre ? "" : `<div style="margin-top:8px">${lien("24 abonnés · 31 abonnements", { aller: "38" })}</div>`}</div>
+  <div class="defile plein">
+    <div class="profil-banniere fond-${fond}">
+      <div class="banniere-affiches">${(autre ? idsScraps().slice(0, 6) : idsScraps().slice(0, 8)).map((id, i) =>
+        `<img src="${imgScrap(id)}" alt="" style="--i:${i}">`).join("")}</div>
+      ${autre ? "" : `<button class="banniere-fond" data-aller="25" aria-label="Changer le fond">${icone("fond", 18)}</button>`}
     </div>
-    ${!autre && u.bio ? `<p class="t-texte-corps" style="margin:16px 0 0">${esc(u.bio)}</p>` : ""}
-    <div class="compteurs" style="margin-top:20px">
+    <div class="profil-tete">
+      <div class="profil-avatar">${avatar(96, autre ? autre.initiales : u.initiales, autre ? null : u.avatar)}</div>
+      ${!autre && choisi ? `<span class="profil-badge">${badgeHtml(choisi, { ok: true, choisi: true, taille: 44 })}</span>` : ""}
+    </div>
+    <div style="padding:0 var(--marge)">
+      <h1 class="t-titre-xl" style="margin:12px 0 4px">${esc(nom)}</h1>
+      <p class="t-texte-meta secondaire" style="margin:0">${esc(titreCollectionneur(autre))} · ${esc(autre ? autre.quartier : u.quartier)} · rang ${autre ? 30 : u.rang}</p>
+      ${!autre && u.bio ? `<p class="t-texte-corps" style="margin:14px 0 0">${esc(u.bio)}</p>` : ""}
+      ${autre ? "" : `<div style="margin-top:10px">${lien("24 abonnés · 31 abonnements", { aller: "38" })}</div>`}
+    </div>
+    <div class="compteurs" style="margin:20px 0 0">
       ${[[autre ? autre.scraps : totalScraps(), "Scraps"], [autre ? 3 : quartiers(), "Quartiers"], [autre ? 2 : D.badges.filter(badgeDebloque).length, "Badges"]]
         .map(([v, l]) => `<div><div class="t-titre-l">${v}</div><span class="t-texte-meta secondaire">${l}</span></div>`).join("")}
     </div>
-    <div class="deux-col" style="margin-top:20px">
-      <div><p class="t-texte-meta secondaire" style="margin:0 0 8px">Scrap mis en avant</p>
-        <button data-action="ouvrirScrap" data-id="${ETAT.miseEnAvant}"><img src="${imgScrap(ETAT.miseEnAvant)}" alt="" style="width:100%"></button></div>
-      <div><p class="t-texte-meta secondaire" style="margin:0 0 8px">Vitrine</p>
-        <button class="vitrine fond-papier" id="vitrine" ${autre ? "" : 'data-aller="34"'} style="display:block"><div class="vitrine-plan" id="vplan"></div></button></div>
+    <div style="padding:20px var(--marge) 24px">
+      <p class="t-texte-meta secondaire" style="margin:0 0 10px">Ce qu'il y a dans sa collection</p>
+      <div class="barres-rarete">${rep.map((x) => `<span class="barre-rarete rarete-${x.cle}" style="--part:${x.part}">
+        <i></i><span class="t-texte-meta">${esc(x.nom)}</span><span class="t-texte-meta secondaire">${x.n}</span></span>`).join("")}</div>
+
+      <div class="deux-col" style="margin-top:24px">
+        <div><p class="t-texte-meta secondaire" style="margin:0 0 8px">Scrap mis en avant</p>
+          <button data-action="ouvrirScrap" data-id="${ETAT.miseEnAvant}"><img src="${imgScrap(ETAT.miseEnAvant)}" alt="" style="width:100%"></button></div>
+        <div><p class="t-texte-meta secondaire" style="margin:0 0 8px">Vitrine</p>
+          <button class="vitrine fond-${fond}" id="vitrine" ${autre ? "" : 'data-aller="34"'} style="display:block"><div class="vitrine-plan" id="vplan"></div></button></div>
+      </div>
+      <p class="t-texte-meta secondaire" style="margin:24px 0 8px">Badges</p>
+      <div class="quatre-col">${badgesOk.map((b) => `<button ${autre ? "" : 'data-aller="36"'} style="text-align:left">${badgeHtml(b, { ok: true, choisi: b.id === u.badge })}<span class="t-texte-meta" style="display:block;margin-top:8px">${esc(b.nom)}</span></button>`).join("")}</div>
     </div>
-    <p class="t-texte-meta secondaire" style="margin:24px 0 8px">Badges</p>
-    <div class="quatre-col">${badgesOk.map((b) => `<button ${autre ? "" : 'data-aller="36"'} style="text-align:left"><span class="badge${b.id === u.badge ? " choisi" : ""}">${icone(b.icone)}</span><span class="t-texte-meta" style="display:block;margin-top:8px">${esc(b.nom)}</span></button>`).join("")}</div>
   </div>
   ${pied(autre
     ? `<div class="rang">${bouton(autre.suivi ? "Suivi" : "Suivre", { type: autre.suivi ? "secondaire" : "", action: "suivre", data: ` data-id="${ETAT.ctx.personne}"` })}${bouton("Partager", { type: "secondaire", aller: "39" })}</div>`
@@ -667,13 +873,13 @@ ecran("36", "E", "Choisir un badge", "grille", () => {
       const ok = badgeDebloque(b);
       const prog = b.collection ? `${progression(b.collection).n} / ${progression(b.collection).total}` : b.objectif ? `${totalScraps()} / ${b.objectif}` : "";
       return `<button class="cell" ${ok ? `data-action="choisirBadgeLocal" data-id="${b.id}"` : 'data-action="badgeVerrouille"'}>
-        <span class="badge${ok ? "" : " verrou"}${b.id === choix ? " choisi" : ""}">${icone(b.icone)}</span>
+        ${badgeHtml(b, { ok, choisi: b.id === choix })}
         <span class="t-texte-meta${ok ? "" : " secondaire"}">${esc(b.nom)}</span>${ok ? "" : `<span class="t-texte-meta secondaire" style="margin-top:2px">${prog}</span>`}</button>`;
     }).join("")}</div>
     <p class="t-texte-meta secondaire" style="margin:28px 0 8px">Aperçu sur mon profil</p>
     <div class="rangee fond-blanc" style="padding:16px;box-shadow:inset 0 0 0 1px var(--trait-defaut)">
       ${avatar(64, u.initiales, u.avatar)}<div style="flex:1"><span class="t-titre-l" style="display:block">${esc(u.nom)}</span><span class="t-texte-meta secondaire">${esc(u.quartier)} · rang ${u.rang}</span></div>
-      <span class="badge choisi" style="width:40px;height:40px">${icone(D.badges.find((b) => b.id === choix).icone)}</span></div>
+      ${badgeHtml(D.badges.find((b) => b.id === choix) || D.badges[0], { ok: true, choisi: true, taille: 44 })}</div>
   </div>
   ${pied(bouton("Enregistrer", { action: "enregistrerBadge" }))}`;
 });

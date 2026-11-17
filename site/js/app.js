@@ -22,6 +22,7 @@ function rendre(id, o = {}) {
   const defil = o.garderDefilement && ancien ? ancien.scrollTop : 0;
   if (nettoyer) { try { nettoyer(); } catch (err) { /* rien */ } nettoyer = null; }
   if (id !== "19") cameraArreter();
+  $$(".revelation").forEach((x) => x.remove());   // pas de révélation qui traîne d'un écran à l'autre
   const s = document.createElement("section");
   s.className = `ecran ${e.classe || ""}${o.garderDefilement ? " sans-anim" : ""}`;
   s.dataset.ecran = id;
@@ -112,6 +113,27 @@ const ACTIONS = {
   filtreCarte(el) { ETAT.filtres[el.dataset.cle] = el.dataset.val; sauver(); rafraichir(); },
   reinitFiltres() { ETAT.filtres = { rayon: 500, collection: "toutes", etat: "tous" }; ETAT.reglages.rayon = 500; ETAT.reglages.manquants = true; sauver(); rafraichir(); },
   capturer() { cameraCapturer(); },
+  passerLancement() { aller("02", { remplace: true }); },
+  basculerAuto(el) {
+    ETAT.reglages.scanAuto = ETAT.reglages.scanAuto === false;
+    el.classList.toggle("active", ETAT.reglages.scanAuto !== false);
+    sauver();
+    toast(ETAT.reglages.scanAuto !== false ? "Capture automatique" : "Capture au bouton");
+  },
+  garderScan() { aller("19.2"); },
+  reprendreScan() { ETAT.ctx.capture = null; aller("19", { remplace: true }); },
+  activerGyro(el) {
+    const demande = el && el.isConnected;   // vrai seulement si la personne a touché le bouton
+    demanderGyro().then((ok) => {
+      const scene = $("[data-gyro]");
+      if (ok && scene && scene._brancherGyro) {
+        scene._brancherGyro();
+        scene.classList.remove("attend-gyro");
+        $$("[data-action='activerGyro']").forEach((b) => b.remove());
+        if (demande) toast("Penche ton téléphone");
+      } else if (demande) toast("Ton téléphone n'a pas autorisé le capteur.");
+    });
+  },
   captureCollection(el) {
     ETAT.ctx.capture.collection = el.dataset.id;
     $$("[data-action='captureCollection']").forEach((b) => b.classList.toggle("active", b === el));
@@ -128,14 +150,29 @@ const ACTIONS = {
   retourner() {
     const r = $("#retourne"); if (!r) return;
     r.classList.toggle("verso");
-    courant = r.classList.contains("verso") ? "22" : "21";
+    const verso = r.classList.contains("verso");
+    courant = verso ? "22" : "21";
     history.replaceState(null, "", "#/" + courant);
     pile[pile.length - 1] = courant;
+    vibrer(8);
+    if (verso) setTimeout(animerVerso, 280);
+    // premier retournement : c'est le geste qu'il faut pour demander le capteur
+    if (gyroDemandeNecessaire()) ACTIONS.activerGyro($("[data-action='activerGyro']") || document.createElement("button"));
   },
-  favori() { const s = scrap(ETAT.ctx.scrap); s.favori = !s.favori; sauver(); rafraichir(); },
+  favori(el) {
+    const s = scrap(ETAT.ctx.scrap);
+    s.favori = !s.favori;
+    sauver();
+    const b = el.closest(".coeur") || el;
+    b.classList.toggle("on", s.favori);
+    b.setAttribute("aria-pressed", String(!!s.favori));
+    if (s.favori) { b.classList.remove("bat"); void b.offsetWidth; b.classList.add("bat"); eclat(b, { n: 8 }); vibrer([8, 30, 14]); }
+    else vibrer(6);
+  },
   coller() {
     const id = ETAT.ctx.scrap, s = scrap(id);
     collerSurMur(id);
+    ETAT.ctx.murMode = "deplacer";
     if (s.collection && collection(s.collection) && complete(s.collection) && !ETAT.celebrees.includes(s.collection)) {
       ETAT.celebrees.push(s.collection);
       ETAT.ctx.collection = s.collection;
@@ -145,9 +182,32 @@ const ACTIONS = {
   },
   billetterie() { toast("Ouverture de la billetterie (démo)"); },
   itineraireLieu() { ETAT.ctx.cible = "lieu"; aller("17"); },
-  validerMur() { ETAT.ctx.murSel = null; sauver(); rafraichir(); toast("Scrapbook enregistré"); },
-  choisirFond(el) { ETAT.mur.fond = el.dataset.id; sauver(); rafraichir(); },
-  choisirScotch(el) { ETAT.mur.scotchType = el.dataset.id; sauver(); rafraichir(); },
+  validerMur() { ETAT.ctx.murSel = null; ETAT.ctx.murMode = "regarder"; sauver(); rafraichir(); toast("Scrapbook enregistré"); },
+  modeMur(el) {
+    ETAT.ctx.murMode = el.dataset.id; ETAT.ctx.murSel = null;
+    if (courant === "24") rafraichir(); else aller("24", { remplace: true });
+  },
+  fermerOutil() { ETAT.ctx.murSel = null; aller("24", { remplace: true }); },
+  deselectionnerItem() { ETAT.ctx.murSel = null; rafraichir(); },
+  itemDevant() {
+    const it = ETAT.mur.items.find((i) => i.id === ETAT.ctx.murSel); if (!it) return;
+    ETAT.mur.items = ETAT.mur.items.filter((i) => i !== it).concat(it);
+    sauver(); rafraichir(); toast("Mis au premier plan");
+  },
+  itemAligner() {
+    const it = ETAT.mur.items.find((i) => i.id === ETAT.ctx.murSel); if (!it) return;
+    it.rot = 0; it.x = Math.round(it.x / 8) * 8; it.y = Math.round(it.y / 8) * 8;
+    sauver(); rafraichir(); vibrer(8);
+  },
+  itemRetirer() {
+    const id = ETAT.ctx.murSel; if (!id) return;
+    ETAT.mur.items = ETAT.mur.items.filter((i) => i.id !== id);
+    ETAT.ctx.murSel = null; sauver(); rafraichir();
+    toast("Décollé. Le scrap reste dans ta collection.");
+  },
+  choisirDispo(el) { ETAT.ctx.dispoColl = el.dataset.id; rafraichir(); },
+  choisirFond(el) { ETAT.mur.fond = el.dataset.id; sauver(); rafraichir(); vibrer(6); },
+  choisirScotch(el) { ETAT.mur.scotchType = el.dataset.id; sauver(); rafraichir(); vibrer(6); },
   annulerDechirure() {
     const a = ETAT.ctx.dechireAvant;
     if (!a) { toast("Rien à annuler"); return; }
@@ -221,12 +281,15 @@ const ACTIONS = {
 
 function collerSurMur(id) {
   const m = ETAT.mur;
+  ETAT.ctx.recadrer = id;
   if (m.items.some((i) => i.id === id)) { ETAT.ctx.murSel = id; return; }
   const t = m.scotchType || "kraft";
-  const bas = m.items.reduce((h, i) => Math.max(h, i.y), 0);
-  const y = Math.min(bas, 520) - 60 + Math.random() * 80;
-  m.items.push({ id, x: 110 + Math.random() * 120, y: Math.max(20, y), w: 128, rot: Math.round(Math.random() * 8 - 4), scotch: [["hg", t], ["hd", t]] });
-  m.hauteur = Math.max(m.hauteur, y + 260);
+  // on pose le nouveau scrap juste sous le plus bas, et la page s'allonge
+  const hauteurDe = (i) => { const s = scrap(i.id); return i.w / ((s && s.ratio) || 0.75); };
+  const bas = m.items.reduce((h, i) => Math.max(h, i.y + hauteurDe(i)), 0);
+  const y = Math.max(20, bas + 16);
+  m.items.push({ id, x: 40 + Math.random() * 200, y, w: 128, rot: Math.round(Math.random() * 8 - 4), scotch: [["hg", t], ["hd", t]] });
+  m.hauteur = Math.max(m.hauteur, y + 320);
   ETAT.ctx.murSel = id;
 }
 
@@ -246,6 +309,14 @@ document.addEventListener("input", (e) => {
   if (!k) return;
   const v = +e.target.value;
   if (k === "rayon") { ETAT.reglages.rayon = v; const l = $("#rayon-val"); if (l) l.textContent = v + " m"; }
+  if (k === "itemTaille" || k === "itemRotation") {
+    const it = ETAT.mur.items.find((x) => x.id === ETAT.ctx.murSel);
+    if (!it) return;
+    const el = $(`[data-item="${CSS.escape(it.id)}"]`);
+    if (k === "itemTaille") { it.w = v; const l = $("#item-taille-val"); if (l) l.textContent = Math.round((v / 128) * 100) + " %"; if (el) el.style.width = v + "px"; }
+    else { it.rot = v; const l = $("#item-rot-val"); if (l) l.textContent = v + "°"; if (el) el.style.transform = `rotate(${v}deg)`; }
+    return;
+  }
   if (k === "vitrineTaille" || k === "vitrineRotation") {
     const it = ETAT.vitrine.find((x) => x.id === ETAT.ctx.vitrineSel) || ETAT.vitrine[ETAT.vitrine.length - 1];
     if (!it) return;
@@ -258,7 +329,7 @@ document.addEventListener("input", (e) => {
 document.addEventListener("change", (e) => {
   const t = e.target;
   if (t.dataset.input === "rayon") { sauver(); if (courant === "14") rafraichir(); }
-  if (t.dataset.input && t.dataset.input.startsWith("vitrine")) sauver();
+  if (t.dataset.input && (t.dataset.input.startsWith("vitrine") || t.dataset.input.startsWith("item"))) sauver();
   if (t.dataset.change === "photoCapture") photoFichier(t.files[0]);
   if (t.dataset.change === "photoProfil" && t.files[0]) {
     const r = new FileReader();

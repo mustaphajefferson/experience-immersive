@@ -49,9 +49,61 @@ const ICONES = {
   attention: "M12 3l10 18H2zM12 10v5M11 18h2",
   image: "M4 4h16v16H4zM4 16l5-5 4 4 3-3 4 4M15 9h.01",
   reglages: "M4 7h10M18 7h2M4 17h4M12 17h8M16 5v4M10 15v4",
+  coeur: "M12 20S3.5 14.4 3.5 8.9A4.4 4.4 0 0 1 12 7a4.4 4.4 0 0 1 8.5 1.9C20.5 14.4 12 20 12 20z",
+  bombe: "M9 8h6v12H9zM10.5 4.5h3V8h-3zM16.5 5h1.4M18.6 3.2h1.4M17.6 8.2h1.4",
+  masque: "M3 4h8v6.5A4 4 0 0 1 3 10.5zM5.6 7h.8M8.2 7h.8M13 8h8v6.5a4 4 0 0 1-8 0zM15.6 11h.8M18.2 11h.8",
+  pellicule: "M3 5h18v14H3zM7 5v14M17 5v14M3 9h4M3 15h4M17 9h4M17 15h4",
+  verre: "M5 4h14l-7 8zM12 12v6M8.5 18h7",
+  ballon: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7.5l4 2.9-1.5 4.6h-5L8 10.4z",
+  cintre: "M12 7.4a2 2 0 1 1 2 2c-1.1 0-2 .7-2 1.7v.9M12 12L3 18.5h18z",
+  lettre: "M6 20 12 4l6 16M8.6 14.4h6.8",
+  fantome: "M5 20V10a7 7 0 0 1 14 0v10l-2.3-2-2.3 2-2.4-2-2.3 2zM9.4 10h.9M13.7 10h.9",
+  loupe: "M11 17a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM15.5 15.5 20 20M8.5 11h5M11 8.5v5",
+  grille4: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
+  grille9: "M4 4h4.6v4.6H4zM9.7 4h4.6v4.6H9.7zM15.4 4H20v4.6h-4.6zM4 9.7h4.6v4.6H4zM9.7 9.7h4.6v4.6H9.7zM15.4 9.7H20v4.6h-4.6zM4 15.4h4.6V20H4zM9.7 15.4h4.6V20H9.7zM15.4 15.4H20V20h-4.6z",
+  liste: "M4 6h3v3H4zM10 7.5h10M4 13h3v3H4zM10 14.5h10",
+  empile: "M6 3h12v18H6zM9 7h6M9 11h6",
+  zoomPlus: "M11 17a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM15.5 15.5 20 20M8.5 11h5M11 8.5v5",
+  zoomMoins: "M11 17a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM15.5 15.5 20 20M8.5 11h5",
+  taille: "M4 4h9v9H4zM11 11h9v9h-9zM16 11v-4M20 11h-4",
+  vue: "M2 12s4-6 10-6 10 6 10 6-4 6-10 6-10-6-10-6zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
+  reprendre: "M4 10a8 8 0 1 1 1 6M4 5v5h5",
 };
 const icone = (nom, t = 24) =>
   `<svg width="${t}" height="${t}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${(1.5 * 24) / t}" stroke-linecap="square" aria-hidden="true"><path d="${ICONES[nom] || ""}"/></svg>`;
+
+/* ───────── Badges : des sceaux, pas des pictos.
+ * Cadre perforé comme un timbre + un motif dessiné pour chaque badge.
+ * Si un badge n'a pas de motif, on agrandit l'icône de sa collection. */
+const MOTIFS_BADGE = {
+  premier: "M27 43V24l-6 4.5M21 43h15",
+  belleville: "M11 45l12-14 7 8 6-7 17 13zM31 18v10M31 18l9 3-9 3",
+  holo: "M32 15l12 17-12 17-12-17zM32 24l6 8-6 8-6-8zM14 23l-5-3M50 23l5-3M14 41l-5 3M50 41l5 3",
+  concerts: "M27 42V20l16-3v19M27 42a5 5 0 1 1-10 0 5 5 0 0 1 10 0zM43 38a5 5 0 1 1-10 0 5 5 0 0 1 10 0z",
+  expos: "M12 16h40v30H12zM18 40l9-10 6 6 6-6 10 10M22 24h4v4h-4z",
+  marches: "M12 20h40v8H12zM20 20v8M28 20v8M36 20v8M44 20v8M17 28v18h30V28M27 46V34h10v12",
+  messages: "M14 26v12h8l16 9V17l-16 9zM45 25a9 9 0 0 1 0 14",
+  cinquante: "M24 23h-9v9h4a5 5 0 1 1-5 5M44 23a5 5 0 0 1 5 5v9a5 5 0 0 1-10 0v-9a5 5 0 0 1 5-5",
+  street: "M25 26h14v22H25zM28 16h8v10h-8zM44 17h4M50 13h4M47 25h4",
+  disparues: "M14 48V26a18 18 0 0 1 36 0v22l-6-5-6 5-6-5-6 5zM25 26h3M37 26h3",
+};
+function badgeSvg(b, t = 64) {
+  const motif = MOTIFS_BADGE[b.id];
+  const dedans = motif
+    ? `<path d="${motif}" stroke-width="2.2"/>`
+    : `<g transform="translate(12.8 12.8) scale(1.6)"><path d="${ICONES[b.icone] || ""}" stroke-width="1.4"/></g>`;
+  return `<svg class="badge-svg" viewBox="0 0 64 64" width="${t}" height="${t}" fill="none" stroke="currentColor" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">
+    <rect x="1" y="1" width="62" height="62" stroke-width="1.5"/>
+    <rect x="6" y="6" width="52" height="52" stroke-width="1" stroke-dasharray="2 3.5" opacity=".6"/>
+    <path d="M1 13h5M1 51h5M58 13h5M58 51h5M13 1v5M51 1v5M13 58v5M51 58v5" stroke-width="1.5"/>
+    ${dedans}</svg>`;
+}
+const badgeHtml = (b, o = {}) => {
+  const ok = o.ok !== undefined ? o.ok : badgeDebloque(b);
+  const t = o.taille || 64;
+  return `<span class="badge${ok ? "" : " verrou"}${o.choisi ? " choisi" : ""}${o.pose ? " pose" : ""}" style="width:${t}px;height:${t}px">
+    ${badgeSvg(b, t)}${ok ? "" : `<i class="badge-cadenas">${icone("cadenas", 16)}</i>`}</span>`;
+};
 
 /* ───────── État du compte démo (sauvegardé sur le téléphone) */
 const CLE = "scrap-demo-v1";
@@ -99,7 +151,38 @@ const dansCollection = (cid) => idsScraps().filter((id) => scrap(id).collection 
 const progression = (cid) => ({ n: dansCollection(cid).length, total: collection(cid).total });
 const complete = (cid) => { if (!collection(cid)) return true; const p = progression(cid); return p.n >= p.total; };
 const badgeDebloque = (b) => b.debloque || (b.collection && complete(b.collection)) || (b.objectif && idsScraps().length >= b.objectif);
+/* Collections rangées : celles que la personne a ouvertes d'abord, puis celles
+ * où elle a déjà des scraps, puis le reste. */
+const collectionsOrdonnees = () => {
+  const depart = ETAT.collectionsDepart || [];
+  const poids = (c) => (depart.includes(c.id) ? 0 : dansCollection(c.id).length ? 1 : 2);
+  return D.collections.slice().sort((a, b) => poids(a) - poids(b));
+};
 const totalScraps = () => idsScraps().length;
+
+/* Ce que la collection dit de la personne : la collection la mieux remplie. */
+function titreCollectionneur(autre) {
+  if (autre) return "Colleur du " + autre.quartier;
+  const ids = idsScraps();
+  if (!ids.length) return "Carnet vide, pour l'instant";
+  const compte = {};
+  ids.forEach((id) => { const c = scrap(id).collection; compte[c] = (compte[c] || 0) + 1; });
+  const meilleur = Object.entries(compte).sort((a, b) => b[1] - a[1])[0];
+  const col = collection(meilleur[0]);
+  const rares = ids.filter((id) => ["mythique", "rare"].includes(rarete(scrap(id)).cle)).length;
+  return (rares >= 3 ? "Œil rare · " : "") + (col ? col.nom + " en tête" : "Collection mêlée");
+}
+
+/* Répartition des scraps par rareté, pour la petite jauge du profil. */
+function repartitionRarete() {
+  const ordre = ["mythique", "rare", "peuvue", "commune"];
+  const ids = idsScraps();
+  const noms = { mythique: "Mythiques", rare: "Rares", peuvue: "Peu vues", commune: "Communes" };
+  return ordre.map((cle) => {
+    const n = ids.filter((id) => rarete(scrap(id)).cle === cle).length;
+    return { cle, nom: noms[cle], n, part: ids.length ? n / ids.length : 0 };
+  }).filter((x) => x.n > 0);
+}
 
 /* ───────── Composants HTML */
 const tampon = (l1, l2, o = {}) =>
