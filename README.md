@@ -20,14 +20,15 @@ Projet de Workshop 2 (LISAA, Mastère Direction Artistique) : une app qui fait s
 
 ## Site prototype (SCRAP)
 
-L'application complète, pensée pour le téléphone : 52 écrans (01 à 50, plus 19.1 « Vérifier le scan » et 19.2 « Identifier le scrap »), tous les boutons reliés.
+L'application complète, pensée pour le téléphone : 56 écrans, tous les boutons reliés.
 C'est la référence du projet : les changements se font ici (vibe coding), plus dans Figma.
 
 - Compte démo d'Inès déjà rempli (15 scraps, collections, scrapbook, vitrine).
 - **Scan automatique** : la caméra suit les contours de l'affiche en direct et la photo se prend toute seule dès que le cadre ne bouge plus, comme dans Notes. L'image est redressée, puis on choisit de la garder ou de la reprendre, et enfin on l'identifie (titre, collection, tags).
-- **Profondeur** : sur la page d'un scrap, le décor derrière la carte suit l'inclinaison du téléphone (gyroscope). L'effet est d'autant plus marqué que le scrap est rare.
-- Vraie carte de Belleville (Leaflet, fond CARTO en gris, pins par collection). La clé CARTO est dans `site/js/config.js`.
-- Scrapbook : pincer pour zoomer et se promener sans rien déplacer, puis mode Disposition pour déplacer, redimensionner et tourner. Vue d'ensemble pour voir tout ce qu'il reste à remplir. 8 fonds, 4 scotchs, déchirure au doigt.
+- **Relief** : l'inclinaison du téléphone est mesurée une fois pour toute l'app, et toutes les couches la suivent. L'autorisation se demande à l'accueil, et se coupe dans les réglages.
+- Vraie carte de Belleville (Leaflet, fond CARTO en gris, pins par collection, ~130 affiches semées). La clé CARTO est dans `site/js/config.js`.
+- **Scrapbook** : on s'y promène librement (un doigt déplace, deux doigts zooment) sans jamais attraper une affiche par mégarde. Mode Disposition pour ranger, éléments à poser (titres, étiquettes, flèches), 8 fonds + sa propre photo, 5 types de déchirure, export en image et aperçu sur un vrai mur à travers la caméra.
+- **Fin de collection** : on ouvre un pack, et on récupère une carte exclusive holographique qui réagit à l'inclinaison.
 - Menu caché : appui long tout en haut de l'écran (ou touche M) pour sauter à un écran ou réinitialiser la démo.
 
 ```bash

@@ -102,16 +102,24 @@ window.DONNEES = {
     { id: "cinquante", nom: "50 scraps", icone: "mur", objectif: 50 },
   ],
 
-  /* Scrapbook : positions en px sur un plan de 402 px de large. */
+  /* Scrapbook : positions en px sur un plan de 402 px de large.
+   * notes : les éléments posés par la personne (titres, étiquettes, flèches…). */
   mur: {
     fond: "papier",
+    fondImage: null,
+    voile: 0,
+    /* w = taille du texte en px pour les éléments écrits, largeur en px pour les autres */
+    notes: [
+      { id: "n1", type: "titre", texte: "Belleville", x: 20, y: 4, w: 34, rot: -2, devant: true },
+      { id: "n2", type: "etiquette", texte: "Automne 2026", x: 232, y: 196, w: 12, rot: 3, devant: true },
+    ],
     /* La page est beaucoup plus grande que l'écran : en vue d'ensemble on voit
      * tout ce qu'il reste à remplir. */
     hauteur: 1600,
     items: [
-      { id: "alta", x: 22, y: 34, w: 122, rot: -3, scotch: [["hg", "transparent"], ["hd", "transparent"]] },
-      { id: "rose", x: 162, y: 22, w: 104, rot: 2, scotch: [["hd", "kraft"]] },
-      { id: "presence", x: 286, y: 44, w: 92, rot: 4, scotch: [["hg", "noir"]] },
+      { id: "alta", x: 22, y: 62, w: 122, rot: -3, scotch: [["hg", "transparent"], ["hd", "transparent"]] },
+      { id: "rose", x: 162, y: 50, w: 104, rot: 2, scotch: [["hd", "kraft"]] },
+      { id: "presence", x: 286, y: 72, w: 92, rot: 4, scotch: [["hg", "noir"]] },
       { id: "ozkan", x: 26, y: 232, w: 100, rot: 0, scotch: [["hg", "papier"]], dechire: [[0, 0], [1, 0], [1, 0.55], [0.82, 0.62], [0.9, 0.7], [0.68, 0.78], [0.76, 0.86], [0.55, 1], [0, 1]] },
       { id: "sanbimu", x: 140, y: 214, w: 146, rot: -1, scotch: [["hd", "kraft"]] },
       { id: "skeleton", x: 300, y: 236, w: 84, rot: 3, scotch: [["hg", "transparent"]] },
@@ -143,5 +151,80 @@ window.DONNEES = {
     murPublic: false, profilRecherche: true, montrerQuartier: false, montrerRang: true,
     rappelHebdo: true, rareProche: false, presqueComplete: true, nouvelAbonne: true, silenceNuit: true,
     positionPrecise: false, rayon: 500,
+    profondeur: true,
   },
 };
+
+/* ═════════ Une carte bien vivante
+ *
+ * À côté des affiches écrites à la main ci-dessus, on en sème une centaine
+ * d'autres dans tout l'est parisien : c'est ce qui donne l'impression d'une
+ * app déjà utilisée par beaucoup de monde, et c'est ce qui rend les filtres
+ * démonstratifs (sans ça, filtrer ne change presque rien à l'écran).
+ *
+ * Le tirage est pseudo-aléatoire mais TOUJOURS LE MÊME : la carte ne change
+ * pas d'un rechargement à l'autre, sinon on ne retrouverait jamais un scrap
+ * repéré la veille.
+ */
+(function semerLesAffiches() {
+  const D = window.DONNEES;
+  // générateur déterministe (mulberry32) : même graine, même carte
+  let graine = 20261117;
+  const alea = () => {
+    graine |= 0; graine = (graine + 0x6D2B79F5) | 0;
+    let t = Math.imul(graine ^ (graine >>> 15), 1 | graine);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const dans = (liste) => liste[Math.floor(alea() * liste.length)];
+
+  const rues = [
+    "Rue de Belleville", "Rue Dénoyez", "Rue Julien-Lacroix", "Rue Ramponeau", "Rue des Couronnes",
+    "Rue de la Mare", "Rue des Pyrénées", "Rue du Jourdain", "Rue de Ménilmontant", "Rue Oberkampf",
+    "Boulevard de la Villette", "Rue Rébeval", "Rue Botzaris", "Avenue Simon-Bolivar", "Rue de Tourtille",
+    "Place des Fêtes", "Rue Piat", "Rue des Envierges", "Rue Sorbier", "Rue de la Chine",
+    "Rue Bisson", "Rue Lesage", "Rue Vilin", "Passage Plantin", "Rue Henri-Chevreau",
+  ];
+  const titres = {
+    concerts: ["Concert au sous-sol", "Release party", "Carte blanche — trio", "Scène ouverte", "Concert de soutien", "Nuit jazz", "Plateau punk"],
+    expos: ["Expo photo", "Vernissage", "Carte blanche — gravure", "Expo collective", "Résidence ouverte", "Accrochage d'atelier"],
+    marches: ["Marché du quartier", "Cantine solidaire", "Food truck du samedi", "Marché des producteurs", "Brunch associatif"],
+    messages: ["Tract collé", "Appel à rassemblement", "Affiche syndicale", "Collage féministe", "Affiche de soutien", "Appel au don"],
+    street: ["Collage", "Pochoir", "Fresque en cours", "Mur libre", "Sticker géant", "Affiche lacérée"],
+    theatre: ["Saison du théâtre", "Compagnie en tournée", "Impro du mardi", "Danse contemporaine", "Lecture publique"],
+    cinema: ["Ciné-club", "Séance en plein air", "Rétrospective", "Court-métrage local", "Documentaire et débat"],
+    fetes: ["Soirée au club", "Fête de quartier", "After du dimanche", "Bal populaire", "Carnaval de rue"],
+    sport: ["Tournoi du gymnase", "Cours d'essai", "Course du quartier", "Club de boxe", "Rando urbaine"],
+    vintage: ["Vide-grenier", "Friperie éphémère", "Puces du quartier", "Troc de disques"],
+    typo: ["Affiche typographique", "Lettrage peint", "Sérigraphie", "Affiche de festival"],
+    disparues: ["Mur recouvert", "Affiche arrachée", "Trace de colle", "Panneau repeint"],
+  };
+  const poids = {
+    concerts: 14, expos: 12, street: 14, messages: 11, fetes: 10, marches: 9,
+    cinema: 8, theatre: 7, typo: 7, sport: 6, vintage: 5, disparues: 3,
+  };
+  const roue = [];
+  Object.entries(poids).forEach(([k, n]) => { for (let i = 0; i < n; i++) roue.push(k); });
+
+  const [clat, clng] = D.centre;
+  for (let i = 0; i < 112; i++) {
+    // plus dense près du centre : on tire un rayon au carré
+    const r = Math.pow(alea(), 0.62) * 0.0135;
+    const a = alea() * Math.PI * 2;
+    const lat = clat + r * Math.cos(a);
+    const lng = clng + (r * Math.sin(a)) / Math.cos((clat * Math.PI) / 180);
+    const col = dans(roue);
+    const rang = alea();
+    D.cibles.push({
+      id: "s" + i,
+      titre: dans(titres[col]),
+      collection: col,
+      lat: +lat.toFixed(5),
+      lng: +lng.toFixed(5),
+      adresse: dans(rues),
+      nouveau: alea() < 0.17,
+      // beaucoup d'affiches déjà très vues, quelques-unes presque vierges
+      scans: rang < 0.12 ? 1 + Math.floor(alea() * 9) : 10 + Math.floor(Math.pow(alea(), 2) * 480),
+    });
+  }
+})();

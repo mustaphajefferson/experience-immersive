@@ -306,12 +306,8 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: v
 }
 .pin .pastille { position: absolute; top: -3px; right: -3px; z-index: 2; }
 /* Un scrap nouveau respire doucement ; l'accent reste réservé à la pastille. */
-.pin.nouveau .pastille::after {
-  content: ""; position: absolute; inset: -3px; box-shadow: 0 0 0 1px var(--accent-capture);
-  animation: pin-pulse 2.4s ease-out infinite; opacity: 0;
-}
-@keyframes pin-pulse { 0% { opacity: .55; transform: scale(.8); } 70%, 100% { opacity: 0; transform: scale(2.2); } }
-.pastille { position: relative; }
+.pin.nouveau .pastille { animation: pastille-respire 2.4s ease-in-out infinite; }
+@keyframes pastille-respire { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.4); } }
 .pin.choisi { width: 36px; height: 48px; }
 .pin.choisi .pin-tete { bottom: 13px; background: var(--fond-inverse); color: var(--texte-inverse); box-shadow: 0 0 0 2px #fff; }
 .pin.choisi .pin-pointe { margin-left: -6px; border-width: 6px; border-bottom: 0; border-top-width: 14px; }
@@ -450,7 +446,9 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: v
 .morceau { position: absolute; z-index: 60; pointer-events: none; animation: tombe 1.1s cubic-bezier(.4,0,.8,.6) forwards; }
 @keyframes tombe { to { transform: translate(var(--dx, 30px), 420px) rotate(var(--dr, 24deg)); opacity: 0; } }
 .trace { position: absolute; z-index: 55; pointer-events: none; }
-.outils { display: flex; gap: 8px; padding: 8px var(--marge); background: var(--fond-principal); border-top: 1px solid var(--trait-defaut); overflow-x: auto; flex: none; }
+.outils { display: flex; gap: 6px; padding: 8px var(--marge); background: var(--fond-principal); border-top: 1px solid var(--trait-defaut); overflow-x: auto; flex: none; scrollbar-width: none; }
+.outils::-webkit-scrollbar { display: none; }
+.outils .puce { padding: 0 11px; }
 .astuce { padding: 8px var(--marge); background: var(--fond-principal); flex: none; }
 .nuancier { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px var(--gouttiere); }
 .nuancier button { text-align: left; }
@@ -471,7 +469,10 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: v
 /* ───────── Lancement animé
    On colle huit affiches l'une sur l'autre, elles tombent, et le nom se
    relève lettre par lettre dessous. */
-.lancement { position: absolute; inset: 0; overflow: hidden; background: var(--fond-principal); display: grid; place-items: center; }
+.lancement { position: absolute; inset: 0; overflow: hidden; display: grid; place-items: center; transition: opacity .34s ease; }
+.lancement.sort { opacity: 0; }
+.ecran.en-fondu { animation: fondu-ecran .4s ease both; }
+@keyframes fondu-ecran { from { opacity: 0; } to { opacity: 1; } }
 .pile-lancement { position: absolute; left: 50%; top: 44%; width: 58%; transform: translate(-50%, -50%); }
 .pile-affiche {
   position: absolute; left: 0; top: 0; width: 100%;
@@ -489,7 +490,9 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: v
   from { opacity: 1; }
   to { opacity: 0; transform: translate(calc(var(--dx) * 5), 62vh) rotate(calc(var(--rot) * 5)); }
 }
-.lancement-logo { position: relative; z-index: 3; text-align: center; }
+/* Le logo est posé à l'endroit exact où l'écran 02 l'affiche : au moment où
+   on enchaîne, il ne bouge pas d'un pixel. */
+.lancement-logo { position: relative; z-index: 3; text-align: center; transform: translateY(72px); }
 .mot { display: inline-flex; align-items: flex-end; gap: 1px; }
 .mot .lettre {
   display: block; overflow: hidden; height: 1.05em;
@@ -549,9 +552,12 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: v
 /* Les couches d'une scène se décalent selon l'inclinaison du téléphone.
    --px et --py (de -1 à 1) sont posées par profondeur() dans js/effets.js ;
    --p est l'amplitude de la couche, en pixels. */
+/* On utilise « translate » et non « transform » : les deux se cumulent, donc
+   une couche peut déjà être tournée ou mise à l'échelle sans qu'on l'écrase.
+   --px / --py sont posées sur la racine du document par js/effets.js. */
 .couche {
-  transform: translate3d(calc(var(--px, 0) * var(--p, 0) * 1px), calc(var(--py, 0) * var(--p, 0) * 1px), 0);
-  will-change: transform;
+  translate: calc(var(--px, 0) * var(--amp, 1) * var(--p, 0) * 1px) calc(var(--py, 0) * var(--amp, 1) * var(--p, 0) * 1px);
+  will-change: translate;
 }
 
 /* ───────── Page d'un scrap (21 / 22) */
@@ -563,6 +569,13 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: v
     rotateY(calc(var(--px, 0) * 7deg))
     rotateX(calc(var(--py, 0) * -7deg));
   transition: transform .1s linear;
+  animation: carte-entre .6s cubic-bezier(.2, 1.1, .3, 1) both;
+}
+/* L'entrée passe par « translate » et « scale », pas par « transform » :
+   comme ça elle n'écrase pas l'inclinaison. */
+@keyframes carte-entre {
+  from { opacity: 0; translate: 0 26px; scale: .93; }
+  to { opacity: 1; translate: 0 0; scale: 1; }
 }
 .decor-trame, .decor-halo, .decor-rayons { position: absolute; pointer-events: none; }
 .decor-trame {
@@ -658,9 +671,10 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: v
 .revelation p { margin: 12px 0 0; letter-spacing: .12em; animation: apparait .5s ease .5s both; }
 
 /* ───────── Collection complète */
+/* Le pack et la carte occupent la même case : la carte sort de la pochette. */
 .scene-exclusif { position: relative; display: grid; place-items: center; padding: 18px 0; }
-.exclusif-carte { position: relative; width: 56%; z-index: 2; animation: exclusif-arrive .7s cubic-bezier(.2, 1.1, .3, 1) both; }
-@keyframes exclusif-arrive { from { opacity: 0; transform: translateY(26px) rotate(-4deg) scale(.9); } to { opacity: 1; transform: none; } }
+.scene-exclusif > * { grid-area: 1 / 1; }
+.exclusif-carte { position: relative; width: 58%; z-index: 2; }
 .badge-page { position: relative; }
 .badge-page > *:not(.decor-halo):not(.decor-rayons) { position: relative; z-index: 1; }
 .badge-page .decor-halo, .badge-page .decor-rayons { z-index: 0; }
@@ -724,3 +738,207 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: v
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   .couche, .scrap-inclinaison { transform: none !important; }
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   DEUXIÈME SÉRIE — poussière, vol d'un scrap, éléments du scrapbook,
+   déchirures, export, mur en vrai, pack et holographie.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* ───────── Poussière de papier : ce qui donne la profondeur quand on penche */
+.poussiere { position: absolute; inset: -6%; pointer-events: none; overflow: hidden; }
+.grain {
+  position: absolute; width: var(--s); height: var(--s);
+  background: var(--texte-secondaire); opacity: var(--o);
+  animation: flotte var(--t) ease-in-out var(--d) infinite alternate;
+}
+@keyframes flotte {
+  from { transform: translate(0, 0) rotate(0deg); }
+  to { transform: translate(14px, -18px) rotate(90deg); }
+}
+
+/* ───────── Un scrap qui vole d'un écran à l'autre */
+.vol-scrap { position: fixed; z-index: 80; pointer-events: none; object-fit: contain; }
+.vient-darriver { animation: arrive .5s cubic-bezier(.2, 1.5, .4, 1) both; }
+@keyframes arrive { 0% { transform: scale(1.1); } 60% { transform: scale(.97); } 100% { transform: none; } }
+
+/* ───────── Écran 07.1 : la démonstration du relief */
+.scene-mouvement { position: relative; height: 210px; }
+.demo-3d { position: absolute; inset: 0; }
+.demo-3d .mur-item { box-shadow: none; }
+
+/* ───────── Les éléments posés sur la page du scrapbook */
+.mur-note { position: absolute; color: var(--texte-principal); touch-action: none; user-select: none; -webkit-user-select: none; white-space: nowrap; }
+.mur-note.choisi { outline: 1px solid var(--trait-fort); outline-offset: 5px; }
+.note-titre { font-weight: 600; letter-spacing: -.04em; line-height: 1; text-transform: uppercase; }
+.note-soustitre { font-weight: 600; letter-spacing: -.02em; line-height: 1.1; }
+.note-etiquette, .note-date {
+  font-weight: 500; letter-spacing: .06em; text-transform: uppercase; line-height: 1;
+  padding: 6px 9px; box-shadow: inset 0 0 0 1px currentColor;
+}
+.note-fleche { color: var(--texte-principal); }
+.note-fleche svg { display: block; }
+.note-punaise { color: var(--accent-capture); }
+.note-ruban { height: 16px; }
+.fond-noir .mur-note, .fond-liege .mur-note { color: #fff; }
+
+.palette { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px var(--gouttiere); }
+.palette button { text-align: center; }
+.palette .palette-apercu {
+  display: grid; place-items: center; height: 54px; margin-bottom: 6px;
+  box-shadow: inset 0 0 0 1px var(--trait-defaut); background: var(--fond-principal);
+  overflow: hidden; font-size: 13px; padding: 0 4px;
+}
+.palette button:active .palette-apercu { background: var(--fond-secondaire); }
+.palette .note-titre { font-size: 13px; }
+.palette .note-soustitre { font-size: 13px; }
+.palette .note-etiquette, .palette .note-date { box-shadow: none; padding: 0; font-size: 10px; }
+.champ-note {
+  width: 100%; margin-top: 10px; padding: 8px 10px; font: inherit; font-size: 15px;
+  background: var(--fond-principal); box-shadow: inset 0 0 0 1px var(--trait-defaut); border: 0; border-radius: 0;
+}
+
+/* ───────── Déchirure : le bord blanc du papier arraché */
+.bord-dechire {
+  position: absolute; inset: 0; background: #FDFDFA;
+  transform: scale(1.024); z-index: 0;
+  filter: drop-shadow(0 0 .6px rgba(17, 17, 17, .35));
+}
+.fond-noir .bord-dechire { background: #F4F4F0; }
+.mur-item.dechire .mur-papier { position: relative; z-index: 1; }
+
+/* ───────── Fond en photo */
+.apercu-photo { display: grid; place-items: center; background-size: cover; background-position: center; color: var(--texte-secondaire); }
+.voile-fond { position: absolute; inset: 0; background: var(--fond-principal); pointer-events: none; z-index: 0; }
+.mur-zone .mur-plan { z-index: 1; }
+
+/* ───────── Export : l'aperçu de l'image */
+.apercu-export {
+  margin-top: 16px; display: grid; place-items: center; overflow: hidden;
+  background: var(--fond-secondaire); box-shadow: inset 0 0 0 1px var(--trait-defaut);
+}
+.apercu-export.format-story { aspect-ratio: 9 / 16; }
+.apercu-export.format-carre { aspect-ratio: 1 / 1; }
+.apercu-export.format-page { aspect-ratio: 3 / 4; }
+.apercu-export img { max-width: 100%; max-height: 100%; display: block; animation: apparait .4s ease both; }
+.apercu-attente { padding: 40px 0; }
+
+/* ───────── Sur un vrai mur */
+.scene-reel { position: absolute; inset: 0; z-index: 2; touch-action: none; perspective: 900px; }
+.page-reel {
+  position: absolute; left: 50%; top: 50%; transform-origin: 50% 50%;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .45);
+  rotate: y calc(var(--px, 0) * 16deg);
+  transition: rotate .12s linear;
+}
+.page-reel .mur-item { pointer-events: none; }
+#consigne-reel {
+  position: absolute; left: 8%; right: 8%; bottom: calc(18% + env(safe-area-inset-bottom)); z-index: 4;
+  margin: 0; padding: 8px 12px; color: #E6E6E2; background: rgba(17, 17, 17, .6);
+}
+
+/* ───────── Le pack qu'on ouvre à la fin d'une collection */
+.scene-pack .apres-pack, .scene-pack .exclusif-carte { opacity: 0; pointer-events: none; }
+.scene-pack.ouvert .apres-pack { opacity: 1; pointer-events: auto; animation: apparait .5s ease .35s both; }
+.scene-pack.ouvert .exclusif-carte { opacity: 1; pointer-events: auto; animation: sort-du-pack .75s cubic-bezier(.2, 1.1, .3, 1) both; }
+.scene-pack.ouvert .pack { display: none; }
+@keyframes sort-du-pack {
+  0% { opacity: 0; transform: translateY(60px) scale(.82); }
+  60% { opacity: 1; }
+  100% { opacity: 1; transform: none; }
+}
+.pack {
+  position: relative; width: 58%; aspect-ratio: .68; z-index: 4; cursor: pointer;
+  background: linear-gradient(150deg, #191919, #0d0d0d 60%, #1f1f1f);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, .35);
+  rotate: calc(var(--px, 0) * -5deg);
+  animation: pack-respire 3.4s ease-in-out infinite;
+}
+@keyframes pack-respire { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+.pack-haut { position: absolute; left: 0; right: 0; top: 0; height: 13%; background: #262626; box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .18); }
+.pack-languette {
+  position: absolute; left: 6%; right: 6%; top: 13%; height: 5px;
+  background: repeating-linear-gradient(90deg, rgba(255, 255, 255, .5) 0 4px, transparent 4px 8px);
+}
+.pack-corps { position: absolute; inset: 13% 0 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: #fff; padding: 0 12px; text-align: center; }
+.pack-corps .logo { background: none; padding: 0; color: #fff; }
+.pack-titre { color: #9A9A96; }
+.pack-mot { font-weight: 600; font-size: 30px; letter-spacing: -.03em; line-height: 1; }
+.pack-pied { color: #6B6B67; }
+.pack::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(calc(100deg + var(--px, 0) * 40deg), transparent 36%, rgba(255, 255, 255, .22) 48%, transparent 60%);
+}
+.pack-aide { position: absolute; left: 0; right: 0; bottom: -26px; text-align: center; color: var(--texte-secondaire); }
+.pack.ouvre { animation: pack-ouvre .6s ease-in forwards; }
+@keyframes pack-ouvre {
+  0% { transform: none; }
+  25% { transform: rotate(-2deg) scale(1.03); }
+  100% { transform: translateY(-14px) scale(1.08); opacity: 0; }
+}
+.pack.ouvre .pack-haut { animation: pack-haut .6s cubic-bezier(.3, 0, .7, .4) forwards; }
+@keyframes pack-haut { to { transform: translateY(-120px) rotate(-16deg); opacity: 0; } }
+
+/* ───────── La carte exclusive : des couches séparées, et de l'holographie.
+   C'est SCRAP qui la fabrique, pas une affiche de la rue : c'est le seul
+   objet de l'app qui a droit à cet effet. */
+.carte-exclusive {
+  position: relative; width: 100%; aspect-ratio: .72; overflow: hidden; color: #fff;
+  container-type: inline-size;   /* les tailles de texte suivent la carte, pas l'écran */
+  transform: perspective(1000px) rotateY(calc(var(--px, 0) * 9deg)) rotateX(calc(var(--py, 0) * -9deg));
+  transition: transform .12s linear;
+}
+.exc-fond { position: absolute; inset: 0; background: radial-gradient(120% 90% at 30% 20%, #202020, #0b0b0b 70%); }
+.exc-cadre { position: absolute; inset: 5.5%; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .9); }
+.carte-exclusive span { position: absolute; display: block; }
+.exc-entete { left: 10%; top: 10%; font-size: 4.4cqw; letter-spacing: .14em; font-weight: 600; }
+.exc-mot { left: 8.5%; top: 34%; font-size: 23cqw; font-weight: 700; letter-spacing: -.05em; line-height: .88; }
+.exc-carre { position: absolute; left: 10%; top: 53%; width: 11%; aspect-ratio: 1; background: var(--accent-capture); }
+.exc-zone { left: 10%; top: 66%; font-size: 5.6cqw; font-weight: 500; letter-spacing: .04em; }
+.exc-etat { left: 10%; top: 73%; font-size: 5.6cqw; font-weight: 500; letter-spacing: .04em; color: #9A9A96; }
+.exc-num { left: 9%; bottom: 7%; font-size: 17cqw; font-weight: 600; letter-spacing: -.05em; }
+
+/* Holographie : discrète au repos, elle ne prend vie qu'en penchant. */
+.holo-film {
+  position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen; opacity: .22;
+  background:
+    repeating-linear-gradient(calc(112deg + var(--px, 0) * 26deg),
+      rgba(255, 0, 90, .5) 0 22px, rgba(255, 220, 0, .45) 22px 44px,
+      rgba(0, 255, 170, .45) 44px 66px, rgba(60, 120, 255, .5) 66px 88px);
+  background-position: calc(var(--px, 0) * 140px) calc(var(--py, 0) * 140px);
+}
+.holo-eclat {
+  position: absolute; inset: -20%; pointer-events: none; mix-blend-mode: screen;
+  background: linear-gradient(calc(100deg + var(--px, 0) * 50deg), transparent 38%, rgba(255, 255, 255, .5) 50%, transparent 62%);
+  translate: calc(var(--px, 0) * 40px) calc(var(--py, 0) * 30px);
+}
+/* halo autour d'un scrap holo : jamais sur l'affiche, toujours derrière */
+.aura-holo {
+  position: absolute; inset: 2% 4%; pointer-events: none;
+  opacity: .72;
+  background: conic-gradient(from calc(var(--px, 0) * 60deg),
+    rgba(255, 0, 90, .16), rgba(255, 220, 0, .14), rgba(0, 255, 170, .14), rgba(60, 120, 255, .16), rgba(255, 0, 90, .16));
+  filter: blur(28px);
+}
+
+/* ───────── Petites finitions */
+.palette button, .nuancier label { display: block; }
+.nuancier label .apercu { aspect-ratio: 1; box-shadow: inset 0 0 0 1px var(--trait-defaut); }
+.nuancier label.choisi .apercu { outline: 2px solid var(--trait-fort); outline-offset: 2px; }
+.nuancier label .t-texte-meta { display: block; margin-top: 6px; }
+
+/* ───────── Un peu de relief partout
+   Les blocs illustrés de l'app suivent eux aussi l'inclinaison, très
+   légèrement : juste assez pour que l'app ne soit jamais tout à fait plate.
+   --d est la profondeur en pixels ; --px / --py viennent de la racine. */
+.illus > *, .pictogramme, .grille-scraps .carte-scrap img, .banniere-affiches img,
+.profil-avatar, .grille-badges .badge, .vignettes img, .scene-accueil .mur-item {
+  translate: calc(var(--px, 0) * var(--d, 5) * 1px) calc(var(--py, 0) * var(--d, 5) * 1px);
+}
+.illus > *:nth-child(odd) { --d: 9; }
+.illus > *:nth-child(3n) { --d: 16; }
+.pictogramme { --d: 10; }
+.grille-scraps .carte-scrap img { --d: 4; }
+.grille-scraps .carte-scrap:nth-child(even) img { --d: 7; }
+.grille-badges .badge { --d: 6; }
+.grille-badges button:nth-child(even) .badge { --d: 10; }
+.profil-avatar { --d: 8; }

@@ -19,7 +19,7 @@ const PILE_LANCEMENT = [
   ["fiasco", 7, -8, "kraft"], ["skeleton", -8, 12, "noir"], ["rose", 4, -6, "transparent"],
   ["seb", -4, 8, "kraft"], ["alta", 2, 0, "papier"],
 ];
-ecran("01", "A", "Lancement animé", "", () => `
+ecran("01", "A", "Lancement animé", "grille", () => `
   <div class="lancement" data-action="passerLancement">
     <div class="pile-lancement">
       ${PILE_LANCEMENT.map(([id, rot, dx, sc], i) => `
@@ -33,19 +33,23 @@ ecran("01", "A", "Lancement animé", "", () => `
       <p class="accroche t-texte-corps secondaire"><span>Ta ville en morceaux.</span></p>
     </div>
     <span class="t-texte-meta secondaire passer-lancement">Toucher pour passer</span>
-  </div>`, () => {
-  const t = setTimeout(() => aller("02", { remplace: true }), 3400);
-  return () => clearTimeout(t);
+  </div>`, (r) => {
+  /* La fin du lancement enchaîne en fondu sur l'écran 02 : le logo y est au
+   * même endroit, donc on ne voit pas la couture. */
+  const l = $(".lancement", r);
+  const t1 = setTimeout(() => l && l.classList.add("sort"), 3050);
+  const t2 = setTimeout(() => { ETAT.ctx.fondu = true; aller("02", { remplace: true }); }, 3400);
+  return () => { clearTimeout(t1); clearTimeout(t2); };
 });
 
 ecran("02", "A", "Bienvenue", "grille", () => `
-  <div class="defile" style="display:flex;flex-direction:column;justify-content:center;padding-top:calc(env(safe-area-inset-top) + 24px)">
+  <div class="defile scene-accueil" style="display:flex;flex-direction:column;justify-content:center;padding-top:calc(env(safe-area-inset-top) + 24px)">
     <div style="position:relative;height:230px;margin-bottom:40px">
-      <div class="mur-item" style="left:2%;top:34px;width:31%;transform:rotate(-6deg)"><img src="assets/affiches/alta.jpg" alt=""><i class="scotch kraft hg"></i></div>
-      <div class="mur-item" style="left:34%;top:0;width:32%;transform:rotate(3deg)"><img src="assets/affiches/rose.jpg" alt=""><i class="scotch transparent hd"></i></div>
-      <div class="mur-item" style="left:67%;top:40px;width:31%;transform:rotate(-4deg)"><img src="assets/affiches/sonda.jpg" alt=""><i class="scotch papier hg"></i></div>
+      <div class="mur-item couche" style="--p:14;left:2%;top:34px;width:31%;transform:rotate(-6deg)"><img src="assets/affiches/alta.jpg" alt=""><i class="scotch kraft hg"></i></div>
+      <div class="mur-item couche" style="--p:24;left:34%;top:0;width:32%;transform:rotate(3deg)"><img src="assets/affiches/rose.jpg" alt=""><i class="scotch transparent hd"></i></div>
+      <div class="mur-item couche" style="--p:9;left:67%;top:40px;width:31%;transform:rotate(-4deg)"><img src="assets/affiches/sonda.jpg" alt=""><i class="scotch papier hg"></i></div>
     </div>
-    <div class="centre">${logo(64)}<p class="t-texte-corps secondaire" style="margin:12px 0 0">Ta ville en morceaux.</p></div>
+    <div class="centre bloc-logo-accueil">${logo(64)}<p class="t-texte-corps secondaire" style="margin:12px 0 0">Ta ville en morceaux.</p></div>
   </div>
   ${pied(bouton("Commencer", { aller: "03" }) + lien("J'ai déjà un compte", { aller: "09", centre: true }), { transparent: true })}`);
 
@@ -101,7 +105,27 @@ ecran("06", "A", "Accès à la caméra", "grille", () => autorisation("camera", 
 
 ecran("07", "A", "Accès à la position", "grille", () => autorisation("position", "Accès à ta position", "Pour afficher les scraps autour de toi et t'y guider à pied.",
   ["Ta position n'est jamais partagée.", "Seulement pendant que l'app est ouverte.", "Rayon et historique réglables dans les réglages."],
-  ["Autoriser pendant l'utilisation", "autoriserPosition"], "08"));
+  ["Autoriser pendant l'utilisation", "autoriserPosition"], "07.1"));
+
+/* 07.1 — le capteur d'inclinaison. Demandé dès le début, comme la caméra :
+ * c'est lui qui fait vivre toute l'app en profondeur. */
+ecran("07.1", "A", "Accès au mouvement", "grille", () => `
+  <div class="defile" style="padding-top:calc(env(safe-area-inset-top) + 56px)">
+    <div class="scene-mouvement" id="scene-mouvement">
+      <i class="decor-trame couche" style="--p:10"></i>
+      <div class="demo-3d">
+        <div class="mur-item couche" style="--p:10;left:4%;top:28px;width:34%;transform:rotate(-5deg)"><img src="assets/affiches/viudas.jpg" alt=""></div>
+        <div class="mur-item couche" style="--p:30;left:33%;top:0;width:36%;transform:rotate(2deg)"><img src="assets/affiches/sonda.jpg" alt=""><i class="scotch kraft hg"></i></div>
+        <div class="mur-item couche" style="--p:52;left:64%;top:34px;width:33%;transform:rotate(4deg)"><img src="assets/affiches/fiasco.jpg" alt=""></div>
+      </div>
+    </div>
+    <h1 class="t-titre-l centre" style="margin:28px 0 0">Penche ton téléphone</h1>
+    <p class="t-texte-corps secondaire centre" style="margin:12px 0 32px">Les scraps prennent du relief quand tu bouges. C'est le capteur d'inclinaison, celui qui sert aussi à tourner l'écran.</p>
+    <div class="liste">${["Aucune donnée n'est enregistrée ni envoyée.", "Ça ne consomme presque rien.", "Tu peux refuser : l'app marche pareil, en plus sage."]
+      .map((p) => `<div class="ligne">${icone("valider")}<span class="t-texte-petit" style="flex:1">${p}</span></div>`).join("")}</div>
+  </div>
+  ${pied(bouton("Activer le relief", { action: "autoriserMouvement" }) + lien("Plus tard", { aller: "08", centre: true }), { transparent: true })}`,
+(r) => profondeur($("#scene-mouvement", r), { amplitude: 1.3 }));
 
 ecran("08", "A", "Créer un compte", "grille", () => `
   ${entete("Créer un compte")}
@@ -434,10 +458,12 @@ function rectoVerso(verso) {
   return `
   ${entete("Scrap capturé", { droite: `<button class="icone-bouton" data-aller="39" aria-label="Partager">${icone("partager")}</button>` })}
   <div class="defile scrap-page rarete-${r.cle}">
-    <div class="scrap-scene" id="scene-scrap">
+    <div class="scrap-scene${s.holo ? " est-holo" : ""}" id="scene-scrap">
       <i class="decor-halo couche" style="--p:26"></i>
       <i class="decor-rayons couche" style="--p:38"></i>
       <i class="decor-trame couche" style="--p:12"></i>
+      ${s.holo ? '<i class="aura-holo couche" style="--p:34"></i>' : ""}
+      ${poussiere(14)}
       <div class="scrap-inclinaison">
         <div class="retourne${verso ? " verso" : ""}" id="retourne" data-action="retourner">
           <div class="retourne-int">
@@ -542,27 +568,52 @@ const commandesZoom = () => `<div class="mur-commandes">
   <span class="t-texte-meta secondaire" id="zoom-valeur">100 %</span>
 </div>`;
 
+const DECHIRURES = [
+  ["coin", "Un coin", "Comme une affiche décollée trop vite."],
+  ["bord", "Un bord", "On arrache une bande, en haut ou en bas."],
+  ["moitie", "En deux", "La coupe passe au milieu."],
+  ["arrachee", "Arrachée", "Une grosse bouchée, bien irrégulière."],
+  ["mesure", "Sur mesure", "Glisse ton doigt à travers le scrap."],
+];
+
 function scrapbook(ecranId) {
   const m = ETAT.mur;
   const mode = modeMur();
   const remplissage = Math.round(remplissageMur() * 100);
+  const dechirure = m.dechireType || "coin";
   const outils = `
     <div class="outils">
       ${puce("Vue", ecranId === "24" && mode === "regarder", ' data-action="modeMur" data-id="regarder"')}
       ${puce("Disposition", ecranId === "24" && mode === "deplacer", ' data-action="modeMur" data-id="deplacer"')}
+      ${puce("Ajouter", ecranId === "24.1", ' data-aller="24.1" data-remplace="1"')}
       ${puce("Scotch", ecranId === "26", ' data-aller="26" data-remplace="1"')}
       ${puce("Déchirer", ecranId === "27", ' data-aller="27" data-remplace="1"')}
       ${puce("Fond", ecranId === "25", ' data-aller="25" data-remplace="1"')}
     </div>`;
 
   const panneaux = {
-    "24": `${mode === "deplacer" ? '<div class="panneau-item vide" id="panneau-item"></div>' : `<p class="astuce t-texte-petit secondaire">Pince pour zoomer, glisse pour te promener, touche un scrap pour l'ouvrir.</p>`}
+    "24": `${mode === "deplacer" ? '<div class="panneau-item vide" id="panneau-item"></div>' : `<p class="astuce t-texte-petit secondaire">Promène-toi : un doigt déplace la page, deux doigts zooment. Touche un scrap pour l'ouvrir en grand.</p>`}
       ${outils}${onglets(1)}`,
+    "24.1": `<div class="pied filet">
+        <div class="rangee entre"><span class="t-titre-m">Ajouter un élément</span>${lien("OK", { action: "fermerOutil" })}</div>
+        <p class="t-texte-petit secondaire" style="margin:6px 0 12px">Annote ta page comme un carnet : un grand titre par quartier, une étiquette, une flèche vers ton scrap préféré.</p>
+        <div class="palette">${TYPES_NOTE.map((t) => `<button data-action="ajouterNote" data-id="${t.type}">
+          <span class="palette-apercu note-${t.type}">${estTexte(t.type) ? esc(t.exemple || "Texte") : icone(t.icone, 22)}</span>
+          <span class="t-texte-meta">${t.nom}</span></button>`).join("")}</div>
+        ${outils}</div>`,
     "25": `<div class="pied filet">
         <div class="rangee entre"><span class="t-titre-m">Fond</span>${lien("OK", { action: "fermerOutil" })}</div>
         <div class="nuancier" style="margin-top:12px">${FONDS.map(([k, nom]) =>
-          `<button class="${m.fond === k ? "choisi" : ""}" data-action="choisirFond" data-id="${k}"><span class="apercu fond-${k}"></span><span class="t-texte-meta${m.fond === k ? "" : " secondaire"}">${nom}</span></button>`).join("")}</div>
-        <p class="t-texte-petit secondaire" style="margin:10px 0 0">Le fond ne change que ton scrapbook. Les scraps, eux, restent intacts.</p>
+          `<button class="${m.fond === k ? "choisi" : ""}" data-action="choisirFond" data-id="${k}"><span class="apercu fond-${k}"></span><span class="t-texte-meta${m.fond === k ? "" : " secondaire"}">${nom}</span></button>`).join("")}
+          <label class="${m.fond === "photo" ? "choisi" : ""}" style="cursor:pointer">
+            <span class="apercu apercu-photo" ${m.fondImage ? `style="background-image:url(${m.fondImage})"` : ""}>${m.fondImage ? "" : icone("image", 20)}</span>
+            <span class="t-texte-meta${m.fond === "photo" ? "" : " secondaire"}">Ta photo</span>
+            <input type="file" accept="image/*" class="cache" data-change="fondPhoto"></label>
+        </div>
+        ${m.fond === "photo" && m.fondImage ? `<div class="curseur-ligne" style="margin-top:14px"><span class="t-texte-meta secondaire">Voile</span><span class="t-texte-meta secondaire" id="voile-val">${m.voile || 0} %</span></div>
+          <input type="range" min="0" max="80" value="${m.voile || 0}" data-input="voileFond">
+          <p class="t-texte-petit secondaire" style="margin:6px 0 0">Un peu de voile et tes affiches ressortent mieux sur la photo.</p>`
+          : `<p class="t-texte-petit secondaire" style="margin:10px 0 0">Le fond ne change que ton scrapbook. Les scraps, eux, restent intacts.</p>`}
         ${outils}</div>`,
     "26": `<div class="pied filet">
         <div class="rangee entre"><span class="t-titre-m">Scotch</span>${lien("OK", { action: "fermerOutil" })}</div>
@@ -572,18 +623,26 @@ function scrapbook(ecranId) {
         ${outils}</div>`,
     "27": `<div class="pied filet">
         <div class="rangee entre"><span class="t-titre-m">Déchirer</span>${lien("OK", { action: "fermerOutil" })}</div>
-        <p class="t-texte-petit secondaire" style="margin:8px 0 12px">Glisse ton doigt à travers un scrap pour le déchirer. Le morceau arraché reste dans ta collection : tu ne perds jamais un scrap.</p>
+        <div class="puces retour-ligne" style="margin:10px 0 8px">${DECHIRURES.map(([k, nom]) =>
+          puce(nom, dechirure === k, ` data-action="choisirDechirure" data-id="${k}"`)).join("")}</div>
+        <p class="t-texte-petit secondaire" style="margin:0 0 12px">${esc((DECHIRURES.find((d) => d[0] === dechirure) || [])[2] || "")} ${dechirure === "mesure" ? "" : "Touche ensuite le scrap à déchirer."} Le morceau arraché reste dans ta collection : tu ne perds jamais un scrap.</p>
         <div class="deux-col">${bouton("Annuler", { type: "secondaire", action: "annulerDechirure" })}${bouton("Recoller tout", { type: "secondaire", action: "recollerTout" })}</div>
         ${outils}</div>`,
   };
 
+  const nomOutil = { "24.1": "Ajouter", 25: "Fond", 26: "Scotch", 27: "Déchirer" }[ecranId];
   return `
   <header class="entete"><div class="entete-ligne">
     <div class="entete-gauche"><span class="t-titre-m">Mon scrapbook</span>
       <span class="t-texte-meta secondaire">${esc(ETAT.utilisateur.quartier)} · ${pluriel(m.items.length, "scrap")} · page remplie à ${remplissage} %</span></div>
-    ${ecranId === "24" && mode === "deplacer" ? lien("Valider", { action: "validerMur" }) : `<span class="t-texte-meta secondaire">${ecranId === "24" ? "Vue" : { 25: "Fond", 26: "Scotch", 27: "Déchirer" }[ecranId]}</span>`}
+    ${ecranId === "24" && mode === "deplacer"
+      ? lien("Valider", { action: "validerMur" })
+      : ecranId === "24"
+        ? `<button class="icone-bouton" data-aller="24.2" aria-label="Partager mon scrapbook">${icone("partager")}</button>`
+        : `<span class="t-texte-meta secondaire">${nomOutil}</span>`}
   </div></header>
-  <div class="mur-zone fond-${m.fond} mode-${ecranId === "24" ? mode : ecranId}" id="mur">
+  <div class="mur-zone fond-${m.fond} mode-${ecranId === "24" ? mode : ecranId}" id="mur" style="${styleFond(m)}">
+    ${m.fond === "photo" && m.voile ? `<i class="voile-fond" style="opacity:${(m.voile || 0) / 100}"></i>` : ""}
     <div class="mur-plan" id="plan"></div>
     ${commandesZoom()}
     <div class="note-ensemble"><span class="t-texte-meta">Page remplie à ${remplissage} %</span><span class="t-texte-meta secondaire">Il reste de la place : continue à sortir.</span></div>
@@ -591,9 +650,61 @@ function scrapbook(ecranId) {
   ${panneaux[ecranId]}`;
 }
 ecran("24", "C", "Mon scrapbook", "", () => scrapbook("24"), (r) => murMonter(r, modeMur()));
+ecran("24.1", "C", "Ajouter un élément", "", () => scrapbook("24.1"), (r) => murMonter(r, "deplacer"));
 ecran("25", "C", "Personnaliser — fond", "", () => scrapbook("25"), (r) => murMonter(r, "aucun"));
 ecran("26", "C", "Personnaliser — scotch", "", () => scrapbook("26"), (r) => murMonter(r, "scotch"));
 ecran("27", "C", "Personnaliser — déchirer", "", () => scrapbook("27"), (r) => murMonter(r, "dechirer"));
+
+/* 24.2 — exporter la page en image, pour la poster ailleurs */
+const FORMATS_EXPORT = [["story", "Story", "9 / 16"], ["carre", "Carré", "1 / 1"], ["page", "Page entière", "la page telle quelle"]];
+ecran("24.2", "C", "Partager mon scrapbook", "grille", () => {
+  const f = ETAT.ctx.formatExport || "story";
+  return `
+  ${entete("Partager", { retourVers: "24" })}
+  <div class="defile">
+    <p class="t-texte-petit secondaire" style="margin:0 0 14px">Ta page devient une image : scraps, scotch, déchirures, titres et fond, tout y est. Rien n'est publié par SCRAP — tu postes où tu veux.</p>
+    <div class="puces">${FORMATS_EXPORT.map(([k, nom]) => puce(nom, f === k, ` data-action="formatExport" data-id="${k}"`)).join("")}</div>
+    <div class="apercu-export format-${f}" id="apercu-export">
+      <div class="apercu-attente t-texte-meta secondaire">Composition…</div>
+    </div>
+    <p class="t-texte-meta secondaire centre" style="margin:12px 0 0">${esc((FORMATS_EXPORT.find((x) => x[0] === f) || [])[2] || "")}</p>
+  </div>
+  ${pied(`<div class="rang">
+    <button class="bouton bouton--secondaire" data-action="telechargerMur">${icone("telecharger", 20)}Enregistrer</button>
+    <button class="bouton" data-action="partagerMur">${icone("partager", 20)}Partager</button></div>
+    ${lien("Le voir sur un vrai mur", { aller: "24.3", centre: true })}`)}`;
+}, () => { majApercuExport(); return null; });
+
+function majApercuExport() {
+  const boite = $("#apercu-export");
+  if (!boite) return;
+  exporterMur(ETAT.ctx.formatExport || "story").then((c) => {
+    const b = $("#apercu-export");
+    if (!b) return;
+    b.innerHTML = "";
+    const im = new Image();
+    im.src = c.toDataURL("image/jpeg", 0.88);
+    im.alt = "Aperçu de ton scrapbook";
+    b.appendChild(im);
+  }).catch(() => { const b = $("#apercu-export"); if (b) b.innerHTML = '<div class="apercu-attente t-texte-meta secondaire">Aperçu impossible ici</div>'; });
+}
+
+/* 24.3 — voir son scrapbook posé sur un vrai mur, à travers la caméra */
+ecran("24.3", "C", "Sur un vrai mur", "sombre", () => `
+  <video class="camera" id="video-reel" playsinline autoplay muted></video>
+  <div class="scene-reel" id="scene-reel">
+    <div class="page-reel" id="page-reel"></div>
+  </div>
+  <header class="entete transparent" style="color:#fff;z-index:6"><div class="entete-ligne">
+    <button class="icone-bouton" data-aller="24.2" aria-label="Fermer">${icone("fermer")}</button>
+    <span class="entete-titre t-texte-meta">Sur un vrai mur</span><span></span>
+  </div></header>
+  <p class="t-texte-petit centre" id="consigne-reel">Vise un mur, place ta page au doigt, pince pour l'agrandir. Penche le téléphone : elle suit le mur.</p>
+  <div class="scanner-bas" style="z-index:3">
+    <span style="width:44px"></span>
+    <button class="declencheur" data-action="photoMurReel" aria-label="Prendre la photo"></button>
+    <span style="width:44px"></span>
+  </div>`, (r) => reelMonter(r));
 
 /* ═════════ D. Collections */
 const FILTRES_COLL = [["derniers", "Derniers"], ["rares", "Plus rares"], ["favoris", "Favoris"], ["lieu", "Lieu"], ["etat", "État"], ["theme", "Thème"]];
@@ -741,29 +852,69 @@ const svgExclusif = (cid) => {
     <text x="70" y="900" fill="#fff" font-family="Inter,Arial" font-weight="600" font-size="120" letter-spacing="-6">N° 001</text></svg>`;
   return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
 };
+/* La carte exclusive n'est pas une affiche de la rue : c'est SCRAP qui la
+ * fabrique. C'est donc le seul objet de l'app qui a le droit à l'holographie
+ * et à des couches séparées — la règle « l'affiche est intouchable » ne
+ * s'applique qu'aux vraies affiches. */
+function carteExclusive(cid) {
+  const c = collection(cid);
+  const mot = c.nom.split(" ")[0].toUpperCase();
+  return `<div class="carte-exclusive holo" id="carte-exclusive">
+    <i class="exc-fond"></i>
+    <i class="holo-film" aria-hidden="true"></i>
+    <i class="exc-cadre couche" style="--p:8"></i>
+    <span class="exc-entete couche" style="--p:14">SCRAP · ÉDITION EXCLUSIVE</span>
+    <span class="exc-mot couche" style="--p:30;font-size:${Math.min(23, 134 / Math.max(4, mot.length)).toFixed(1)}cqw">${esc(mot)}</span>
+    <i class="exc-carre couche" style="--p:44"></i>
+    <span class="exc-zone couche" style="--p:20">${esc(c.zone.toUpperCase())}</span>
+    <span class="exc-etat couche" style="--p:20">COLLECTION COMPLÈTE</span>
+    <span class="exc-num couche" style="--p:26">N° 001</span>
+    <i class="holo-eclat" aria-hidden="true"></i>
+  </div>`;
+}
+
 ecran("32", "D", "Collection complète — scrap exclusif", "grille", () => {
   const cid = ETAT.ctx.collection || "concerts";
   const c = collection(cid);
+  const ouvert = ETAT.ctx.packOuvert === cid;
   return `
   ${entete("", { fermer: true })}
-  <div class="defile">
+  <div class="defile scene-pack${ouvert ? " ouvert" : ""}" id="scene-pack">
     <span class="t-texte-meta secondaire">Collection complète</span>
-    <h1 class="t-titre-xl" style="margin:8px 0 24px">${esc(c.nom)}</h1>
+    <h1 class="t-titre-xl" style="margin:8px 0 20px">${esc(c.nom)}</h1>
     <div class="scene-exclusif" id="scene-exclusif">
       <i class="decor-halo couche" style="--p:30"></i>
       <i class="decor-rayons couche" style="--p:44"></i>
-      <div class="exclusif-carte couche" style="--p:6"><img src="${svgExclusif(cid)}" alt="Scrap exclusif" style="width:100%"><i class="scotch noir" style="left:-18px;top:2px;transform:rotate(-38deg)"></i><i class="scotch noir" style="right:-18px;top:2px;transform:rotate(38deg)"></i></div>
+      ${poussiere(16)}
+      <div class="pack" id="pack" data-action="ouvrirPack" role="button" tabindex="0">
+        <i class="pack-haut"></i>
+        <div class="pack-corps">
+          <span class="pack-logo">${logo(22)}</span>
+          <span class="pack-titre t-texte-meta">Édition exclusive</span>
+          <span class="pack-mot">${esc(c.nom.split(" ")[0].toUpperCase())}</span>
+          <span class="pack-pied t-texte-meta">1 scrap · numéroté</span>
+        </div>
+        <i class="pack-languette"></i>
+        <span class="pack-aide t-texte-meta">Tire pour ouvrir</span>
+      </div>
+      <div class="exclusif-carte couche" style="--p:6">${carteExclusive(cid)}</div>
     </div>
-    <div class="rangee entre" style="margin-top:24px;align-items:flex-start">
-      <div>${etiquette("Scrap exclusif")}<p class="t-texte-petit secondaire" style="margin:10px 0 0;max-width:180px">Réservé aux 64 personnes qui ont fini la collection.</p></div>
-      ${tampon(`Complète · ${c.total} / ${c.total}`, `${aujourdhui().date} · Paris`, { grand: true, plein: true, pose: true })}
+    <div class="apres-pack">
+      <div class="rangee entre" style="margin-top:24px;align-items:flex-start">
+        <div>${etiquette("Scrap exclusif")}<p class="t-texte-petit secondaire" style="margin:10px 0 0;max-width:180px">Réservé aux 64 personnes qui ont fini la collection.</p></div>
+        ${tampon(`Complète · ${c.total} / ${c.total}`, `${aujourdhui().date} · Paris`, { grand: true, plein: true, pose: true })}
+      </div>
+      <div class="rangee entre" style="margin-top:14px;gap:12px"><span class="t-texte-meta secondaire">Penche-la pour la faire briller</span>${boutonGyro()}</div>
     </div>
   </div>
-  ${pied(bouton("Coller sur mon scrapbook", { action: "collerExclusif" }) + lien("Voir mon badge", { aller: "33", centre: true }))}`;
+  ${pied(ouvert
+    ? bouton("Coller sur mon scrapbook", { action: "collerExclusif" }) + lien("Voir mon badge", { aller: "33", centre: true })
+    : bouton("Ouvrir le pack", { action: "ouvrirPack" }))}`;
 }, (r) => {
-  const c = collection(ETAT.ctx.collection || "concerts");
-  revelation(["COLLECTION", "COMPLÈTE"], { sous: c ? c.nom.toUpperCase() : "", duree: 1700 });
-  return profondeur($("#scene-exclusif", r), { amplitude: 1.2 });
+  const cid = ETAT.ctx.collection || "concerts";
+  const c = collection(cid);
+  if (ETAT.ctx.packOuvert !== cid) revelation(["COLLECTION", "COMPLÈTE"], { sous: c ? c.nom.toUpperCase() : "", duree: 1700 });
+  return profondeur($("#scene-exclusif", r), { amplitude: 1.3 });
 });
 
 ecran("33", "D", "Badge débloqué", "grille", () => {
@@ -967,6 +1118,9 @@ ecran("41", "F", "Réglages", "grille", () => {
     <button class="ligne" data-aller="37" style="min-height:88px">${avatar(56, u.initiales, u.avatar)}<span style="flex:1"><span class="t-texte-label" style="display:block">${esc(u.pseudo)}</span><span class="t-texte-petit secondaire">Modifier le profil</span></span><span class="secondaire">${icone("chevron")}</span></button>
     <p class="t-texte-meta secondaire" style="margin:20px 0 4px">Mon compte</p>
     <div class="liste">${ligne("Confidentialité", { aller: "42", icone: "cadenas" })}${ligne("Notifications", { aller: "43", icone: "cloche" })}${ligne("Position", { aller: "44", icone: "position" })}${ligne("Compte", { aller: "45", icone: "profil" })}</div>
+    <p class="t-texte-meta secondaire" style="margin:20px 0 4px">Affichage</p>
+    <div class="liste">${ligne("Relief au mouvement", { toggle: "profondeur", icone: "mur3d" })}</div>
+    <p class="t-texte-petit secondaire" style="margin:6px 0 0">Les scraps prennent du relief quand tu penches le téléphone. À couper si ça te gêne ou pour économiser la batterie.</p>
     <p class="t-texte-meta secondaire" style="margin:20px 0 4px">Infos</p>
     <div class="liste">${ligne("Aide et mentions", { aller: "46", icone: "aide" })}${ligne("Vie privée", { aller: "47", icone: "cadenas" })}</div>
     <p class="t-texte-meta secondaire centre" style="margin-top:32px">SCRAP · version 1.0 · prototype</p>

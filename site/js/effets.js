@@ -29,58 +29,114 @@ function demanderGyro() {
     .catch(() => { gyroAutorise = false; return false; });
 }
 
-function profondeur(scene, o = {}) {
-  if (!scene || MOINS_ANIM || !(window.CONFIG && CONFIG.profondeur.actif)) return null;
-  const amp = (o.amplitude || 1) * CONFIG.profondeur.amplitude;
-  let cibleX = 0, cibleY = 0, x = 0, y = 0, base = null, anim = null, vivant = true;
+/* ───────── L'inclinaison du téléphone, mesurée une seule fois pour toute
+ * l'app. On écrit --px et --py (de -1 à 1) sur la racine du document : toutes
+ * les couches de tous les écrans en héritent, sans qu'aucun écran n'ait à
+ * brancher quoi que ce soit. Sur ordinateur, la souris remplace le capteur. */
+const INCLINAISON = { x: 0, y: 0, cibleX: 0, cibleY: 0, base: null, branche: false, anim: null };
+
+function inclinaisonActive() {
+  return !MOINS_ANIM && ETAT.reglages.profondeur !== false && !!(window.CONFIG && CONFIG.profondeur.actif);
+}
+
+function inclinaisonDemarrer() {
+  const racine = document.documentElement;
 
   const boucle = () => {
-    if (!vivant) return;
-    x += (cibleX - x) * 0.12;
-    y += (cibleY - y) * 0.12;
-    scene.style.setProperty("--px", x.toFixed(4));
-    scene.style.setProperty("--py", y.toFixed(4));
-    anim = requestAnimationFrame(boucle);
+    const vise = inclinaisonActive() ? 1 : 0;
+    const dx = INCLINAISON.cibleX * vise - INCLINAISON.x;
+    const dy = INCLINAISON.cibleY * vise - INCLINAISON.y;
+    // quand plus rien ne bouge, on n'écrit rien : le navigateur se repose
+    if (Math.abs(dx) > 0.0008 || Math.abs(dy) > 0.0008) {
+      INCLINAISON.x += dx * 0.12;
+      INCLINAISON.y += dy * 0.12;
+      racine.style.setProperty("--px", INCLINAISON.x.toFixed(4));
+      racine.style.setProperty("--py", INCLINAISON.y.toFixed(4));
+    }
+    INCLINAISON.anim = requestAnimationFrame(boucle);
   };
   boucle();
 
-  const surOrientation = (e) => {
+  INCLINAISON.surOrientation = (e) => {
     if (e.gamma === null || e.gamma === undefined) return;
-    if (!base) base = { g: e.gamma, b: e.beta };
-    cibleX = clamp(((e.gamma - base.g) / 26) * amp, -1, 1);
-    cibleY = clamp(((e.beta - base.b) / 26) * amp, -1, 1);
+    if (!INCLINAISON.base) INCLINAISON.base = { g: e.gamma, b: e.beta };
+    const amp = (window.CONFIG && CONFIG.profondeur.amplitude) || 1;
+    INCLINAISON.cibleX = clamp(((e.gamma - INCLINAISON.base.g) / 24) * amp, -1, 1);
+    INCLINAISON.cibleY = clamp(((e.beta - INCLINAISON.base.b) / 24) * amp, -1, 1);
   };
-  const surSouris = (e) => {
-    const r = scene.getBoundingClientRect();
-    cibleX = clamp(((e.clientX - (r.left + r.width / 2)) / (r.width / 2)) * amp, -1, 1);
-    cibleY = clamp(((e.clientY - (r.top + r.height / 2)) / (r.height / 2)) * amp, -1, 1);
-  };
-  const recentrer = () => { base = null; cibleX = 0; cibleY = 0; };
+  window.addEventListener("pointermove", (e) => {
+    if (INCLINAISON.branche) return;   // le capteur a la priorité sur la souris
+    INCLINAISON.cibleX = clamp((e.clientX / innerWidth - 0.5) * 2, -1, 1);
+    INCLINAISON.cibleY = clamp((e.clientY / innerHeight - 0.5) * 2, -1, 1);
+  });
+  window.addEventListener("blur", () => { INCLINAISON.base = null; INCLINAISON.cibleX = 0; INCLINAISON.cibleY = 0; });
+  if (!gyroDemandeNecessaire()) brancherInclinaison();
+}
 
-  const brancherGyro = () => window.addEventListener("deviceorientation", surOrientation, true);
-  if (gyroDemandeNecessaire()) {
-    // iOS : il faut un geste de la personne. Le bouton est posé par l'écran.
-    scene.classList.add("attend-gyro");
-  } else {
-    brancherGyro();
-  }
+function brancherInclinaison() {
+  if (INCLINAISON.branche) return;
+  INCLINAISON.branche = true;
+  window.addEventListener("deviceorientation", INCLINAISON.surOrientation, true);
+}
+
+/* Règle l'intensité de l'effet sur une scène (1 = normal). Les couches
+ * à l'intérieur portent class="couche" et --p, l'amplitude en pixels. */
+function profondeur(scene, o = {}) {
+  if (!scene) return null;
+  scene.style.setProperty("--amp", o.amplitude === undefined ? 1 : o.amplitude);
   scene.dataset.gyro = "1";
-  scene._brancherGyro = brancherGyro;
-  window.addEventListener("pointermove", surSouris);
-  window.addEventListener("blur", recentrer);
-
-  return () => {
-    vivant = false;
-    cancelAnimationFrame(anim);
-    window.removeEventListener("deviceorientation", surOrientation, true);
-    window.removeEventListener("pointermove", surSouris);
-    window.removeEventListener("blur", recentrer);
-  };
+  return null;
 }
 
 /* Bouton « activer la 3D » (iOS seulement), à poser dans un écran */
 const boutonGyro = () =>
   gyroDemandeNecessaire() ? `<button class="bouton-lien t-texte-meta" data-action="activerGyro">Activer la 3D</button>` : "";
+
+/* ───────── Poussière de papier : quelques éclats qui flottent dans une scène.
+ * Purement décoratif, et c'est ce qui donne la profondeur quand on penche. */
+function poussiere(n = 14) {
+  if (MOINS_ANIM) return "";
+  let out = "";
+  for (let i = 0; i < n; i++) {
+    const p = 10 + Math.random() * 46;          // profondeur : plus c'est grand, plus ça bouge
+    out += `<i class="grain couche" style="--p:${p.toFixed(0)};left:${(Math.random() * 100).toFixed(1)}%;top:${(Math.random() * 100).toFixed(1)}%;
+      --t:${(5 + Math.random() * 7).toFixed(1)}s;--d:${(-Math.random() * 7).toFixed(1)}s;--s:${(2 + Math.random() * 4).toFixed(1)}px;--o:${(0.18 + Math.random() * 0.3).toFixed(2)}"></i>`;
+  }
+  return `<div class="poussiere" aria-hidden="true">${out}</div>`;
+}
+
+/* ───────── Vol d'un scrap d'un écran à l'autre (l'affiche qu'on colle).
+ * On garde la position de départ, et le scrapbook termine le mouvement. */
+function volPreparer(el) {
+  if (!el || MOINS_ANIM) return null;
+  const r = el.getBoundingClientRect();
+  return { img: el.currentSrc || el.src, x: r.left, y: r.top, w: r.width, h: r.height };
+}
+function volArriver(vol, cible, apres) {
+  if (!vol || !cible || MOINS_ANIM) { apres && apres(); return; }
+  const papier = cible.querySelector(".mur-papier") || cible;
+  const r = papier.getBoundingClientRect();
+  const clone = document.createElement("img");
+  clone.className = "vol-scrap";
+  clone.src = vol.img;
+  clone.style.cssText = `left:${vol.x}px;top:${vol.y}px;width:${vol.w}px;height:${vol.h}px`;
+  document.body.appendChild(clone);
+  cible.style.visibility = "hidden";
+  requestAnimationFrame(() => {
+    clone.style.transition = "transform .62s cubic-bezier(.3,.9,.3,1), opacity .2s ease .5s";
+    const k = r.width / vol.w;
+    clone.style.transformOrigin = "0 0";
+    clone.style.transform = `translate(${r.left - vol.x}px, ${r.top - vol.y}px) scale(${k}) rotate(${(Math.random() * 10 - 5).toFixed(1)}deg)`;
+    clone.style.opacity = ".9";
+  });
+  setTimeout(() => {
+    clone.remove();
+    cible.style.visibility = "";
+    cible.classList.add("vient-darriver");
+    vibrer([12, 40, 18]);
+    apres && apres();
+  }, 640);
+}
 
 /* ───────── Compteur : des chiffres qui défilent avant de se poser.
  * 000 → 019, chiffre par chiffre, de gauche à droite. */

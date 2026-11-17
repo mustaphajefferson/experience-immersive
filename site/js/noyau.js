@@ -68,6 +68,15 @@ const ICONES = {
   taille: "M4 4h9v9H4zM11 11h9v9h-9zM16 11v-4M20 11h-4",
   vue: "M2 12s4-6 10-6 10 6 10 6-4 6-10 6-10-6-10-6zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
   reprendre: "M4 10a8 8 0 1 1 1 6M4 5v5h5",
+  etiquette: "M3 7h18v10H3zM6.5 10h8M6.5 14h5",
+  calendrier: "M3 6h18v15H3zM3 10h18M8 3v4M16 3v4M7 14h3v3H7z",
+  fleche: "M3 17c6-8 12-11 18-11M16 2.5 21 6l-3 5",
+  ruban: "M3 9h18v6H3zM7 9v6M12 9v6M17 9v6",
+  punaise: "M12 16a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM12 16v6",
+  telecharger: "M12 3v12M7.5 11 12 15.5 16.5 11M4 20h16",
+  mur3d: "M3 8l9-5 9 5v8l-9 5-9-5zM3 8l9 5 9-5M12 13v8",
+  ciseaux: "M7 7a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM7 22a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM9 8.5 20 20M9 15.5 20 4",
+  texte: "M5 5h14M12 5v14M8.5 19h7",
 };
 const icone = (nom, t = 24) =>
   `<svg width="${t}" height="${t}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${(1.5 * 24) / t}" stroke-linecap="square" aria-hidden="true"><path d="${ICONES[nom] || ""}"/></svg>`;

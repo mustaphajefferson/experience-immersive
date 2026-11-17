@@ -24,7 +24,9 @@ function rendre(id, o = {}) {
   if (id !== "19") cameraArreter();
   $$(".revelation").forEach((x) => x.remove());   // pas de révélation qui traîne d'un écran à l'autre
   const s = document.createElement("section");
-  s.className = `ecran ${e.classe || ""}${o.garderDefilement ? " sans-anim" : ""}`;
+  const fondu = ETAT.ctx.fondu ? " en-fondu" : "";
+  ETAT.ctx.fondu = false;
+  s.className = `ecran ${e.classe || ""}${o.garderDefilement ? " sans-anim" : ""}${fondu}`;
   s.dataset.ecran = id;
   try { s.innerHTML = e.rendu(); } catch (err) { console.error(err); s.innerHTML = ECRANS["50"].rendu(); }
   APP.replaceChildren(s);
@@ -125,13 +127,17 @@ const ACTIONS = {
   activerGyro(el) {
     const demande = el && el.isConnected;   // vrai seulement si la personne a touché le bouton
     demanderGyro().then((ok) => {
-      const scene = $("[data-gyro]");
-      if (ok && scene && scene._brancherGyro) {
-        scene._brancherGyro();
-        scene.classList.remove("attend-gyro");
+      if (ok) {
+        brancherInclinaison();
         $$("[data-action='activerGyro']").forEach((b) => b.remove());
         if (demande) toast("Penche ton téléphone");
       } else if (demande) toast("Ton téléphone n'a pas autorisé le capteur.");
+    });
+  },
+  autoriserMouvement() {
+    demanderGyro().then((ok) => {
+      if (ok) { brancherInclinaison(); ETAT.reglages.profondeur = true; sauver(); }
+      aller("08");
     });
   },
   captureCollection(el) {
@@ -171,14 +177,18 @@ const ACTIONS = {
   },
   coller() {
     const id = ETAT.ctx.scrap, s = scrap(id);
+    // on retient d'où part l'affiche : le scrapbook terminera le mouvement
+    ETAT.ctx.vol = volPreparer($(".scrap-img"));
     collerSurMur(id);
-    ETAT.ctx.murMode = "deplacer";
+    ETAT.ctx.murMode = "regarder";
     if (s.collection && collection(s.collection) && complete(s.collection) && !ETAT.celebrees.includes(s.collection)) {
       ETAT.celebrees.push(s.collection);
       ETAT.ctx.collection = s.collection;
+      ETAT.ctx.packOuvert = null;
+      ETAT.ctx.vol = null;
       sauver();
       aller("32");
-    } else { sauver(); aller("24"); setTimeout(() => toast("Collé sur ton scrapbook"), 300); }
+    } else { sauver(); aller("24"); }
   },
   billetterie() { toast("Ouverture de la billetterie (démo)"); },
   itineraireLieu() { ETAT.ctx.cible = "lieu"; aller("17"); },
@@ -189,25 +199,51 @@ const ACTIONS = {
   },
   fermerOutil() { ETAT.ctx.murSel = null; aller("24", { remplace: true }); },
   deselectionnerItem() { ETAT.ctx.murSel = null; rafraichir(); },
+  ouvrirSelection() { if (ETAT.ctx.murSel) { ETAT.ctx.scrap = ETAT.ctx.murSel; aller("21"); } },
   itemDevant() {
-    const it = ETAT.mur.items.find((i) => i.id === ETAT.ctx.murSel); if (!it) return;
-    ETAT.mur.items = ETAT.mur.items.filter((i) => i !== it).concat(it);
+    const o = trouverElement(ETAT.ctx.murSel); if (!o) return;
+    if (o.type) { o.devant = true; ETAT.mur.notes = ETAT.mur.notes.filter((n) => n !== o).concat(o); }
+    else ETAT.mur.items = ETAT.mur.items.filter((i) => i !== o).concat(o);
     sauver(); rafraichir(); toast("Mis au premier plan");
   },
   itemAligner() {
-    const it = ETAT.mur.items.find((i) => i.id === ETAT.ctx.murSel); if (!it) return;
-    it.rot = 0; it.x = Math.round(it.x / 8) * 8; it.y = Math.round(it.y / 8) * 8;
+    const o = trouverElement(ETAT.ctx.murSel); if (!o) return;
+    o.rot = 0; o.x = Math.round(o.x / 8) * 8; o.y = Math.round(o.y / 8) * 8;
     sauver(); rafraichir(); vibrer(8);
   },
   itemRetirer() {
     const id = ETAT.ctx.murSel; if (!id) return;
-    ETAT.mur.items = ETAT.mur.items.filter((i) => i.id !== id);
+    const o = trouverElement(id);
+    if (o && o.type) ETAT.mur.notes = ETAT.mur.notes.filter((n) => n.id !== id);
+    else ETAT.mur.items = ETAT.mur.items.filter((i) => i.id !== id);
     ETAT.ctx.murSel = null; sauver(); rafraichir();
-    toast("Décollé. Le scrap reste dans ta collection.");
+    toast(o && o.type ? "Élément retiré" : "Décollé. Le scrap reste dans ta collection.");
+  },
+  /* Poser un titre, une étiquette, une flèche… au milieu de ce qu'on regarde */
+  ajouterNote(el) {
+    const t = TYPES_NOTE.find((x) => x.type === el.dataset.id); if (!t) return;
+    const vue = ETAT.ctx.vue || { k: 1, x: 0, y: 0 };
+    const zone = $("#mur");
+    const cx = zone ? (zone.clientWidth / 2 - vue.x) / vue.k : LARGEUR_MUR / 2;
+    const cy = zone ? (zone.clientHeight / 2 - vue.y) / vue.k : 200;
+    const n = {
+      id: "n" + Date.now(),
+      type: t.type,
+      texte: t.type === "date" ? aujourdhui().date : t.exemple,
+      x: Math.round(clamp(cx - (estTexte(t.type) ? 90 : t.w / 2), 8, LARGEUR_MUR - 60)),
+      y: Math.round(clamp(cy - 20, 0, ETAT.mur.hauteur - 60)),
+      w: t.w, rot: Math.round(Math.random() * 6 - 3), devant: true,
+    };
+    (ETAT.mur.notes || (ETAT.mur.notes = [])).push(n);
+    ETAT.ctx.murSel = n.id;
+    ETAT.ctx.murMode = "deplacer";
+    sauver(); vibrer(10);
+    aller("24", { remplace: true });
   },
   choisirDispo(el) { ETAT.ctx.dispoColl = el.dataset.id; rafraichir(); },
   choisirFond(el) { ETAT.mur.fond = el.dataset.id; sauver(); rafraichir(); vibrer(6); },
   choisirScotch(el) { ETAT.mur.scotchType = el.dataset.id; sauver(); rafraichir(); vibrer(6); },
+  choisirDechirure(el) { ETAT.mur.dechireType = el.dataset.id; sauver(); rafraichir(); },
   annulerDechirure() {
     const a = ETAT.ctx.dechireAvant;
     if (!a) { toast("Rien à annuler"); return; }
@@ -236,6 +272,53 @@ const ACTIONS = {
     const c = D.cibles.find((x) => x.collection === el.dataset.id);
     if (!c) { toast("Plus rien à chercher dans cette collection"); return; }
     ETAT.ctx.cible = c.id; aller("16");
+  },
+  /* ───────── Export du scrapbook */
+  formatExport(el) { ETAT.ctx.formatExport = el.dataset.id; rafraichir(); majApercuExport(); },
+  telechargerMur() {
+    exporterMur(ETAT.ctx.formatExport || "story").then((c) => {
+      const a = document.createElement("a");
+      a.download = `scrapbook-${ETAT.utilisateur.pseudo.replace("@", "")}.jpg`;
+      a.href = c.toDataURL("image/jpeg", 0.92);
+      a.click();
+      toast("Image enregistrée");
+    }).catch(() => toast("L'export n'a pas abouti"));
+  },
+  partagerMur() {
+    exporterMur(ETAT.ctx.formatExport || "story").then((c) => new Promise((ok) => c.toBlob(ok, "image/jpeg", 0.9)))
+      .then((blob) => {
+        const f = new File([blob], "scrapbook.jpg", { type: "image/jpeg" });
+        if (navigator.canShare && navigator.canShare({ files: [f] })) {
+          return navigator.share({ files: [f], title: "Mon scrapbook SCRAP", text: "Ma ville en morceaux." });
+        }
+        ACTIONS.telechargerMur();
+        toast("Ton téléphone ne partage pas les images : elle est enregistrée.");
+      }).catch(() => {});
+  },
+  photoMurReel() {
+    vibrer([18, 40, 12]);
+    const f = document.createElement("div"); f.className = "flash";
+    const e = document.querySelector(".ecran"); if (e) e.appendChild(f);
+    photoReel().then((c) => {
+      const a = document.createElement("a");
+      a.download = "scrapbook-sur-le-mur.jpg";
+      a.href = c.toDataURL("image/jpeg", 0.9);
+      a.click();
+      toast("Photo enregistrée");
+    }).catch(() => toast("Photo impossible ici"));
+  },
+  /* ───────── Ouverture du pack */
+  ouvrirPack() {
+    const cid = ETAT.ctx.collection || "concerts";
+    if (ETAT.ctx.packOuvert === cid) return;
+    const p = $("#pack");
+    vibrer([14, 50, 20, 40, 30]);
+    if (p) p.classList.add("ouvre");
+    setTimeout(() => {
+      ETAT.ctx.packOuvert = cid;
+      rafraichir();
+      setTimeout(() => { const c = $("#carte-exclusive"); if (c) eclat(c, { n: 16 }); }, 260);
+    }, 620);
   },
   collerExclusif() {
     const cid = ETAT.ctx.collection || "concerts", c = collection(cid), id = "excl-" + cid;
@@ -309,12 +392,34 @@ document.addEventListener("input", (e) => {
   if (!k) return;
   const v = +e.target.value;
   if (k === "rayon") { ETAT.reglages.rayon = v; const l = $("#rayon-val"); if (l) l.textContent = v + " m"; }
+  if (k === "noteTexte") {
+    const n = trouverElement(ETAT.ctx.murSel);
+    if (!n || !n.type) return;
+    n.texte = e.target.value;
+    const el = $(`[data-note="${CSS.escape(n.id)}"]`);
+    if (el) el.firstChild ? (el.childNodes[0].nodeValue = n.texte) : (el.textContent = n.texte);
+    return;
+  }
+  if (k === "voileFond") {
+    ETAT.mur.voile = v;
+    const l = $("#voile-val"); if (l) l.textContent = v + " %";
+    const x = $(".voile-fond"); if (x) x.style.opacity = v / 100;
+    return;
+  }
   if (k === "itemTaille" || k === "itemRotation") {
-    const it = ETAT.mur.items.find((x) => x.id === ETAT.ctx.murSel);
-    if (!it) return;
-    const el = $(`[data-item="${CSS.escape(it.id)}"]`);
-    if (k === "itemTaille") { it.w = v; const l = $("#item-taille-val"); if (l) l.textContent = Math.round((v / 128) * 100) + " %"; if (el) el.style.width = v + "px"; }
-    else { it.rot = v; const l = $("#item-rot-val"); if (l) l.textContent = v + "°"; if (el) el.style.transform = `rotate(${v}deg)`; }
+    const o = trouverElement(ETAT.ctx.murSel);
+    if (!o) return;
+    const el = $(`[data-item="${CSS.escape(o.id)}"]`) || $(`[data-note="${CSS.escape(o.id)}"]`);
+    if (k === "itemTaille") {
+      o.w = v;
+      const texte = o.type && estTexte(o.type);
+      const l = $("#item-taille-val"); if (l) l.textContent = texte ? v + " px" : Math.round((v / 128) * 100) + " %";
+      if (el) { if (texte) el.style.fontSize = v + "px"; else { el.style.width = v + "px"; if (o.type === "punaise") el.style.height = v + "px"; } }
+    } else {
+      o.rot = v;
+      const l = $("#item-rot-val"); if (l) l.textContent = v + "°";
+      if (el) el.style.transform = `rotate(${v}deg)`;
+    }
     return;
   }
   if (k === "vitrineTaille" || k === "vitrineRotation") {
@@ -329,8 +434,28 @@ document.addEventListener("input", (e) => {
 document.addEventListener("change", (e) => {
   const t = e.target;
   if (t.dataset.input === "rayon") { sauver(); if (courant === "14") rafraichir(); }
-  if (t.dataset.input && (t.dataset.input.startsWith("vitrine") || t.dataset.input.startsWith("item"))) sauver();
+  if (t.dataset.input && (t.dataset.input.startsWith("vitrine") || t.dataset.input.startsWith("item") || t.dataset.input === "noteTexte" || t.dataset.input === "voileFond")) sauver();
   if (t.dataset.change === "photoCapture") photoFichier(t.files[0]);
+  /* Photo de fond du scrapbook : on la réduit avant de l'enregistrer, sinon
+   * elle ne tient pas dans la mémoire du navigateur. */
+  if (t.dataset.change === "fondPhoto" && t.files[0]) {
+    const r = new FileReader();
+    r.onload = () => {
+      const im = new Image();
+      im.onload = () => {
+        const L = Math.min(900, im.width);
+        const c = document.createElement("canvas");
+        c.width = L; c.height = Math.round((L * im.height) / im.width);
+        c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+        ETAT.mur.fondImage = c.toDataURL("image/jpeg", 0.72);
+        ETAT.mur.fond = "photo";
+        if (!ETAT.mur.voile) ETAT.mur.voile = 25;
+        sauver(); rafraichir(); vibrer(8);
+      };
+      im.src = r.result;
+    };
+    r.readAsDataURL(t.files[0]);
+  }
   if (t.dataset.change === "photoProfil" && t.files[0]) {
     const r = new FileReader();
     r.onload = () => {
@@ -396,6 +521,8 @@ window.addEventListener("offline", () => { if (["13", "14", "16", "17", "18"].in
 /* ───────── Démarrage */
 (function demarrer() {
   if (!ETAT.reglages.hasOwnProperty("manquants")) ETAT.reglages.manquants = true;
+  if (!ETAT.mur.notes) ETAT.mur.notes = [];
+  inclinaisonDemarrer();   // l'inclinaison du téléphone, pour toute l'app
   const id = idDuHash();
   if (!id) { location.replace("#/01"); pile.push("01"); rendre("01"); return; }
   pile.push(id);

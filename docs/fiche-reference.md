@@ -2,7 +2,7 @@
 
 *À lire au début de chaque nouvelle conversation. C'est la source de vérité du projet : si une décision change, on met cette fiche à jour.*
 
-Dernière mise à jour : 17.11.2026 (v5 : scan automatique, profondeur au gyroscope, rareté, scrapbook zoomable, 12 collections)
+Dernière mise à jour : 17.11.2026 (v6 : relief partout, scrapbook annotable et exportable, déchirures réalistes, pack et carte holo, mur en réalité augmentée)
 
 ---
 
@@ -31,6 +31,7 @@ Dernière mise à jour : 17.11.2026 (v5 : scan automatique, profondeur au gyrosc
 - On capture une affiche dans la rue : elle devient un scrap, avec son numéro (« Scrap N° 003 » = 3e personne à l'avoir capturé).
 - Les scraps se collent sur un **scrapbook** personnel, façon moodboard : déplacer, scotcher, déchirer, changer le fond.
 - Elles se regroupent en **collections** (12 au total : concerts, expos, marchés, messages politiques, street art, théâtre, cinéma, soirées, sport, brocantes, typo, affiches disparues). On en choisit trois au départ ; la carte aide à trouver celles qui manquent.
+- **Le relief** est une matière de l'app entière, pas un effet d'un écran : l'inclinaison du téléphone est mesurée une fois pour toutes et toutes les couches de tous les écrans la suivent. L'autorisation est demandée dès l'accueil (écran 07.1), à côté de la caméra, et se coupe dans les réglages.
 - **La rareté** se lit sur le numéro de capture : mythique (5 premiers), rare (20 premiers), peu vue (60 premiers), commune. Plus un scrap est rare, plus sa page réagit : le décor derrière la carte bouge avec l'inclinaison du téléphone (gyroscope), le halo et les rayons s'intensifient. L'affiche, elle, n'est jamais touchée.
 - Progression : profil personnalisable, vitrine d'affiches, badges (sceaux au cadre perforé, un motif dessiné par badge).
 - **Objectif principal :** faire sortir les gens.
@@ -46,7 +47,7 @@ Le parcours d'Inès (les 11 premiers écrans dessinés) est inclus : 13, 19, 21,
 **A. Lancement et inscription**
 - 01 Lancement animé (3,4 s, toucher pour passer) : huit affiches se collent l'une sur l'autre, elles tombent, et SCRAP se relève lettre par lettre dessous
 - 02 Bienvenue · 03 Découverte 1 — Sors · 04 Découverte 2 — Capture · 05 Découverte 3 — Colle
-- 06 Accès à la caméra · 07 Accès à la position
+- 06 Accès à la caméra · 07 Accès à la position · **07.1 Accès au mouvement** (le relief, démontré avec trois affiches qui bougent)
 - 08 Créer un compte · 09 Se connecter · 10 Mot de passe oublié · 11 Pseudo et avatar · 12 Collections de départ (3 max)
 
 **B. Carte et capture**
@@ -55,12 +56,15 @@ Le parcours d'Inès (les 11 premiers écrans dessinés) est inclus : 13, 19, 21,
 - 20 Capture échouée · 21 Scrap capturé — recto · 22 Scrap capturé — verso · 23 Détail de l'événement
 
 **C. Scrapbook**
-- 24 Mon scrapbook, deux modes : **Vue** (pincer pour zoomer, glisser pour se promener, rien ne bouge) et **Disposition** (déplacer, redimensionner, tourner, mettre devant, retirer)
-- 25 Personnaliser — fond (8 fonds) · 26 Personnaliser — scotch · 27 Personnaliser — déchirer
+- 24 Mon scrapbook, deux modes : **Vue** (se promener, zoomer ; toucher un scrap l'ouvre en grand) et **Disposition** (premier toucher = sélection, deuxième = ouvre en grand ; seul le scrap sélectionné se déplace, donc un glissement n'attrape jamais une affiche par surprise)
+- **24.1 Ajouter un élément** : grand titre, sous-titre, étiquette, date, flèche, ruban, punaise — de quoi annoter la page comme un carnet
+- **24.2 Partager mon scrapbook** : la page devient une image (story, carré, page entière), à enregistrer ou à partager
+- **24.3 Sur un vrai mur** : la page posée sur le mur d'en face à travers la caméra, avec photo
+- 25 Personnaliser — fond (8 motifs + **ta propre photo**, avec un voile réglable) · 26 Personnaliser — scotch · 27 Personnaliser — déchirer (**5 types** : un coin, un bord, en deux, arrachée, sur mesure)
 
 **D. Collections**
 - 28 Ma collection (filtres Derniers · Plus rares · Favoris · Lieu · **État** · Thème ; 4 dispositions : Mosaïque · Serré · Liste · En grand) · 29 Sélection · 30 Mes collections
-- 31 Fiche d'une collection · 32 Collection complète — scrap exclusif · 33 Badge débloqué
+- 31 Fiche d'une collection · 32 Collection complète — **ouverture d'un pack** puis le scrap exclusif holographique · 33 Badge débloqué
 
 **E. Profil et partage**
 - 34 Placer sur ma vitrine · 35 Profil vu par les autres · 36 Choisir un badge · 37 Modifier le profil · 38 Abonnés et abonnements · 39 Partager un scrap · 40 Lieu partenaire
@@ -133,9 +137,10 @@ L'accent sert uniquement pour : le déclencheur et le cadre du scanner, le bouto
 
 **10 — Scrap (ajoutée) :**
 - **Tampon** : un par scrap, à droite de la légende, jamais sur l'image. Il porte la date de capture et l'arrondissement. Contour = scrap capturé ; plein (fond/inverse) = collection complète. Incliné de 6°, double filet, Texte/Méta, jamais en accent.
-- **Fonds du scrapbook** (au choix) : Papier (défaut, fond/secondaire), Quadrillé (la grille 09), Millimétré, Kraft, Béton, Liège, Journal, Noir. Trame de points 2 px tous les 24 px, repères « + » tous les 96 px.
+- **Fonds du scrapbook** (au choix) : Papier (défaut, fond/secondaire), Quadrillé (la grille 09), Millimétré, Kraft, Béton, Liège, Journal, Noir, ou une photo personnelle avec un voile réglable. Trame de points 2 px tous les 24 px, repères « + » tous les 96 px.
 - **Scotch** : transparent, kraft, papier, noir. 52 × 16 px, deux bouts maximum par scrap, sur le scrapbook et la vitrine uniquement.
-- **Déchirure** : sur le scrapbook seulement. Le morceau arraché reste dans la collection : on ne perd jamais un scrap.
+- **Déchirure** : sur le scrapbook seulement. Cinq types au choix (un coin, un bord, en deux, arrachée, sur mesure au doigt). Le bord n'est pas un zigzag régulier : il est construit par déplacement du milieu, avec de grandes ondulations et de petites dents par-dessus, et un liseré de papier blanc derrière pour l'épaisseur. Le morceau arraché reste dans la collection : on ne perd jamais un scrap.
+- **Éléments à poser** (section 11) : grand titre, sous-titre, étiquette, date, flèche, ruban, punaise. Ils se déplacent, se redimensionnent et se tournent comme les scraps. Les textes prennent la couleur du fond (blanc sur noir et liège).
 - **Logo** : « SCRAP » en Inter Semi Bold, suivi d'un carré rouge (le point de capture, seul accent du logo).
 
 ## 5. Décisions prises
@@ -148,6 +153,11 @@ L'accent sert uniquement pour : le déclencheur et le cadre du scanner, le bouto
 - **Le scan est automatique** (écran 19) : les contours de l'affiche sont suivis en direct et la photo part toute seule dès que le cadre ne bouge plus, comme dans Notes. L'image est redressée (perspective corrigée) avant d'être proposée. La capture au bouton reste possible : chip « Auto » en haut à droite.
 - **On vérifie avant d'identifier** : après la capture, l'écran 19.1 montre l'affiche seule sur fond noir et demande « Ce scan te plaît ? » — Garder ou Reprendre. L'identification (titre, lieu, collection, tags) vient après, en 19.2.
 - **Holo :** l'état holographique est signalé par une étiquette « État · Holo » et une mention dans la légende, pas par un effet sur l'image (règle « affiche intouchable »).
+- **Le relief au gyroscope** s'applique à toute l'app, pas à un écran : une seule mesure, posée en variables CSS sur la racine du document (`--px`, `--py`), dont héritent toutes les couches. L'autorisation est demandée à l'accueil (07.1) et se coupe dans Réglages › Affichage.
+- **L'holographie est réservée à ce que SCRAP fabrique lui-même** : la carte exclusive de fin de collection. Elle a des couches séparées (fond, cadre, mot, carré rouge, numéro), un film irisé et un éclat qui suivent l'inclinaison. La règle « l'affiche est intouchable » ne concerne que les vraies affiches de la rue ; pour un scrap marqué Holo, l'effet passe en halo derrière l'affiche, jamais dessus.
+- **Fin de collection : on ouvre un pack.** Une pochette noire scellée, une languette, puis la carte qui sort. C'est l'objet le plus précieux de l'app, il lui fallait un geste.
+- **L'export du scrapbook** redessine la page dans un canvas (fonds, scraps, scotch, déchirures, éléments posés), avec une signature SCRAP et le pseudo en bas. Trois formats : story, carré, page entière.
+- **« Sur un vrai mur »** est de la réalité augmentée légère : flux de la caméra + la page inclinée selon le gyroscope. Pas de reconnaissance de surface — WebXR n'existe pas sur Safari iOS, et une vraie détection de plan demanderait une app native. Pour une démo de workshop, c'est suffisant et ça marche sur tous les téléphones.
 - **Badges** : des sceaux, pas des pictos. Carré de 64 px, cadre double dont un filet perforé façon timbre, repères aux quatre côtés, et un motif dessiné pour chaque badge (le « 1 » du premier scrap, les collines de Belleville, le losange de l'holo, la note des concerts, le cadre des expos, l'auvent des marchés, le mégaphone des messages, la bombe du street art, le fantôme des disparues, le « 50 »). Fond noir quand le badge est choisi, gris et cadenas quand il est verrouillé.
 - Le filtre « Date » est remplacé par **« État »**.
 - Fondation Vuitton, La Boule Noire, etc. sont des **exemples**, pas de vrais partenaires.
@@ -166,6 +176,7 @@ L'accent sert uniquement pour : le déclencheur et le cadre du scanner, le bouto
 - **Retours regroupés** en une seule liste numérotée par écran.
 - **Le code du dépôt fait foi :** on modifie l'existant, on ne régénère pas tout.
 - **Le site prototype (`site/`) est la référence** depuis le 17.11.2026. On travaille en vibe coding : l'équipe donne les changements, Claude modifie le site et pousse sur `main`, GitHub Pages se met à jour. Les maquettes Figma ne suivent plus automatiquement.
-- Site : 52 écrans (01 à 50, plus **19.1 Vérifier le scan** et **19.2 Identifier le scrap**). Compte démo d'Inès pré-rempli (15 scraps), vraie caméra avec détection des contours, vraie carte de Belleville, scrapbook zoomable. Menu caché : appui long en haut de l'écran, avec « Réinitialiser la démo ».
+- Site : 56 écrans (01 à 50, plus 07.1, 19.1, 19.2, 24.1, 24.2 et 24.3). Compte démo d'Inès pré-rempli (15 scraps), vraie caméra avec détection des contours, vraie carte de Belleville, scrapbook zoomable. Menu caché : appui long en haut de l'écran, avec « Réinitialiser la démo ».
 - **Clé du fond de carte :** CARTO demande désormais une clé, sinon la carte répond « API key required ». La clé est dans `site/js/config.js`, avec les trois fonds essayés dans l'ordre (Voyager, Positron, puis OpenStreetMap sans clé si tout échoue). C'est une clé de fond de carte, faite pour vivre dans le code d'une page web. **À faire une fois :** sur carto.com, la limiter au domaine `mustaphajefferson.github.io`.
-- **Fichiers du site :** `config.js` (clé et réglages), `data.js` (compte démo), `noyau.js` (composants, badges), `effets.js` (profondeur gyroscope, compteurs, révélations, rareté), `carte.js` (Leaflet et pins), `mur.js` (scrapbook et vitrine), `camera.js` (détection des contours et redressement), `ecrans.js` (les 52 écrans), `app.js` (navigation et actions).
+- **Fichiers du site :** `config.js` (clé et réglages), `data.js` (compte démo et semis de la carte), `noyau.js` (composants, badges), `effets.js` (inclinaison globale, poussière, vol d'un scrap, compteurs, révélations, rareté), `carte.js` (Leaflet et pins), `mur.js` (scrapbook, déchirures, export), `reel.js` (le mur en réalité augmentée), `camera.js` (détection des contours et redressement), `ecrans.js` (les 56 écrans), `app.js` (navigation et actions).
+- **La carte est semée** : une vingtaine d'affiches écrites à la main, plus 112 tirées au sort autour de Belleville par un générateur à graine fixe (donc toujours les mêmes). C'est ce qui donne une app déjà vivante et ce qui rend les filtres démonstratifs.
