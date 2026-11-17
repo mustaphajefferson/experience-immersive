@@ -34,5 +34,29 @@
   "skeleton": {
     "fichier": "assets/affiches/skeleton.jpg",
     "ratio": 0.5924
+  },
+  "flea": {
+    "fichier": "assets/affiches/flea.jpg",
+    "ratio": 0.7533
+  },
+  "sonda": {
+    "fichier": "assets/affiches/sonda.jpg",
+    "ratio": 0.7588
+  },
+  "scrt": {
+    "fichier": "assets/affiches/scrt.jpg",
+    "ratio": 0.7999
+  },
+  "fiasco": {
+    "fichier": "assets/affiches/fiasco.jpg",
+    "ratio": 0.7503
+  },
+  "rose": {
+    "fichier": "assets/affiches/rose.jpg",
+    "ratio": 0.7503
+  },
+  "viudas": {
+    "fichier": "assets/affiches/viudas.jpg",
+    "ratio": 0.7503
   }
 }

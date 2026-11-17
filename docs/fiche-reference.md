@@ -160,4 +160,5 @@ L'accent sert uniquement pour : le déclencheur et le cadre du scanner, le bouto
 - **Une conversation par chantier** (site prototype, dossier, vidéo, pitch), dans ce projet. Première phrase : « Lis la fiche de référence, on travaille sur … ».
 - **Retours regroupés** en une seule liste numérotée par écran.
 - **Le code du dépôt fait foi :** on modifie l'existant, on ne régénère pas tout.
-- Le site prototype devient la référence. Le plugin Figma est généré à partir des mêmes tokens.
+- **Le site prototype (`site/`) est la référence** depuis le 17.11.2026. On travaille en vibe coding : l'équipe donne les changements, Claude modifie le site et pousse sur `main`, GitHub Pages se met à jour. Les maquettes Figma ne suivent plus automatiquement.
+- Site : 51 écrans (01 à 50 + **19.1 Identifier le scrap** : après la capture, on saisit titre, lieu, collection et tags, car l'app ne reconnaît pas les affiches toute seule). Compte démo d'Inès pré-rempli (15 scraps), vraie caméra, vraie carte de Belleville, scrapbook interactif. Menu caché : appui long en haut de l'écran, avec « Réinitialiser la démo ».
