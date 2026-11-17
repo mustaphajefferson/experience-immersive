@@ -223,6 +223,8 @@ window.DONNEES = {
       lng: +lng.toFixed(5),
       adresse: dans(rues),
       nouveau: alea() < 0.17,
+      // une partie est déjà dans la collection : la carte montre ce qui est fait
+      fait: alea() < 0.24,
       // beaucoup d'affiches déjà très vues, quelques-unes presque vierges
       scans: rang < 0.12 ? 1 + Math.floor(alea() * 9) : 10 + Math.floor(Math.pow(alea(), 2) * 480),
     });

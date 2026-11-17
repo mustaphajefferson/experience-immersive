@@ -470,3 +470,47 @@ function lireCapture() {
   if (t) p.titre = t.value;
   if (l) p.lieu = l.value;
 }
+
+/* ═════════ Photo d'un mur (écran 24.4)
+ * Sert de fond à l'export « sur un mur » : on prend une vraie photo, le
+ * scrapbook est posé dessus au moment de composer l'image. */
+let FLUX_MUR = null;
+
+function cameraMurDemarrer(video) {
+  if (!video || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    const c = $("#consigne-mur");
+    if (c) c.textContent = "Caméra indisponible ici : choisis une photo avec le bouton à gauche.";
+    return null;
+  }
+  let arrete = false;
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 } }, audio: false })
+    .then((f) => {
+      if (arrete) { f.getTracks().forEach((t) => t.stop()); return; }
+      FLUX_MUR = f; video.srcObject = f; video.play().catch(() => {});
+    })
+    .catch(() => { const c = $("#consigne-mur"); if (c) c.textContent = "Caméra refusée : choisis une photo avec le bouton à gauche."; });
+  return () => { arrete = true; cameraMurArreter(); };
+}
+function cameraMurArreter() {
+  if (FLUX_MUR) FLUX_MUR.getTracks().forEach((t) => t.stop());
+  FLUX_MUR = null;
+}
+
+function photoDuMur() {
+  const v = $("#video-mur");
+  if (!v || !v.videoWidth) { toast("La caméra se lance… réessaie dans une seconde."); return; }
+  const L = Math.min(1400, v.videoWidth);
+  const c = document.createElement("canvas");
+  c.width = L; c.height = Math.round((L * v.videoHeight) / v.videoWidth);
+  c.getContext("2d").drawImage(v, 0, 0, c.width, c.height);
+  enregistrerPhotoMur(c.toDataURL("image/jpeg", 0.82));
+}
+
+function enregistrerPhotoMur(dataUrl) {
+  ETAT.mur.photoMur = dataUrl;
+  ETAT.ctx.formatExport = "mur";
+  sauver();
+  cameraMurArreter();
+  vibrer([16, 40, 12]);
+  aller("24.2", { remplace: true });
+}

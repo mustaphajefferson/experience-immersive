@@ -23,6 +23,8 @@ function rendre(id, o = {}) {
   if (nettoyer) { try { nettoyer(); } catch (err) { /* rien */ } nettoyer = null; }
   if (id !== "19") cameraArreter();
   $$(".revelation").forEach((x) => x.remove());   // pas de révélation qui traîne d'un écran à l'autre
+  if (id !== "19" && id !== "24.4") cameraMurArreter();
+  if (!String(id).startsWith("24") && id !== "25" && id !== "26" && id !== "27") ETAT.ctx.livreOuvert = false;
   const s = document.createElement("section");
   const fondu = ETAT.ctx.fondu ? " en-fondu" : "";
   ETAT.ctx.fondu = false;
@@ -115,7 +117,6 @@ const ACTIONS = {
   filtreCarte(el) { ETAT.filtres[el.dataset.cle] = el.dataset.val; sauver(); rafraichir(); },
   reinitFiltres() { ETAT.filtres = { rayon: 500, collection: "toutes", etat: "tous" }; ETAT.reglages.rayon = 500; ETAT.reglages.manquants = true; sauver(); rafraichir(); },
   capturer() { cameraCapturer(); },
-  passerLancement() { aller("02", { remplace: true }); },
   basculerAuto(el) {
     ETAT.reglages.scanAuto = ETAT.reglages.scanAuto === false;
     el.classList.toggle("active", ETAT.reglages.scanAuto !== false);
@@ -244,6 +245,21 @@ const ACTIONS = {
   choisirFond(el) { ETAT.mur.fond = el.dataset.id; sauver(); rafraichir(); vibrer(6); },
   choisirScotch(el) { ETAT.mur.scotchType = el.dataset.id; sauver(); rafraichir(); vibrer(6); },
   choisirDechirure(el) { ETAT.mur.dechireType = el.dataset.id; sauver(); rafraichir(); },
+  choisirCadre(el) {
+    const it = trouverElement(ETAT.ctx.murSel);
+    if (!it || it.type) return;
+    it.cadre = el.dataset.id;
+    sauver(); rafraichir(); vibrer(6);
+  },
+  rangerMur(el) { rangerMur(el.dataset.id); ETAT.ctx.murSel = null; ETAT.ctx.vue = null; rafraichir(); toast("Page rangée"); },
+  couleurTrait(el) { (ETAT.mur.dessin || (ETAT.mur.dessin = {})).couleur = el.dataset.id; sauver(); rafraichir(); },
+  epaisseurTrait(el) { (ETAT.mur.dessin || (ETAT.mur.dessin = {})).w = +el.dataset.id; sauver(); rafraichir(); },
+  annulerTrait() {
+    const t = ETAT.mur.traits || [];
+    if (!t.length) { toast("Rien à annuler"); return; }
+    t.pop(); sauver(); rafraichir();
+  },
+  effacerTraits() { ETAT.mur.traits = []; sauver(); rafraichir(); toast("Dessins effacés"); },
   annulerDechirure() {
     const a = ETAT.ctx.dechireAvant;
     if (!a) { toast("Rien à annuler"); return; }
@@ -295,17 +311,10 @@ const ACTIONS = {
         toast("Ton téléphone ne partage pas les images : elle est enregistrée.");
       }).catch(() => {});
   },
-  photoMurReel() {
-    vibrer([18, 40, 12]);
+  prendrePhotoMur() {
     const f = document.createElement("div"); f.className = "flash";
     const e = document.querySelector(".ecran"); if (e) e.appendChild(f);
-    photoReel().then((c) => {
-      const a = document.createElement("a");
-      a.download = "scrapbook-sur-le-mur.jpg";
-      a.href = c.toDataURL("image/jpeg", 0.9);
-      a.click();
-      toast("Photo enregistrée");
-    }).catch(() => toast("Photo impossible ici"));
+    photoDuMur();
   },
   /* ───────── Ouverture du pack */
   ouvrirPack() {
@@ -324,7 +333,7 @@ const ACTIONS = {
     const cid = ETAT.ctx.collection || "concerts", c = collection(cid), id = "excl-" + cid;
     if (!ETAT.scraps[id]) {
       const { date, heure } = aujourdhui();
-      ETAT.scraps[id] = { titre: "Édition exclusive — " + c.nom, artiste: "SCRAP", ratio: 0.72, num: 1, lieu: c.zone, arr: ETAT.utilisateur.arrondissement, date, heure, collection: "exclusifs", themes: ["Exclusif"], holo: true, scans: 64, murs: 1, img: svgExclusif(cid) };
+      ETAT.scraps[id] = { titre: "Édition exclusive — " + c.nom, artiste: "SCRAP", ratio: 0.72, num: 1, lieu: c.zone, arr: ETAT.utilisateur.arrondissement, date, heure, collection: "exclusifs", themes: ["Exclusif"], holo: true, scans: 64, murs: 1, img: svgExclusif(cid), exclusif: cid };
     }
     collerSurMur(id); sauver(); aller("33");
   },
@@ -356,8 +365,8 @@ const ACTIONS = {
   bientot() { toast("Disponible dans la vraie app"); },
   effacerHistorique() { toast("Historique des lieux effacé"); },
   exporter() { toast("Export envoyé à " + ETAT.utilisateur.email + " (démo)"); },
-  deconnecter() { aller("02"); toast("Déconnecté"); },
-  supprimerCompte() { aller("02"); toast("Compte supprimé (démo : rien n'est effacé)"); },
+  deconnecter() { aller("01"); toast("Déconnecté"); },
+  supprimerCompte() { aller("01"); toast("Compte supprimé (démo : rien n'est effacé)"); },
   reessayer() { if (navigator.onLine) aller("13"); else toast("Toujours pas de réseau"); },
   choisirPhoto() { $("#photo-49").click(); },
 };
@@ -436,6 +445,21 @@ document.addEventListener("change", (e) => {
   if (t.dataset.input === "rayon") { sauver(); if (courant === "14") rafraichir(); }
   if (t.dataset.input && (t.dataset.input.startsWith("vitrine") || t.dataset.input.startsWith("item") || t.dataset.input === "noteTexte" || t.dataset.input === "voileFond")) sauver();
   if (t.dataset.change === "photoCapture") photoFichier(t.files[0]);
+  if (t.dataset.change === "photoMur" && t.files[0]) {
+    const r = new FileReader();
+    r.onload = () => {
+      const im = new Image();
+      im.onload = () => {
+        const L = Math.min(1400, im.width);
+        const c = document.createElement("canvas");
+        c.width = L; c.height = Math.round((L * im.height) / im.width);
+        c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+        enregistrerPhotoMur(c.toDataURL("image/jpeg", 0.82));
+      };
+      im.src = r.result;
+    };
+    r.readAsDataURL(t.files[0]);
+  }
   /* Photo de fond du scrapbook : on la réduit avant de l'enregistrer, sinon
    * elle ne tient pas dans la mémoire du navigateur. */
   if (t.dataset.change === "fondPhoto" && t.files[0]) {

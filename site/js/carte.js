@@ -11,8 +11,20 @@ function distanceEntre(a, b) {
   return 2 * RAYON_TERRE * Math.asin(Math.sqrt(h));
 }
 const distanceM = (c) => distanceEntre(D.position, [c.lat, c.lng]);
+/* La vignette d'une affiche repérée : la même dans le bandeau de la carte et
+ * dans la recherche, pour qu'on reconnaisse tout de suite de quoi on parle. */
+const miniatureCible = (c) => {
+  const col = collection(c.collection);
+  return `<span class="mini-cible${c.fait ? " fait" : ""}">${icone(c.fait ? "valider" : col ? col.icone : "scan", 20)}</span>`;
+};
 const distanceTxt = (c) => { const m = distanceM(c); return m >= 1000 ? (m / 1000).toFixed(1).replace(".", ",") + " km" : Math.round(m / 10) * 10 + " m"; };
 const minutes = (c) => Math.max(1, Math.round(distanceM(c) / 80));
+
+/* Vrai dès qu'un filtre s'écarte du réglage par défaut : le bouton passe en accent. */
+const filtresPoses = () => {
+  const f = ETAT.filtres, r = ETAT.reglages;
+  return f.collection !== "toutes" || f.etat !== "tous" || r.rayon !== 500 || r.manquants !== true;
+};
 
 function ciblesVisibles() {
   const f = ETAT.filtres, r = ETAT.reglages;
@@ -22,6 +34,9 @@ function ciblesVisibles() {
     (f.etat !== "nouveaux" || c.nouveau) &&
     (!r.manquants || !complete(c.collection)));
 }
+/* Les affiches qu'il reste à capturer, les plus proches d'abord. */
+const ciblesAFaire = () => ciblesVisibles().filter((c) => !c.fait);
+
 function cibleCourante() {
   if (ETAT.ctx.cible === "lieu") return { id: "lieu", titre: D.lieu.nom, adresse: D.lieu.adresse, lat: D.lieu.lat, lng: D.lieu.lng, collection: "concerts", scans: 312 };
   return D.cibles.find((c) => c.id === ETAT.ctx.cible) || D.cibles[0];
@@ -32,11 +47,11 @@ function cibleCourante() {
  * pointe en bas, pastille rouge si le scrap est nouveau. */
 function pinHtml(c, o = {}) {
   const col = collection(c.collection);
-  const classes = ["pin", o.choisi ? "choisi" : "", c.nouveau ? "nouveau" : ""].filter(Boolean).join(" ");
+  const classes = ["pin", o.choisi ? "choisi" : "", c.fait ? "fait" : "", c.nouveau && !c.fait ? "nouveau" : ""].filter(Boolean).join(" ");
   return `<span class="${classes}" style="--retard:${(o.index || 0) * 60}ms">
-    <span class="pin-tete">${icone(col ? col.icone : "scan", 16)}</span>
+    <span class="pin-tete">${icone(c.fait ? "valider" : col ? col.icone : "scan", 16)}</span>
     <i class="pin-pointe"></i>
-    ${c.nouveau ? '<i class="pastille"></i>' : ""}
+    ${c.nouveau && !c.fait ? '<i class="pastille"></i>' : ""}
   </span>`;
 }
 const TAILLE_PIN = [28, 38];

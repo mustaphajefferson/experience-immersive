@@ -26,8 +26,8 @@ C'est la référence du projet : les changements se font ici (vibe coding), plus
 - Compte démo d'Inès déjà rempli (15 scraps, collections, scrapbook, vitrine).
 - **Scan automatique** : la caméra suit les contours de l'affiche en direct et la photo se prend toute seule dès que le cadre ne bouge plus, comme dans Notes. L'image est redressée, puis on choisit de la garder ou de la reprendre, et enfin on l'identifie (titre, collection, tags).
 - **Relief** : l'inclinaison du téléphone est mesurée une fois pour toute l'app, et toutes les couches la suivent. L'autorisation se demande à l'accueil, et se coupe dans les réglages.
-- Vraie carte de Belleville (Leaflet, fond CARTO en gris, pins par collection, ~130 affiches semées). La clé CARTO est dans `site/js/config.js`.
-- **Scrapbook** : on s'y promène librement (un doigt déplace, deux doigts zooment) sans jamais attraper une affiche par mégarde. Mode Disposition pour ranger, éléments à poser (titres, étiquettes, flèches), 8 fonds + sa propre photo, 5 types de déchirure, export en image et aperçu sur un vrai mur à travers la caméra.
+- Vraie carte de Belleville (Leaflet, fond CARTO en gris, ~130 affiches semées, coche rouge sur celles déjà capturées). La clé CARTO est dans `site/js/config.js`.
+- **Scrapbook** : le carnet s'ouvre en arrivant. On s'y promène librement dans tous les sens, sans jamais attraper une affiche par mégarde. Rangements tout faits, éléments à poser (titres, flèches, soulignements animés), dessin à la main, cadres autour des affiches, 8 fonds + sa propre photo, 5 types de déchirure, export en image — y compris posée sur la photo d'un vrai mur.
 - **Fin de collection** : on ouvre un pack, et on récupère une carte exclusive holographique qui réagit à l'inclinaison.
 - Menu caché : appui long tout en haut de l'écran (ou touche M) pour sauter à un écran ou réinitialiser la démo.
 

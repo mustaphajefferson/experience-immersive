@@ -1,33 +1,42 @@
-/* SCRAP — le scrapbook, la vitrine du profil, l'export et le mur en vrai.
+/* SCRAP — le scrapbook, la vitrine du profil et l'export.
  *
- * Le scrapbook est une grande page qu'on regarde à travers l'écran. On s'y
- * promène librement : un doigt déplace la page, deux doigts zooment, et les
- * scraps ne bougent jamais tant qu'on ne les a pas choisis exprès.
+ * Le scrapbook est une grande page qu'on regarde à travers l'écran. Elle est
+ * entourée de marges généreuses : on peut aller voir au-delà des affiches,
+ * de tous les côtés, comme quand on fait glisser un vrai carnet sur la table.
  *
  * Modes :
  *   regarder — se promener, zoomer ; toucher un scrap l'ouvre en grand
- *   deplacer — toucher un scrap le sélectionne ; le toucher à nouveau
- *              l'ouvre en grand ; seul le scrap sélectionné se déplace, donc
- *              un glissement n'attrape jamais une affiche par surprise
+ *   deplacer — toucher sélectionne, re-toucher ouvre en grand ; seul
+ *              l'élément sélectionné se déplace, donc un glissement
+ *              n'attrape jamais une affiche par surprise
  *   scotch   — toucher un coin pour poser ou enlever un bout de scotch
  *   dechirer — choisir un type de déchirure, puis toucher un scrap
+ *   dessiner — tracer au doigt, par-dessus tout
  */
 "use strict";
 
 const LARGEUR_MUR = 402;
+const MARGE_MUR = 200;          // le vide tout autour de la page
 const ZOOM_MAX = 2.8;
 const polyCss = (pts) => `polygon(${pts.map(([x, y]) => `${(x * 100).toFixed(2)}% ${(y * 100).toFixed(2)}%`).join(",")})`;
 
 /* ═════════ Ce qu'il y a sur la page */
 
+const CADRES = [
+  ["aucun", "Aucun"], ["filet", "Filet"], ["epais", "Épais"],
+  ["passe", "Passe-partout"], ["polaroid", "Polaroïd"], ["noir", "Noir"],
+];
+
 function itemHtml(it, choisi) {
   const s = scrap(it.id);
   if (!s) return "";
   const decoupe = it.dechire ? `clip-path:${polyCss(it.dechire)}` : "";
-  return `<div class="mur-item${choisi ? " choisi" : ""}${it.dechire ? " dechire" : ""}" data-item="${it.id}"
+  const cadre = it.cadre && it.cadre !== "aucun" ? ` cadre-${it.cadre}` : "";
+  return `<div class="mur-item${choisi ? " choisi" : ""}${it.dechire ? " dechire" : ""}${cadre}" data-item="${it.id}"
     style="left:${it.x}px;top:${it.y}px;width:${it.w}px;transform:rotate(${it.rot || 0}deg)">
     ${it.dechire ? `<i class="bord-dechire" style="${decoupe}"></i>` : ""}
     <div class="mur-papier" style="${decoupe}"><img src="${imgScrap(it.id)}" alt="" draggable="false" style="aspect-ratio:${s.ratio}"></div>
+    ${it.cadre === "polaroid" ? `<span class="polaroid-legende t-texte-meta">${esc(s.lieu)}</span>` : ""}
     ${(it.scotch || []).map(([coin, type]) => `<i class="scotch ${type} ${coin}"></i>`).join("")}
     ${choisi ? '<i class="poignee" data-poignee="1"></i>' : ""}
   </div>`;
@@ -40,10 +49,24 @@ const TYPES_NOTE = [
   { type: "etiquette", nom: "Étiquette", exemple: "Mes préférées", w: 13, icone: "etiquette" },
   { type: "date", nom: "Date", exemple: "", w: 13, icone: "calendrier" },
   { type: "fleche", nom: "Flèche", exemple: "", w: 90, icone: "fleche" },
+  { type: "fleche2", nom: "Flèche double", exemple: "", w: 100, icone: "fleche" },
+  { type: "souligne", nom: "Soulignement", exemple: "", w: 120, icone: "texte" },
+  { type: "entoure", nom: "Entourer", exemple: "", w: 130, icone: "loupe" },
+  { type: "etoile", nom: "Étoile", exemple: "", w: 40, icone: "etoile" },
   { type: "ruban", nom: "Ruban", exemple: "", w: 80, icone: "ruban" },
   { type: "punaise", nom: "Punaise", exemple: "", w: 22, icone: "punaise" },
 ];
 const estTexte = (t) => ["titre", "soustitre", "etiquette", "date"].includes(t);
+
+/* Les annotations dessinées se tracent toutes seules quand elles arrivent :
+ * le trait se déroule, comme si on venait de le faire au feutre. */
+const DESSINS_NOTE = {
+  fleche: ['<svg viewBox="0 0 100 34">', '<path d="M2 24c18-18 44-24 94-20"/><path d="M78 2l18 2-4 18"/>', 34],
+  fleche2: ['<svg viewBox="0 0 100 40">', '<path d="M6 20h88"/><path d="M18 8 4 20l14 12"/><path d="M82 8l14 12-14 12"/>', 40],
+  souligne: ['<svg viewBox="0 0 120 20">', '<path d="M3 9c26 6 62 7 114 1"/><path d="M8 15c24 4 56 5 102 0"/>', 20],
+  entoure: ['<svg viewBox="0 0 130 70">', '<path d="M68 5C28 3 4 18 6 37s34 30 66 28 52-16 50-32S104 7 70 5"/>', 70],
+  etoile: ['<svg viewBox="0 0 40 40">', '<path d="M20 3l5 11 12 1-9 8 3 12-11-6-11 6 3-12-9-8 12-1z"/>', 40],
+};
 
 function noteHtml(n, choisi) {
   const base = `mur-note note-${n.type}${choisi ? " choisi" : ""}`;
@@ -52,10 +75,10 @@ function noteHtml(n, choisi) {
   if (estTexte(n.type)) {
     return `<div class="${base}" data-note="${n.id}" style="${pose};font-size:${n.w}px">${esc(n.texte || "")}${poignee}</div>`;
   }
-  if (n.type === "fleche") {
+  const d = DESSINS_NOTE[n.type];
+  if (d) {
     return `<div class="${base}" data-note="${n.id}" style="${pose};width:${n.w}px">
-      <svg viewBox="0 0 100 34" width="100%" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square">
-        <path d="M2 24c18-18 44-24 94-20"/><path d="M78 2l18 2-4 18"/></svg>${poignee}</div>`;
+      ${d[0]}<g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">${d[1]}</g></svg>${poignee}</div>`;
   }
   if (n.type === "ruban") {
     return `<div class="${base}" data-note="${n.id}" style="${pose};width:${n.w}px"><i class="scotch ${ETAT.mur.scotchType || "kraft"}" style="position:static;display:block;width:100%"></i>${poignee}</div>`;
@@ -65,8 +88,19 @@ function noteHtml(n, choisi) {
 }
 
 const notesMur = () => ETAT.mur.notes || (ETAT.mur.notes = []);
+const traitsMur = () => ETAT.mur.traits || (ETAT.mur.traits = []);
 const trouverElement = (id) => ETAT.mur.items.find((i) => i.id === id) || notesMur().find((n) => n.id === id);
 const estNote = (o) => !!(o && o.type);
+
+/* Les traits dessinés à la main, dans un seul calque SVG. */
+function traitsHtml() {
+  const t = traitsMur();
+  if (!t.length) return "";
+  return `<svg class="traits-mur" width="${LARGEUR_MUR}" height="${ETAT.mur.hauteur}" aria-hidden="true">
+    ${t.map((tr) => `<polyline points="${tr.pts.map(([x, y]) => `${x},${y}`).join(" ")}" fill="none"
+      stroke="${tr.couleur || "#111111"}" stroke-width="${tr.w || 3}" stroke-linecap="round" stroke-linejoin="round"/>`).join("")}
+  </svg>`;
+}
 
 /* Part de la page déjà couverte par des scraps — sert au petit indicateur. */
 function remplissageMur() {
@@ -86,6 +120,56 @@ function styleFond(m) {
   return "";
 }
 
+/* ═════════ Dispositions toutes faites
+ * Quatre façons de ranger la page d'un coup, parce que placer vingt affiches
+ * à la main est long et qu'on veut surtout pouvoir repartir d'une base. */
+function rangerMur(type) {
+  const m = ETAT.mur;
+  const liste = m.items.slice();
+  const hauteurDe = (it, w) => { const s = scrap(it.id); return w / ((s && s.ratio) || 0.75); };
+  const marge = 18;
+  let y = 56;
+
+  if (type === "grille") {
+    const col = 3, w = Math.floor((LARGEUR_MUR - marge * (col + 1)) / col);
+    liste.forEach((it, i) => {
+      it.w = w; it.rot = 0;
+      it.x = marge + (i % col) * (w + marge);
+      if (i % col === 0 && i) y += Math.max(...liste.slice(i - col, i).map((p) => hauteurDe(p, w))) + marge;
+      it.y = y;
+    });
+    m.hauteur = Math.max(900, y + 300);
+  } else if (type === "colonne") {
+    const w = Math.round(LARGEUR_MUR * 0.62);
+    liste.forEach((it) => {
+      it.w = w; it.rot = 0; it.x = Math.round((LARGEUR_MUR - w) / 2);
+      it.y = y; y += hauteurDe(it, w) + marge;
+    });
+    m.hauteur = Math.max(900, y + 300);
+  } else if (type === "mosaique") {
+    // deux colonnes qui se remplissent en alternance, comme un mur de posters
+    const col = 2, w = Math.floor((LARGEUR_MUR - marge * (col + 1)) / col);
+    const bas = [56, 110];
+    liste.forEach((it) => {
+      const c = bas[0] <= bas[1] ? 0 : 1;
+      it.w = w; it.rot = Math.round(Math.random() * 6 - 3);
+      it.x = marge + c * (w + marge);
+      it.y = bas[c];
+      bas[c] += hauteurDe(it, w) + marge;
+    });
+    m.hauteur = Math.max(900, Math.max(...bas) + 300);
+  } else {   // éparpillé
+    liste.forEach((it, i) => {
+      it.w = 92 + Math.round(Math.random() * 70);
+      it.rot = Math.round(Math.random() * 16 - 8);
+      it.x = Math.round(14 + Math.random() * (LARGEUR_MUR - it.w - 28));
+      it.y = Math.round(56 + i * 108 + Math.random() * 60);
+    });
+    m.hauteur = Math.max(900, 56 + liste.length * 108 + 400);
+  }
+  sauver();
+}
+
 /* ═════════ La page */
 
 function murMonter(racine, outil) {
@@ -93,21 +177,23 @@ function murMonter(racine, outil) {
   if (!zone || !plan) return null;
   const m = ETAT.mur;
   const vue = ETAT.ctx.vue || (ETAT.ctx.vue = { k: 0, x: 0, y: 0 });
+  const PW = LARGEUR_MUR + MARGE_MUR * 2;
+  const PH = () => m.hauteur + MARGE_MUR * 2;
 
   /* ───────── Cadrage */
   const kLarge = () => zone.clientWidth / LARGEUR_MUR;                                  // la page remplit la largeur
-  const kEnsemble = () => Math.min(kLarge(), zone.clientHeight / m.hauteur) * 0.92;     // toute la page d'un coup
-  const kMin = () => Math.min(kEnsemble(), kLarge()) * 0.75;
+  const kEnsemble = () => Math.min(zone.clientWidth / PW, zone.clientHeight / PH());    // toute la page d'un coup
+  const kMin = () => kEnsemble() * 0.8;
 
   const contraindre = () => {
-    const pw = LARGEUR_MUR * vue.k, ph = m.hauteur * vue.k;
+    const pw = PW * vue.k, ph = PH() * vue.k;
     vue.x = pw <= zone.clientWidth ? (zone.clientWidth - pw) / 2 : clamp(vue.x, zone.clientWidth - pw, 0);
     vue.y = ph <= zone.clientHeight ? (zone.clientHeight - ph) / 2 : clamp(vue.y, zone.clientHeight - ph, 0);
   };
   const appliquer = () => {
     contraindre();
     plan.style.transform = `translate(${vue.x.toFixed(2)}px, ${vue.y.toFixed(2)}px) scale(${vue.k.toFixed(4)})`;
-    zone.classList.toggle("ensemble", vue.k <= kEnsemble() * 1.05);
+    zone.classList.toggle("ensemble", vue.k <= kEnsemble() * 1.08);
     const j = $("#zoom-valeur", racine);
     if (j) j.textContent = Math.round((vue.k / kLarge()) * 100) + " %";
   };
@@ -120,22 +206,28 @@ function murMonter(racine, outil) {
     appliquer();
   };
   const centre = () => { const r = zone.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
+  // place la page en haut, centrée, à l'échelle « largeur »
+  const cadrerDepart = () => { vue.k = kLarge(); vue.x = -MARGE_MUR * vue.k; vue.y = -MARGE_MUR * vue.k; };
 
   const choisissable = outil === "deplacer";
+  let contenu = null;
   const dessiner = () => {
-    plan.style.width = LARGEUR_MUR + "px";
-    plan.style.height = m.hauteur + "px";
+    plan.style.width = PW + "px";
+    plan.style.height = PH() + "px";
     const sel = choisissable ? ETAT.ctx.murSel : null;
     const notes = notesMur();
-    plan.innerHTML =
-      notes.filter((n) => !n.devant).map((n) => noteHtml(n, n.id === sel)).join("")
-      + m.items.map((it) => itemHtml(it, it.id === sel)).join("")
-      + notes.filter((n) => n.devant).map((n) => noteHtml(n, n.id === sel)).join("")
-      + `<svg class="trace" id="trace" width="${LARGEUR_MUR}" height="${m.hauteur}"></svg>`;
+    plan.innerHTML = `<div class="mur-contenu" id="contenu" style="left:${MARGE_MUR}px;top:${MARGE_MUR}px;width:${LARGEUR_MUR}px;height:${m.hauteur}px">
+      ${notes.filter((n) => !n.devant).map((n) => noteHtml(n, n.id === sel)).join("")}
+      ${m.items.map((it) => itemHtml(it, it.id === sel)).join("")}
+      ${notes.filter((n) => n.devant).map((n) => noteHtml(n, n.id === sel)).join("")}
+      ${traitsHtml()}
+      <svg class="trace" id="trace" width="${LARGEUR_MUR}" height="${m.hauteur}"></svg>
+    </div>`;
+    contenu = $("#contenu", plan);
   };
 
   dessiner();
-  if (!vue.k) { vue.k = kLarge(); vue.x = 0; vue.y = 0; }
+  if (!vue.k) cadrerDepart();
   // après un collage, on se place sur le scrap qui vient d'arriver
   let volCible = null;
   if (ETAT.ctx.recadrer) {
@@ -144,12 +236,12 @@ function murMonter(racine, outil) {
     if (it) {
       const s = scrap(it.id);
       vue.k = kLarge();
-      vue.y = zone.clientHeight / 2 - (it.y + it.w / ((s && s.ratio) || 0.75) / 2) * vue.k;
+      vue.x = -MARGE_MUR * vue.k;
+      vue.y = zone.clientHeight / 2 - (MARGE_MUR + it.y + it.w / ((s && s.ratio) || 0.75) / 2) * vue.k;
       volCible = it.id;
     }
   }
   appliquer();
-  // l'affiche qui arrive de l'écran précédent finit son vol ici
   if (volCible && ETAT.ctx.vol) {
     const vol = ETAT.ctx.vol; ETAT.ctx.vol = null;
     requestAnimationFrame(() => volArriver(vol, plan.querySelector(`[data-item="${CSS.escape(volCible)}"]`),
@@ -171,8 +263,7 @@ function murMonter(racine, outil) {
   const cibleDe = (n) => {
     const el = n.closest && n.closest("[data-item],[data-note]");
     if (!el) return [null, null];
-    const id = el.dataset.item || el.dataset.note;
-    return [el, trouverElement(id)];
+    return [el, trouverElement(el.dataset.item || el.dataset.note)];
   };
   const auPremierPlan = (o) => {
     if (estNote(o)) { o.devant = true; ETAT.mur.notes = notesMur().filter((n) => n !== o).concat(o); }
@@ -189,10 +280,13 @@ function murMonter(racine, outil) {
     const w = it.w * vue.k, h = hauteurDe(it) * vue.k;
     return [lx / w + 0.5, ly / h + 0.5];
   };
+  // point de l'écran ramené dans le repère de la page (px)
+  const surPage = (ex, ey) => {
+    const r = contenu.getBoundingClientRect();
+    return [(ex - r.left) / vue.k, (ey - r.top) / vue.k];
+  };
 
-  /* ───────── Gestes : un doigt promène la page, deux doigts pincent.
-   * Seul l'élément déjà sélectionné se déplace au doigt : c'est ce qui permet
-   * de se balader sans attraper une affiche au passage. */
+  /* ───────── Gestes : un doigt promène la page, deux doigts pincent. */
   const doigts = new Map();
   let geste = null, pince = null, dernierTap = 0;
 
@@ -202,6 +296,7 @@ function murMonter(racine, outil) {
     zone.setPointerCapture && zone.setPointerCapture(e.pointerId);
 
     if (doigts.size === 2) {
+      if (geste && geste.trait) traitsMur().pop();
       geste = null;
       const [a, b] = [...doigts.values()];
       pince = { d0: Math.hypot(a.x - b.x, a.y - b.y), k0: vue.k };
@@ -211,27 +306,31 @@ function murMonter(racine, outil) {
     if (doigts.size > 2) return;
 
     const [el, obj] = cibleDe(e.target);
-    const selectionne = obj && choisissable && ETAT.ctx.murSel === (obj.id);
+    const selectionne = obj && choisissable && ETAT.ctx.murSel === obj.id;
 
-    // poignée de redimensionnement
+    if (outil === "dessiner") {
+      e.preventDefault();
+      const d = ETAT.mur.dessin || (ETAT.mur.dessin = { w: 4, couleur: "#111111" });
+      const tr = { id: "t" + Date.now(), pts: [surPage(e.clientX, e.clientY).map(Math.round)], w: d.w, couleur: d.couleur };
+      traitsMur().push(tr);
+      geste = { trait: tr };
+      return;
+    }
     if (el && e.target.closest("[data-poignee]") && choisissable) {
       e.preventDefault();
       geste = { taille: true, obj, el, x0: e.clientX, y0: e.clientY, w0: obj.w };
       return;
     }
-    // mode déchirure : on glisse librement pour couper sur mesure
     if (outil === "dechirer" && (ETAT.mur.dechireType || "coin") === "mesure") {
       geste = { libre: true, x0: e.clientX, y0: e.clientY, bouge: false };
       return;
     }
-    // un élément déjà sélectionné : on le déplace
     if (el && selectionne) {
       e.preventDefault();
-      geste = { obj, el, x0: e.clientX, y0: e.clientY, ix: obj.x, iy: obj.y, bouge: false, deplace: true, depart: local(el, obj, e.clientX, e.clientY) };
+      geste = { obj, el, x0: e.clientX, y0: e.clientY, ix: obj.x, iy: obj.y, bouge: false, deplace: true };
       el.classList.add("tire");
       return;
     }
-    // tout le reste : on promène la page, et on retient ce qu'il y avait dessous
     geste = {
       promene: true, x0: e.clientX, y0: e.clientY, vx: vue.x, vy: vue.y, bouge: false,
       sous: el ? { el, obj, depart: local(el, obj, e.clientX, e.clientY) } : null,
@@ -252,6 +351,12 @@ function murMonter(racine, outil) {
     const dx = (e.clientX - geste.x0) / vue.k, dy = (e.clientY - geste.y0) / vue.k;
     if (Math.abs(e.clientX - geste.x0) + Math.abs(e.clientY - geste.y0) > 6) geste.bouge = true;
 
+    if (geste.trait) {
+      const p = surPage(e.clientX, e.clientY).map(Math.round);
+      const der = geste.trait.pts[geste.trait.pts.length - 1];
+      if (Math.hypot(p[0] - der[0], p[1] - der[1]) > 2) { geste.trait.pts.push(p); redessinerTraits(); }
+      return;
+    }
     if (geste.promene) {
       vue.x = geste.vx + (e.clientX - geste.x0);
       vue.y = geste.vy + (e.clientY - geste.y0);
@@ -261,7 +366,7 @@ function murMonter(racine, outil) {
     if (geste.taille) {
       const o = geste.obj;
       const d = ((e.clientX - geste.x0) + (e.clientY - geste.y0)) / 2 / vue.k;
-      const bornes = estNote(o) ? (estTexte(o.type) ? [11, 76] : [24, 300]) : [56, 360];
+      const bornes = estNote(o) ? (estTexte(o.type) ? [11, 76] : [24, 320]) : [56, 360];
       o.w = clamp(Math.round(geste.w0 + d), bornes[0], bornes[1]);
       if (estTexte(o.type)) geste.el.style.fontSize = o.w + "px"; else geste.el.style.width = o.w + "px";
       if (estNote(o) && o.type === "punaise") geste.el.style.height = o.w + "px";
@@ -269,20 +374,24 @@ function murMonter(racine, outil) {
       return;
     }
     if (geste.deplace) {
-      geste.obj.x = clamp(geste.ix + dx, -60, LARGEUR_MUR - 20);
-      geste.obj.y = clamp(geste.iy + dy, -30, m.hauteur - 40);
+      geste.obj.x = clamp(geste.ix + dx, -MARGE_MUR + 20, LARGEUR_MUR + MARGE_MUR - 40);
+      geste.obj.y = clamp(geste.iy + dy, -MARGE_MUR + 20, m.hauteur + MARGE_MUR - 40);
       geste.el.style.left = geste.obj.x + "px";
       geste.el.style.top = geste.obj.y + "px";
       return;
     }
     if (geste.libre) {
-      const pr = plan.getBoundingClientRect();
-      const p0 = [(geste.x0 - pr.left) / vue.k, (geste.y0 - pr.top) / vue.k];
-      const p1 = [(e.clientX - pr.left) / vue.k, (e.clientY - pr.top) / vue.k];
+      const p0 = surPage(geste.x0, geste.y0), p1 = surPage(e.clientX, e.clientY);
       const t = $("#trace", plan);
       if (t) t.innerHTML = `<path d="M${p0[0]} ${p0[1]} L${p1[0]} ${p1[1]}" stroke="#111" stroke-width="${1.5 / vue.k}" stroke-dasharray="${5 / vue.k} ${5 / vue.k}" fill="none"/>`;
     }
   };
+
+  function redessinerTraits() {
+    const svg = $(".traits-mur", plan);
+    if (!svg) { const bloc = document.createElement("div"); bloc.innerHTML = traitsHtml(); contenu.appendChild(bloc.firstElementChild); return; }
+    svg.outerHTML = traitsHtml();
+  }
 
   const fin = (e) => {
     doigts.delete(e.pointerId);
@@ -292,6 +401,11 @@ function murMonter(racine, outil) {
     plan.classList.remove("sans-transition");
     $$(".tire", plan).forEach((x) => x.classList.remove("tire"));
 
+    if (g.trait) {
+      if (g.trait.pts.length < 2) traitsMur().pop();
+      sauver(); redessinerTraits(); majPanneau();
+      return;
+    }
     if (g.deplace) { sauver(); return; }
     if (g.taille) { sauver(); vibrer(6); return; }
 
@@ -306,18 +420,13 @@ function murMonter(racine, outil) {
       return;
     }
 
-    if (!g.promene) return;
+    if (!g.promene || g.bouge) return;
 
-    // on a promené la page : rien d'autre à faire
-    if (g.bouge) return;
-
-    // simple toucher
     const sous = g.sous;
     if (!sous || !sous.obj) {
-      // double-tap sur le fond : vue d'ensemble ↔ vue normale
       const t = performance.now();
       if (t - dernierTap < 300) {
-        const proche = vue.k > kEnsemble() * 1.15;
+        const proche = vue.k > kEnsemble() * 1.2;
         if (proche) { vue.k = kEnsemble(); vue.x = 0; vue.y = 0; appliquer(); }
         else cadrer(kLarge() * 1.4, e.clientX, e.clientY);
         vibrer(8);
@@ -334,7 +443,6 @@ function murMonter(racine, outil) {
     }
     if (outil === "deplacer") {
       if (ETAT.ctx.murSel === obj.id) {
-        // deuxième toucher : on l'ouvre en grand
         if (estNote(obj)) { const c = $("#note-texte"); if (c) c.focus(); return; }
         ETAT.ctx.scrap = obj.id; aller("21"); return;
       }
@@ -366,13 +474,13 @@ function murMonter(racine, outil) {
   const roulette = (e) => { e.preventDefault(); cadrer(vue.k * (e.deltaY < 0 ? 1.1 : 1 / 1.1), e.clientX, e.clientY); };
   zone.addEventListener("wheel", roulette, { passive: false });
 
-  /* Panneau de l'élément sélectionné (mode Disposition) */
+  /* Panneau du bas (mode Disposition) : l'élément choisi, ou les rangements */
   function majPanneau() {
     const p = $("#panneau-item", racine);
     if (!p) return;
     const o = trouverElement(ETAT.ctx.murSel);
-    p.innerHTML = o ? panneauElement(o) : "";
-    p.classList.toggle("vide", !o);
+    p.innerHTML = o ? panneauElement(o) : panneauRangements();
+    p.classList.remove("vide");
   }
   function majCurseurs(o) {
     const a = $("#item-taille", racine), b = $("#item-taille-val", racine);
@@ -381,6 +489,7 @@ function murMonter(racine, outil) {
   }
   majPanneau();
   racine._murRedessiner = () => { dessiner(); majPanneau(); };
+  racine._murCadrerDepart = () => { cadrerDepart(); appliquer(); };
 
   function dechirer(it, a, b) {
     const res = coupe(a, b, { rugosite: ETAT.mur.dechireType === "arrachee" ? 1.8 : 1 });
@@ -389,12 +498,11 @@ function murMonter(racine, outil) {
     it.dechire = res.garde;
     sauver();
     vibrer([10, 30, 20]);
-    const el = plan.querySelector(`[data-item="${CSS.escape(it.id)}"]`);
     const morceau = document.createElement("div");
     morceau.className = "morceau";
     morceau.style.cssText = `left:${it.x}px;top:${it.y}px;width:${it.w}px;--dx:${(Math.random() * 60 - 30).toFixed(0)}px;--dr:${(Math.random() * 50 - 25).toFixed(0)}deg`;
     morceau.innerHTML = `<div style="transform:rotate(${it.rot || 0}deg);clip-path:${polyCss(res.arrache)}"><img src="${imgScrap(it.id)}" alt="" style="width:100%"></div>`;
-    plan.appendChild(morceau);
+    contenu.appendChild(morceau);
     setTimeout(() => morceau.remove(), 1200);
     dessiner();
     toast("Déchiré. Le morceau reste dans ta collection.");
@@ -403,18 +511,36 @@ function murMonter(racine, outil) {
   return () => { window.removeEventListener("resize", ajuster); zone.removeEventListener("wheel", roulette); };
 }
 
-/* Réglages de l'élément sélectionné, au-dessus de la barre d'outils */
+/* Rangements proposés quand rien n'est sélectionné */
+const RANGEMENTS = [["grille", "Grille"], ["colonne", "Colonne"], ["mosaique", "Mosaïque"], ["eparpille", "Éparpillé"]];
+function panneauRangements() {
+  return `<div class="panneau-item-int">
+    <div class="rangee entre">
+      <span class="t-texte-meta secondaire">Ranger la page d'un coup</span>
+      <button class="bouton-lien t-texte-meta" data-action="modeMur" data-id="regarder">Terminé</button>
+    </div>
+    <div class="puces retour-ligne" style="margin-top:10px">
+      ${RANGEMENTS.map(([k, nom]) => `<button class="puce" data-action="rangerMur" data-id="${k}">${nom}</button>`).join("")}
+    </div>
+    <p class="t-texte-petit secondaire" style="margin:8px 0 0">Ou touche un scrap pour le déplacer, l'agrandir, le tourner et l'encadrer.</p>
+  </div>`;
+}
+
+/* Réglages de l'élément sélectionné */
 function panneauElement(o) {
   const note = estNote(o);
   const texte = note && estTexte(o.type);
   const nom = note ? (TYPES_NOTE.find((t) => t.type === o.type) || {}).nom || "Élément" : `N° ${pad3(scrap(o.id).num)} · ${scrap(o.id).titre}`;
-  const bornes = note ? (texte ? [11, 76] : [24, 300]) : [56, 360];
+  const bornes = note ? (texte ? [11, 76] : [24, 320]) : [56, 360];
   return `<div class="panneau-item-int">
     <div class="rangee entre">
       <span class="t-texte-meta secondaire">${esc(nom)}</span>
       <button class="bouton-lien t-texte-meta" data-action="deselectionnerItem">Terminé</button>
     </div>
     ${texte ? `<input class="champ-note" id="note-texte" type="text" value="${esc(o.texte || "")}" data-input="noteTexte" placeholder="Ton texte" maxlength="40">` : ""}
+    ${note ? "" : `<div class="cadres">${CADRES.map(([k, nom2]) =>
+      `<button class="cadre-choix${(o.cadre || "aucun") === k ? " choisi" : ""}" data-action="choisirCadre" data-id="${k}" title="${nom2}">
+        <span class="cadre-apercu cadre-${k}"><i></i></span><span class="t-texte-meta${(o.cadre || "aucun") === k ? "" : " secondaire"}">${nom2}</span></button>`).join("")}</div>`}
     <div class="curseur-ligne" style="margin-top:10px"><span class="t-texte-meta secondaire">Taille</span><span class="t-texte-meta secondaire" id="item-taille-val">${texte ? o.w + " px" : Math.round((o.w / 128) * 100) + " %"}</span></div>
     <input type="range" min="${bornes[0]}" max="${bornes[1]}" value="${o.w}" data-input="itemTaille" id="item-taille">
     <div class="curseur-ligne" style="margin-top:6px"><span class="t-texte-meta secondaire">Rotation</span><span class="t-texte-meta secondaire" id="item-rot-val">${o.rot || 0}°</span></div>
@@ -429,13 +555,9 @@ function panneauElement(o) {
 }
 
 /* ═════════ Déchirures
- *
  * Un vrai bord déchiré n'est pas un zigzag régulier : c'est une ligne qui
  * part dans tous les sens, avec de grandes ondulations et de petites dents
- * par-dessus. On construit ça par déplacement du milieu : on coupe le
- * segment en deux, on décale le milieu au hasard, et on recommence sur
- * chaque moitié avec une amplitude plus faible.
- */
+ * par-dessus. On construit ça par déplacement du milieu. */
 function bordDechire(p1, p2, amp = 1) {
   const long = Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) || 1;
   let pts = [p1, p2];
@@ -446,7 +568,6 @@ function bordDechire(p1, p2, amp = 1) {
       const [x1, y1] = pts[i], [x2, y2] = pts[i + 1];
       const nx = -(y2 - y1) / long, ny = (x2 - x1) / long;
       const d = (Math.random() - 0.5) * 2 * a;
-      // un peu de décalage dans le sens de la ligne aussi : ça évite l'effet dents de scie
       const t = 0.5 + (Math.random() - 0.5) * 0.3;
       suivant.push([
         clamp(x1 + (x2 - x1) * t + nx * d, 0, 1),
@@ -460,7 +581,6 @@ function bordDechire(p1, p2, amp = 1) {
   return pts.slice(1, -1);
 }
 
-/* Les déchirures proposées : deux points sur le bord du scrap. */
 function pointsDechirure(type) {
   const r = (a, b) => a + Math.random() * (b - a);
   if (type === "coin") {
@@ -476,12 +596,9 @@ function pointsDechirure(type) {
   if (type === "moitie") {
     return Math.random() < 0.5 ? [[0, r(0.42, 0.58)], [1, r(0.42, 0.58)]] : [[r(0.42, 0.58), 0], [r(0.42, 0.58), 1]];
   }
-  // arrachée : une grosse bouchée en biais
   return [[r(0, 0.3), 0], [1, r(0.5, 0.9)]];
 }
 
-/* Coupe le carré unité le long de AB : renvoie la plus grande partie (gardée)
- * et l'autre (arrachée), avec un bord de papier déchiré. */
 function coupe(a, b, o = {}) {
   const d = [b[0] - a[0], b[1] - a[1]];
   if (Math.hypot(d[0], d[1]) < 0.15) return null;
@@ -517,8 +634,6 @@ const MOTIFS_FOND = {
   noir: ["#111111", "rgba(255,255,255,.22)"],
 };
 
-/* Dessine le scrapbook dans un canvas. Renvoie une promesse : il faut
- * attendre que toutes les affiches soient chargées. */
 function dessinerMurCanvas(o = {}) {
   const m = ETAT.mur;
   const marge = o.marge === undefined ? 28 : o.marge;
@@ -552,34 +667,44 @@ function dessinerMurCanvas(o = {}) {
   const fondPhoto = m.fond === "photo" && m.fondImage ? charger(m.fondImage) : Promise.resolve(null);
 
   return fondPhoto.then((photo) => {
-    if (photo) {
+    if (o.transparent) { /* on laisse le fond vide : l'appelant met une photo dessous */ }
+    else if (photo) {
       const kk = Math.max((c.width / k) / photo.width, (c.height / k) / photo.height);
       x.drawImage(photo, ((c.width / k) - photo.width * kk) / 2, ((c.height / k) - photo.height * kk) / 2, photo.width * kk, photo.height * kk);
       if (m.voile) { x.fillStyle = `rgba(255,255,255,${m.voile / 100})`; x.fillRect(0, 0, c.width / k, c.height / k); }
     } else dessinerFond();
 
     const notes = ETAT.mur.notes || [];
+    const sombre = m.fond === "noir" || o.transparent;
     const dessinerNote = (n) => {
       x.save();
       x.translate(marge + n.x, marge + n.y);
       x.rotate(((n.rot || 0) * Math.PI) / 180);
-      x.fillStyle = m.fond === "noir" ? "#fff" : "#111";
+      x.fillStyle = sombre ? "#fff" : "#111";
+      x.strokeStyle = x.fillStyle;
       if (n.type === "titre") { x.font = `600 ${n.w}px Inter, Arial`; x.textBaseline = "top"; x.fillText((n.texte || "").toUpperCase(), 0, 0); }
       else if (n.type === "soustitre") { x.font = `600 ${n.w}px Inter, Arial`; x.textBaseline = "top"; x.fillText(n.texte || "", 0, 0); }
       else if (n.type === "etiquette" || n.type === "date") {
         x.font = `500 ${n.w}px Inter, Arial`; x.textBaseline = "top";
         const l = x.measureText((n.texte || "").toUpperCase()).width;
-        x.strokeStyle = x.fillStyle; x.lineWidth = 1;
+        x.lineWidth = 1;
         x.strokeRect(-6, -5, l + 12, n.w + 10);
         x.fillText((n.texte || "").toUpperCase(), 0, 0);
-      } else if (n.type === "fleche") {
-        x.strokeStyle = x.fillStyle; x.lineWidth = n.w * 0.035;
-        x.beginPath(); x.moveTo(0, n.w * 0.24); x.quadraticCurveTo(n.w * 0.5, n.w * 0.02, n.w, n.w * 0.04);
-        x.moveTo(n.w * 0.78, 0); x.lineTo(n.w, n.w * 0.04); x.lineTo(n.w * 0.92, n.w * 0.22); x.stroke();
       } else if (n.type === "ruban") {
         x.fillStyle = "rgba(200,174,134,.85)"; x.fillRect(0, 0, n.w, n.w * 0.2);
       } else if (n.type === "punaise") {
         x.beginPath(); x.arc(n.w / 2, n.w / 2.6, n.w / 2.6, 0, 7); x.fill();
+      } else if (DESSINS_NOTE[n.type]) {
+        // les annotations dessinées : on les retrace à la main, simplifiées
+        const e = n.w / 100;
+        x.lineWidth = 3 * e; x.lineCap = "round";
+        x.beginPath();
+        if (n.type === "fleche") { x.moveTo(2 * e, 24 * e); x.quadraticCurveTo(50 * e, 2 * e, 96 * e, 4 * e); x.moveTo(78 * e, 2 * e); x.lineTo(96 * e, 4 * e); x.lineTo(92 * e, 22 * e); }
+        else if (n.type === "fleche2") { x.moveTo(6 * e, 20 * e); x.lineTo(94 * e, 20 * e); x.moveTo(18 * e, 8 * e); x.lineTo(4 * e, 20 * e); x.lineTo(18 * e, 32 * e); x.moveTo(82 * e, 8 * e); x.lineTo(96 * e, 20 * e); x.lineTo(82 * e, 32 * e); }
+        else if (n.type === "souligne") { x.moveTo(3 * e, 9 * e); x.quadraticCurveTo(60 * e, 18 * e, 117 * e, 10 * e); x.moveTo(8 * e, 15 * e); x.quadraticCurveTo(60 * e, 22 * e, 110 * e, 15 * e); }
+        else if (n.type === "entoure") { x.ellipse(64 * e, 35 * e, 60 * e, 32 * e, 0.06, 0, 7); }
+        else if (n.type === "etoile") { const p = [[20, 3], [25, 14], [37, 15], [28, 23], [31, 35], [20, 29], [9, 35], [12, 23], [3, 15], [15, 14]]; p.forEach(([px, py], i) => (i ? x.lineTo(px * e * 2.5, py * e * 2.5) : x.moveTo(px * e * 2.5, py * e * 2.5))); x.closePath(); }
+        x.stroke();
       }
       x.restore();
     };
@@ -595,8 +720,14 @@ function dessinerMurCanvas(o = {}) {
           x.save();
           x.translate(marge + it.x + w / 2, marge + it.y + h / 2);
           x.rotate(((it.rot || 0) * Math.PI) / 180);
+          // cadre éventuel, dessiné derrière l'affiche
+          const c2 = it.cadre;
+          if (c2 && c2 !== "aucun") {
+            const ep = c2 === "epais" ? 10 : c2 === "passe" ? 16 : c2 === "polaroid" ? 12 : c2 === "noir" ? 8 : 2;
+            x.fillStyle = c2 === "noir" ? "#111" : c2 === "filet" ? "#111" : "#FBFBF8";
+            x.fillRect(-w / 2 - ep, -h / 2 - ep, w + ep * 2, h + ep * 2 + (c2 === "polaroid" ? 26 : 0));
+          }
           if (it.dechire) {
-            // bord blanc du papier déchiré, puis l'affiche découpée
             x.save();
             x.beginPath();
             it.dechire.forEach(([px, py], i) => { const X = (px - 0.5) * w * 1.02, Y = (py - 0.5) * h * 1.02; i ? x.lineTo(X, Y) : x.moveTo(X, Y); });
@@ -619,34 +750,76 @@ function dessinerMurCanvas(o = {}) {
 
         notes.filter((n) => n.devant).forEach(dessinerNote);
 
+        // les traits dessinés à la main, par-dessus
+        (ETAT.mur.traits || []).forEach((tr) => {
+          if (tr.pts.length < 2) return;
+          x.save();
+          x.strokeStyle = tr.couleur || "#111";
+          x.lineWidth = tr.w || 3; x.lineCap = "round"; x.lineJoin = "round";
+          x.beginPath();
+          tr.pts.forEach(([px, py], i) => (i ? x.lineTo(marge + px, marge + py) : x.moveTo(marge + px, marge + py)));
+          x.stroke();
+          x.restore();
+        });
+
         if (o.pied) {
           const y = hauteur + marge * 2 + 20;
-          x.fillStyle = m.fond === "noir" ? "#fff" : "#111";
+          x.fillStyle = sombre ? "#fff" : "#111";
           x.font = "600 30px Inter, Arial";
           x.fillText("SCRAP", marge, y + 24);
           const l = x.measureText("SCRAP").width;
           x.fillStyle = "#FF0000"; x.fillRect(marge + l + 7, y + 17, 7, 7);
-          x.fillStyle = m.fond === "noir" ? "#9A9A96" : "#6B6B67";
+          x.fillStyle = sombre ? "#9A9A96" : "#6B6B67";
           x.font = "500 20px Inter, Arial";
-          const t = `${ETAT.utilisateur.pseudo} · ${pluriel(m.items.length, "scrap")} · ${esc(ETAT.utilisateur.quartier)}`;
-          x.fillText(t, marge, y + 54);
+          x.fillText(`${ETAT.utilisateur.pseudo} · ${pluriel(m.items.length, "scrap")} · ${ETAT.utilisateur.quartier}`, marge, y + 54);
         }
         return c;
       });
   });
 }
 
-/* Recadre le scrapbook dans un format de réseau social */
+/* Recadre le scrapbook dans un format de réseau social.
+ * « mur » pose la page sur la photo d'un vrai mur prise avec la caméra. */
 function exporterMur(format) {
-  const tailles = { story: [1080, 1920], carre: [1080, 1080], page: null };
-  return dessinerMurCanvas({ largeur: 1080, pied: true }).then((src) => {
+  const tailles = { story: [1080, 1920], carre: [1080, 1080], mur: [1080, 1920] };
+  const surMur = format === "mur" && ETAT.mur.photoMur;
+  return dessinerMurCanvas({ largeur: 1080, pied: !surMur, transparent: !!surMur }).then((src) => {
     if (format === "page" || !tailles[format]) return src;
     const [W, H] = tailles[format];
     const c = document.createElement("canvas");
     c.width = W; c.height = H;
     const x = c.getContext("2d");
-    const m = ETAT.mur;
-    x.fillStyle = (MOTIFS_FOND[m.fond] || MOTIFS_FOND.papier)[0];
+
+    if (surMur) {
+      return new Promise((ok) => {
+        const im = new Image();
+        im.onload = () => {
+          const kk = Math.max(W / im.width, H / im.height);
+          x.drawImage(im, (W - im.width * kk) / 2, (H - im.height * kk) / 2, im.width * kk, im.height * kk);
+          x.fillStyle = "rgba(17,17,17,.18)"; x.fillRect(0, 0, W, H);
+          const k = Math.min((W - 150) / src.width, (H - 420) / src.height);
+          const w = src.width * k, h = src.height * k;
+          x.save();
+          x.translate(W / 2, H / 2);
+          x.rotate(-0.012);
+          x.shadowColor = "rgba(0,0,0,.5)"; x.shadowBlur = 40; x.shadowOffsetY = 18;
+          x.drawImage(src, -w / 2, -h / 2, w, h);
+          x.restore();
+          // signature en bas
+          x.fillStyle = "#fff"; x.font = "600 46px Inter, Arial";
+          x.fillText("SCRAP", 70, H - 96);
+          const l = x.measureText("SCRAP").width;
+          x.fillStyle = "#FF0000"; x.fillRect(70 + l + 10, H - 108, 11, 11);
+          x.fillStyle = "rgba(255,255,255,.8)"; x.font = "500 28px Inter, Arial";
+          x.fillText(`${ETAT.utilisateur.pseudo} · ${ETAT.utilisateur.quartier}`, 70, H - 52);
+          ok(c);
+        };
+        im.onerror = () => ok(src);
+        im.src = ETAT.mur.photoMur;
+      });
+    }
+
+    x.fillStyle = (MOTIFS_FOND[ETAT.mur.fond] || MOTIFS_FOND.papier)[0];
     x.fillRect(0, 0, W, H);
     const k = Math.min((W - 80) / src.width, (H - 160) / src.height);
     x.drawImage(src, (W - src.width * k) / 2, (H - src.height * k) / 2, src.width * k, src.height * k);

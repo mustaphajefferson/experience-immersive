@@ -2,7 +2,7 @@
 
 *À lire au début de chaque nouvelle conversation. C'est la source de vérité du projet : si une décision change, on met cette fiche à jour.*
 
-Dernière mise à jour : 17.11.2026 (v6 : relief partout, scrapbook annotable et exportable, déchirures réalistes, pack et carte holo, mur en réalité augmentée)
+Dernière mise à jour : 17.11.2026 (v7 : accueil d'un seul tenant, l'accent marque ce qui est actif, scrapbook qui s'ouvre comme un carnet, dessin et cadres, export posé sur la photo d'un vrai mur)
 
 ---
 
@@ -40,13 +40,13 @@ Dernière mise à jour : 17.11.2026 (v6 : relief partout, scrapbook annotable et
 **Persona :** Inès, 22 ans, étudiante en design, Belleville / 11e (hypothèse, pas de vrais entretiens à ce stade).
 **Références :** Pokémon GO, Flash Invaders, Soundmap, Ingress Prime.
 
-## 3. Écrans — v6 (ordre du parcours, numérotation de référence)
+## 3. Écrans — v7 (ordre du parcours, numérotation de référence)
 
 Le parcours d'Inès (les 11 premiers écrans dessinés) est inclus : 13, 19, 21, 22, 24, 28, 29, 34, 35, 36, 30.
 
 **A. Lancement et inscription**
-- 01 Lancement animé (3,4 s, toucher pour passer) : huit affiches se collent l'une sur l'autre, elles tombent, et SCRAP se relève lettre par lettre dessous
-- 02 Bienvenue · 03 Découverte 1 — Sors · 04 Découverte 2 — Capture · 05 Découverte 3 — Colle
+- **01 Accueil, d'un seul tenant** (il n'y a plus d'écran 02 : c'est cette couture-là qui se voyait). Les affiches arrivent une à une et se rangent en quatre rangées ; dès qu'on fait défiler, les rangées sortent par les côtés en sens contraire et le nom, l'accroche et le bouton montent à leur place.
+- 03 Découverte 1 — Sors · 04 Découverte 2 — Capture · 05 Découverte 3 — Colle
 - 06 Accès à la caméra · 07 Accès à la position · **07.1 Accès au mouvement** (le relief, démontré avec trois affiches qui bougent)
 - 08 Créer un compte · 09 Se connecter · 10 Mot de passe oublié · 11 Pseudo et avatar · 12 Collections de départ (3 max)
 
@@ -56,10 +56,11 @@ Le parcours d'Inès (les 11 premiers écrans dessinés) est inclus : 13, 19, 21,
 - 20 Capture échouée · 21 Scrap capturé — recto · 22 Scrap capturé — verso · 23 Détail de l'événement
 
 **C. Scrapbook**
-- 24 Mon scrapbook, deux modes : **Vue** (se promener, zoomer ; toucher un scrap l'ouvre en grand) et **Disposition** (premier toucher = sélection, deuxième = ouvre en grand ; seul le scrap sélectionné se déplace, donc un glissement n'attrape jamais une affiche par surprise)
-- **24.1 Ajouter un élément** : grand titre, sous-titre, étiquette, date, flèche, ruban, punaise — de quoi annoter la page comme un carnet
-- **24.2 Partager mon scrapbook** : la page devient une image (story, carré, page entière), à enregistrer ou à partager
-- **24.3 Sur un vrai mur** : la page posée sur le mur d'en face à travers la caméra, avec photo
+- 24 Mon scrapbook. **Le carnet s'ouvre** en arrivant : deux couvertures qui s'écartent, puis plus aucune bordure de livre, juste la page. Deux modes : **Vue** (se promener, zoomer ; toucher un scrap l'ouvre en grand) et **Disposition** (premier toucher = sélection, deuxième = ouvre en grand ; seul le scrap sélectionné se déplace, donc un glissement n'attrape jamais une affiche par surprise). La page a 200 px de marge **de tous les côtés** : on peut aller voir au-delà des affiches, à gauche comme à droite. Quand rien n'est sélectionné, le panneau propose quatre **rangements tout faits** (grille, colonne, mosaïque, éparpillé).
+- **24.1 Ajouter un élément** : grand titre, sous-titre, étiquette, date, flèche, flèche double, soulignement, entourage, étoile, ruban, punaise. Les annotations dessinées se tracent toutes seules en arrivant, comme si on venait de les faire au feutre.
+- **24.2 Partager mon scrapbook** : la page devient une image — story, carré, **sur un mur** (posée sur la photo d'un vrai mur), page entière
+- **24.3 Dessiner** : tracer à la main sur la page (noir, rouge, blanc ; trois épaisseurs)
+- **24.4 Photo d'un mur** : on photographie un vrai mur, et l'export « Sur un mur » pose la page dessus
 - 25 Personnaliser — fond (8 motifs + **ta propre photo**, avec un voile réglable) · 26 Personnaliser — scotch · 27 Personnaliser — déchirer (**5 types** : un coin, un bord, en deux, arrachée, sur mesure)
 
 **D. Collections**
@@ -96,7 +97,7 @@ Le parcours d'Inès (les 11 premiers écrans dessinés) est inclus : 13, 19, 21,
 | accent/capture | **#FF0000** | #FF0000 | Capture et sa trace uniquement |
 | accent/sur-accent | #FFFFFF | #FFFFFF | Texte et icône sur l'accent |
 
-L'accent sert uniquement pour : le déclencheur et le cadre du scanner, le bouton « Scanner une affiche » (un seul par écran), le numéro de scan, la pastille « nouveau », ma position sur la carte. Il n'est jamais utilisé en fond, pour un état actif, en dégradé ou en transparence.
+**L'accent a deux rôles depuis la v7 :** la capture (déclencheur et cadre du scanner, bouton « Scanner une affiche », numéro de scan, pastille « nouveau », ma position sur la carte) **et ce qui est actif** — un point rouge de 5 px dans le coin des puces et des dispositions sélectionnées, le liseré des puces actives, la barre de l'onglet courant, les coches, les interrupteurs allumés, le contour des cartes et des vignettes choisies, les jauges de progression, le bouton Filtres quand un filtre est posé. Règle : **en détail, jamais en aplat** — les fonds pleins restent noirs.
 
 **Typographie (Inter)**
 
@@ -149,15 +150,20 @@ L'accent sert uniquement pour : le déclencheur et le cadre du scanner, le bouto
 - **Pas de thème** (pêcheur, guetteur…) : on garde le concept tel quel.
 
 - **L'accent est rouge (#FF0000).** L'export l'appelle encore « Bleu capture » : il faudra renommer.
-- **Les pins de la carte** remplacent les marqueurs carrés : une petite affiche plantée sur une pointe, avec l'icône de sa collection dedans. Contour noir pour tous ; seule la pastille rouge « nouveau » est en accent, et elle respire doucement.
+- **Les pins de la carte** remplacent les marqueurs carrés : une petite affiche plantée sur une pointe, avec l'icône de sa collection dedans. Une affiche **déjà capturée** porte une coche rouge et passe en retrait : d'un coup d'œil on voit ce qui reste à faire.
+- **La recherche ne montre que ce qui manque.** On y cherche quoi aller capturer, trié par distance, avec la même vignette que le bandeau de la carte. Les scraps déjà capturés sont dans l'onglet Collection, qui est fait pour ça.
+- **On peut toujours rentrer :** la barre du bas reste sur le profil et les réglages, et le retour d'un écran sans historique ramène à la carte.
 - **Le scan est automatique** (écran 19) : les contours de l'affiche sont suivis en direct et la photo part toute seule dès que le cadre ne bouge plus, comme dans Notes. L'image est redressée (perspective corrigée) avant d'être proposée. La capture au bouton reste possible : chip « Auto » en haut à droite.
 - **On vérifie avant d'identifier** : après la capture, l'écran 19.1 montre l'affiche seule sur fond noir et demande « Ce scan te plaît ? » — Garder ou Reprendre. L'identification (titre, lieu, collection, tags) vient après, en 19.2.
 - **Holo :** l'état holographique est signalé par une étiquette « État · Holo » et une mention dans la légende, pas par un effet sur l'image (règle « affiche intouchable »).
 - **Le relief au gyroscope** s'applique à toute l'app, pas à un écran : une seule mesure, posée en variables CSS sur la racine du document (`--px`, `--py`), dont héritent toutes les couches. L'autorisation est demandée à l'accueil (07.1) et se coupe dans Réglages › Affichage.
-- **L'holographie est réservée à ce que SCRAP fabrique lui-même** : la carte exclusive de fin de collection. Elle a des couches séparées (fond, cadre, mot, carré rouge, numéro), un film irisé et un éclat qui suivent l'inclinaison. La règle « l'affiche est intouchable » ne concerne que les vraies affiches de la rue ; pour un scrap marqué Holo, l'effet passe en halo derrière l'affiche, jamais dessus.
+- **L'holographie est réservée à ce que SCRAP fabrique lui-même** : la carte exclusive de fin de collection. Pas d'arc-en-ciel en aplat — trois couches qui ne se voient presque pas à plat et qui prennent vie dès qu'on penche : un **guillochage gravé** (fines diagonales blanches, une sur trois en rouge), un **reflet net** qui balaie la carte, un **liseré prismatique** concentré sur les bords. La carte garde cet effet quand on la rouvre depuis le scrapbook, pas seulement le jour où on la gagne. La règle « l'affiche est intouchable » ne concerne que les vraies affiches de la rue ; pour un scrap marqué Holo, l'effet passe en halo derrière l'affiche, jamais dessus.
+- **Observer une affiche, c'est une composition** : le nom de la collection à la verticale dans la gouttière gauche, le numéro en rouge en haut à droite, la date en bas, une règle graduée, deux repères rouges, un viseur en retrait et de la poussière de papier. Tout cela se décale à des profondeurs différentes quand on penche — c'est ce qui rend le relief visible, l'affiche elle-même bougeant à peine.
+- **Cadres** (scrapbook seulement) : aucun, filet, épais, passe-partout, polaroïd, noir. Posés **autour** de l'affiche, comme un vrai cadre sur un vrai mur : l'affiche n'est ni recadrée ni recouverte.
+- **Dessin à la main** sur la page, en noir, rouge ou blanc, trois épaisseurs. Deux doigts continuent de zoomer.
 - **Fin de collection : on ouvre un pack.** Une pochette noire scellée, une languette, puis la carte qui sort. C'est l'objet le plus précieux de l'app, il lui fallait un geste.
 - **L'export du scrapbook** redessine la page dans un canvas (fonds, scraps, scotch, déchirures, éléments posés), avec une signature SCRAP et le pseudo en bas. Trois formats : story, carré, page entière.
-- **« Sur un vrai mur »** est de la réalité augmentée légère : flux de la caméra + la page inclinée selon le gyroscope. Pas de reconnaissance de surface — WebXR n'existe pas sur Safari iOS, et une vraie détection de plan demanderait une app native. Pour une démo de workshop, c'est suffisant et ça marche sur tous les téléphones.
+- **La réalité augmentée en direct est abandonnée.** Sans reconnaissance de surface (WebXR n'existe pas sur Safari iOS), la page flottait sans jamais tenir au mur. À la place : on **photographie** un vrai mur, et l'export pose le scrapbook dessus, avec son ombre. Le résultat est une image qu'on poste ; c'est ce qu'on voulait montrer, sans promettre une technologie qu'un navigateur ne sait pas tenir.
 - **Badges** : des sceaux, pas des pictos. Carré de 64 px, cadre double dont un filet perforé façon timbre, repères aux quatre côtés, et un motif dessiné pour chaque badge (le « 1 » du premier scrap, les collines de Belleville, le losange de l'holo, la note des concerts, le cadre des expos, l'auvent des marchés, le mégaphone des messages, la bombe du street art, le fantôme des disparues, le « 50 »). Fond noir quand le badge est choisi, gris et cadenas quand il est verrouillé.
 - Le filtre « Date » est remplacé par **« État »**.
 - Fondation Vuitton, La Boule Noire, etc. sont des **exemples**, pas de vrais partenaires.
@@ -176,7 +182,7 @@ L'accent sert uniquement pour : le déclencheur et le cadre du scanner, le bouto
 - **Retours regroupés** en une seule liste numérotée par écran.
 - **Le code du dépôt fait foi :** on modifie l'existant, on ne régénère pas tout.
 - **Le site prototype (`site/`) est la référence** depuis le 17.11.2026. On travaille en vibe coding : l'équipe donne les changements, Claude modifie le site et pousse sur `main`, GitHub Pages se met à jour. Les maquettes Figma ne suivent plus automatiquement.
-- Site : 56 écrans (01 à 50, plus 07.1, 19.1, 19.2, 24.1, 24.2 et 24.3). Compte démo d'Inès pré-rempli (15 scraps), vraie caméra avec détection des contours, vraie carte de Belleville, scrapbook zoomable. Menu caché : appui long en haut de l'écran, avec « Réinitialiser la démo ».
+- Site : 56 écrans (01, 03 à 50, plus 07.1, 19.1, 19.2, 24.1, 24.2, 24.3 et 24.4 — l'ancien écran 02 a été fondu dans l'accueil). Compte démo d'Inès pré-rempli (15 scraps), vraie caméra avec détection des contours, vraie carte de Belleville, scrapbook zoomable. Menu caché : appui long en haut de l'écran, avec « Réinitialiser la démo ».
 - **Clé du fond de carte :** CARTO demande désormais une clé, sinon la carte répond « API key required ». La clé est dans `site/js/config.js`, avec les trois fonds essayés dans l'ordre (Voyager, Positron, puis OpenStreetMap sans clé si tout échoue). C'est une clé de fond de carte, faite pour vivre dans le code d'une page web. **À faire une fois :** sur carto.com, la limiter au domaine `mustaphajefferson.github.io`.
-- **Fichiers du site :** `config.js` (clé et réglages), `data.js` (compte démo et semis de la carte), `noyau.js` (composants, badges), `effets.js` (inclinaison globale, poussière, vol d'un scrap, compteurs, révélations, rareté), `carte.js` (Leaflet et pins), `mur.js` (scrapbook, déchirures, export), `reel.js` (le mur en réalité augmentée), `camera.js` (détection des contours et redressement), `ecrans.js` (les 56 écrans), `app.js` (navigation et actions).
+- **Fichiers du site :** `config.js` (clé et réglages), `data.js` (compte démo et semis de la carte), `noyau.js` (composants, badges), `effets.js` (inclinaison globale, poussière, vol d'un scrap, compteurs, révélations, rareté), `carte.js` (Leaflet et pins), `mur.js` (scrapbook, déchirures, rangements, dessin, export), `camera.js` (détection des contours, redressement, photo d'un mur), `ecrans.js` (les 56 écrans), `app.js` (navigation et actions).
 - **La carte est semée** : une vingtaine d'affiches écrites à la main, plus 112 tirées au sort autour de Belleville par un générateur à graine fixe (donc toujours les mêmes). C'est ce qui donne une app déjà vivante et ce qui rend les filtres démonstratifs.

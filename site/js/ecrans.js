@@ -12,46 +12,55 @@ const ecran = (id, section, titre, classe, rendu, monter) => { ECRANS[id] = { id
 
 /* ═════════ A. Lancement et inscription */
 
-/* Lancement : on colle des affiches les unes sur les autres, elles tombent,
- * et le nom se relève lettre par lettre dessous. Toucher l'écran passe. */
-const PILE_LANCEMENT = [
-  ["sonda", -6, -14, "kraft"], ["white", 5, 10, "transparent"], ["viudas", -3, 6, "papier"],
-  ["fiasco", 7, -8, "kraft"], ["skeleton", -8, 12, "noir"], ["rose", 4, -6, "transparent"],
-  ["seb", -4, 8, "kraft"], ["alta", 2, 0, "papier"],
+/* 01 — l'accueil, d'un seul tenant (il n'y a plus d'écran 02 séparé : c'est
+ * cette couture-là qui se voyait).
+ *
+ * Les affiches arrivent une à une et se rangent en quatre rangées. Dès qu'on
+ * fait défiler, les rangées partent sur les côtés, en sens contraire, et le
+ * nom et le bouton montent à leur place. Tout se joue sur une seule variable,
+ * --s, qui vaut 0 en haut de la page et 1 une fois le mur sorti. */
+const MUR_ACCUEIL = [
+  ["alta", "rose", "sonda", "skeleton", "seb"],
+  ["viudas", "fiasco", "white", "flea", "presence"],
+  ["sanbimu", "ozkan", "habitat", "different", "scrt"],
+  ["seb", "sonda", "rose", "viudas", "alta"],
 ];
-ecran("01", "A", "Lancement animé", "grille", () => `
-  <div class="lancement" data-action="passerLancement">
-    <div class="pile-lancement">
-      ${PILE_LANCEMENT.map(([id, rot, dx, sc], i) => `
-        <div class="pile-affiche" style="--i:${i};--rot:${rot}deg;--dx:${dx}px">
-          <img src="assets/affiches/${id}.jpg" alt="">
-          <i class="scotch ${sc} ${i % 2 ? "hd" : "hg"}"></i>
-        </div>`).join("")}
-    </div>
-    <div class="lancement-logo">
-      <span class="mot">${"SCRAP".split("").map((l, i) => `<span class="lettre" style="--i:${i}"><b>${l}</b></span>`).join("")}<i class="point"></i></span>
-      <p class="accroche t-texte-corps secondaire"><span>Ta ville en morceaux.</span></p>
-    </div>
-    <span class="t-texte-meta secondaire passer-lancement">Toucher pour passer</span>
-  </div>`, (r) => {
-  /* La fin du lancement enchaîne en fondu sur l'écran 02 : le logo y est au
-   * même endroit, donc on ne voit pas la couture. */
-  const l = $(".lancement", r);
-  const t1 = setTimeout(() => l && l.classList.add("sort"), 3050);
-  const t2 = setTimeout(() => { ETAT.ctx.fondu = true; aller("02", { remplace: true }); }, 3400);
-  return () => { clearTimeout(t1); clearTimeout(t2); };
-});
+const SCOTCHS_ACCUEIL = ["kraft", "transparent", "papier", "noir"];
 
-ecran("02", "A", "Bienvenue", "grille", () => `
-  <div class="defile scene-accueil" style="display:flex;flex-direction:column;justify-content:center;padding-top:calc(env(safe-area-inset-top) + 24px)">
-    <div style="position:relative;height:230px;margin-bottom:40px">
-      <div class="mur-item couche" style="--p:14;left:2%;top:34px;width:31%;transform:rotate(-6deg)"><img src="assets/affiches/alta.jpg" alt=""><i class="scotch kraft hg"></i></div>
-      <div class="mur-item couche" style="--p:24;left:34%;top:0;width:32%;transform:rotate(3deg)"><img src="assets/affiches/rose.jpg" alt=""><i class="scotch transparent hd"></i></div>
-      <div class="mur-item couche" style="--p:9;left:67%;top:40px;width:31%;transform:rotate(-4deg)"><img src="assets/affiches/sonda.jpg" alt=""><i class="scotch papier hg"></i></div>
+ecran("01", "A", "Accueil", "grille", () => `
+  <div class="defile accueil" id="accueil">
+    <div class="mur-accueil">
+      ${MUR_ACCUEIL.map((rangee, r) => `
+        <div class="rangee-affiches" style="--sens:${r % 2 ? 1 : -1};--decalage:${r % 2 ? -40 : 0}px">
+          ${rangee.concat(rangee).map((id, i) => `
+            <div class="affiche-accueil" style="--i:${r * 5 + (i % 5)};--rot:${((i * 7 + r * 3) % 9) - 4}deg">
+              <img src="assets/affiches/${id}.jpg" alt="" loading="${r < 2 ? "eager" : "lazy"}">
+              ${i % 3 === 0 ? `<i class="scotch ${SCOTCHS_ACCUEIL[(i + r) % 4]} hg"></i>` : ""}
+            </div>`).join("")}
+        </div>`).join("")}
+      <i class="voile-accueil"></i>
     </div>
-    <div class="centre bloc-logo-accueil">${logo(64)}<p class="t-texte-corps secondaire" style="margin:12px 0 0">Ta ville en morceaux.</p></div>
-  </div>
-  ${pied(bouton("Commencer", { aller: "03" }) + lien("J'ai déjà un compte", { aller: "09", centre: true }), { transparent: true })}`);
+    <div class="accueil-texte">
+      <span class="mot">${"SCRAP".split("").map((l, i) => `<span class="lettre" style="--i:${i}"><b>${l}</b></span>`).join("")}<i class="point"></i></span>
+      <p class="t-texte-corps secondaire" style="margin:14px 0 0">Ta ville en morceaux.</p>
+      <p class="t-texte-petit secondaire" style="margin:18px 0 0;max-width:300px">Chaque affiche collée dans la rue est un scrap à capturer. Tu les ranges sur ton scrapbook, et tu sors en chercher d'autres.</p>
+      <div class="accueil-boutons">
+        ${bouton("Commencer", { aller: "03" })}
+        ${lien("J'ai déjà un compte", { aller: "09", centre: true })}
+      </div>
+    </div>
+    <span class="indice-defilement t-texte-meta secondaire">Fais défiler${icone("chevron", 16)}</span>
+  </div>`, (r) => {
+  const zone = $("#accueil", r);
+  if (!zone) return null;
+  const maj = () => {
+    const course = Math.max(1, zone.clientHeight * 0.68);
+    zone.style.setProperty("--s", clamp(zone.scrollTop / course, 0, 1).toFixed(4));
+  };
+  maj();
+  zone.addEventListener("scroll", maj, { passive: true });
+  return () => zone.removeEventListener("scroll", maj);
+});
 
 const decouverte = (n, illus, titre, texte, suivant, btn) => `
   <div style="flex:none;padding:calc(env(safe-area-inset-top) + 16px) var(--marge) 0" class="rangee entre">
@@ -216,10 +225,7 @@ ecran("12", "A", "Collections de départ", "grille", () => {
 /* ═════════ B. Carte et capture */
 
 const champCarte = () => `<button class="champ-carte" data-aller="15">${icone("recherche")}<span>Rechercher un scrap, un lieu</span></button>`;
-const cibleProche = () => {
-  const visibles = ciblesVisibles();
-  return visibles.sort((a, b) => distanceM(a) - distanceM(b))[0];
-};
+const cibleProche = () => ciblesAFaire().sort((a, b) => distanceM(a) - distanceM(b))[0];
 
 ecran("13", "B", "Carte d'accueil", "", () => {
   const c = cibleProche();
@@ -229,14 +235,14 @@ ecran("13", "B", "Carte d'accueil", "", () => {
   <div class="carte-ui" style="position:relative;flex:1">
     <div class="carte-haut">${champCarte()}
       <button class="carre-bouton" data-action="monProfil" aria-label="Mon profil">${ETAT.utilisateur.avatar ? avatar(46, "", ETAT.utilisateur.avatar) : icone("profil")}</button></div>
-    <div style="padding:8px var(--marge) 0;display:flex;justify-content:flex-end"><button class="carre-bouton" data-aller="14" aria-label="Filtres">${icone("filtre")}</button></div>
+    <div style="padding:8px var(--marge) 0;display:flex;justify-content:flex-end"><button class="carre-bouton${filtresPoses() ? " actif" : ""}" data-aller="14" aria-label="Filtres">${icone("filtre")}</button></div>
     <div class="carte-bas">
       ${vide ? `<div class="panneau" style="flex-direction:column;align-items:flex-start;padding:16px">
           <span class="t-titre-m">Aucun scrap à moins de ${ETAT.reglages.rayon >= 1000 ? ETAT.reglages.rayon / 1000 + " km" : ETAT.reglages.rayon + " m"}</span>
           <span class="t-texte-petit secondaire">Élargis le rayon ou change de quartier.</span>
           ${lien("Élargir à 2 km", { action: "elargir" })}</div>`
         : `<button class="panneau" data-action="ouvrirCible" data-id="${c.id}">
-          <span style="width:48px;height:64px;display:grid;place-items:center;background:var(--fond-secondaire);flex:none">${icone("scan")}</span>
+          ${miniatureCible(c)}
           <span style="flex:1"><span class="rangee" style="gap:6px">${c.nouveau ? '<i class="pastille"></i>' : ""}<span class="t-texte-meta secondaire">${c.nouveau ? "Nouveau · " : ""}à ${distanceTxt(c)}</span></span>
           <span class="t-titre-m" style="display:block">${esc(c.titre)}</span><span class="t-texte-petit secondaire">${esc(c.adresse)}</span></span>
           <span class="secondaire">${icone("chevron")}</span></button>`}
@@ -267,7 +273,7 @@ ecran("14", "B", "Filtres de la carte", "", () => {
 ecran("15", "B", "Recherche", "grille", () => `
   <header class="entete"><div class="entete-ligne">
     <button class="icone-bouton" data-action="retour" aria-label="Retour">${icone("retour")}</button>
-    <div class="recherche" style="flex:1"><input id="q" type="search" placeholder="Un scrap, un lieu, un artiste" autocomplete="off" value="${esc(ETAT.ctx.q || "")}"></div>
+    <div class="recherche" style="flex:1"><input id="q" type="search" placeholder="Une affiche à capturer, un lieu" autocomplete="off" value="${esc(ETAT.ctx.q || "")}"></div>
     ${lien("Annuler", { action: "retour" })}
   </div></header>
   <div class="defile" id="resultats"></div>`, (r) => {
@@ -282,18 +288,23 @@ function resultatsRecherche(q) {
   const n = (s) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
   const m = n(q.trim());
   const ok = (...champs) => !m || champs.some((c) => n(c || "").includes(m));
-  const sc = idsScraps().filter((id) => ok(scrap(id).titre, scrap(id).lieu, scrap(id).artiste, (scrap(id).themes || []).join(" ")));
-  const ci = D.cibles.filter((c) => ok(c.titre, c.adresse, collection(c.collection).nom));
+  /* On ne cherche ici que ce qu'on n'a PAS encore : la recherche sert à
+   * trouver quoi aller capturer. Les scraps déjà capturés se retrouvent dans
+   * l'onglet Collection, qui est fait pour ça. */
+  const ci = D.cibles.filter((c) => !c.fait && ok(c.titre, c.adresse, collection(c.collection).nom))
+    .sort((a, b) => distanceM(a) - distanceM(b));
   const li = ok(D.lieu.nom, D.lieu.adresse) ? [D.lieu] : [];
   const bloc = (titre, html) => (html ? `<p class="t-texte-meta secondaire" style="margin:16px 0 4px">${titre}</p><div class="liste">${html}</div>` : "");
   const html =
-    bloc("Mes scraps", sc.slice(0, 6).map((id) => `<button class="ligne" data-action="ouvrirScrap" data-id="${id}" style="min-height:72px">
-      <img src="${imgScrap(id)}" alt="" style="width:40px;height:54px;object-fit:contain;background:var(--fond-secondaire)">
-      <span style="flex:1"><span class="t-texte-label" style="display:block">${esc(scrap(id).titre)}</span><span class="t-texte-meta secondaire">${esc(scrap(id).lieu)} · N° ${pad3(scrap(id).num)}</span></span>
+    bloc("À capturer autour de toi", ci.slice(0, 8).map((c) => `<button class="ligne" data-action="ouvrirCible" data-id="${c.id}" style="min-height:72px">
+      ${miniatureCible(c)}
+      <span style="flex:1"><span class="t-texte-label" style="display:block">${esc(c.titre)}</span>
+        <span class="t-texte-meta secondaire">${c.nouveau ? "Nouveau · " : ""}${esc(c.adresse)}</span></span>
+      <span class="t-texte-meta secondaire">${distanceTxt(c)}</span>
       <span class="secondaire">${icone("chevron")}</span></button>`).join("")) +
-    bloc("Repérés sur la carte", ci.slice(0, 5).map((c) => ligne(c.titre, { action: "ouvrirCible", data: ` data-id="${c.id}"`, icone: "scan", valeur: distanceTxt(c) })).join("")) +
     bloc("Lieux", li.map((l) => ligne(l.nom, { aller: "40", icone: "position", valeur: "350 m" })).join(""));
-  return html || `<p class="t-texte-corps secondaire centre" style="margin-top:48px">Rien trouvé pour « ${esc(q)} ».</p>`;
+  return (html || `<p class="t-texte-corps secondaire centre" style="margin-top:48px">Rien trouvé pour « ${esc(q)} ».</p>`)
+    + `<p class="t-texte-petit secondaire centre" style="margin:28px 0 0">Les scraps que tu as déjà capturés sont dans ${"<b>Collection</b>"}.</p>`;
 }
 
 ecran("16", "B", "Scrap repéré (avant capture)", "", () => {
@@ -451,6 +462,7 @@ function rectoVerso(verso) {
   const surMur = ETAT.mur.items.some((it) => it.id === id);
   const frais = ETAT.ctx.frais === id;
   const r = rarete(s);
+  const exclusif = s.collection === "exclusifs" ? (s.exclusif || "concerts") : null;
   const lignes = [["Artiste", s.artiste || "—"], ["Lieu", `${s.lieu}, ${s.arr.replace("Paris ", "")}`],
     ["Capturé le", `${s.date} · ${s.heure}`], ["Tags", (s.themes || []).join(" · ") || "—"],
     ["État", s.holo ? "Holo" : "Normal"], ["Rareté", r.nom],
@@ -467,7 +479,9 @@ function rectoVerso(verso) {
       <div class="scrap-inclinaison">
         <div class="retourne${verso ? " verso" : ""}" id="retourne" data-action="retourner">
           <div class="retourne-int">
-            <img class="face scrap-img" src="${imgScrap(id)}" alt="${esc(s.titre)}" style="aspect-ratio:${s.ratio}">
+            ${exclusif
+              ? `<div class="face scrap-img face--exclusive">${carteExclusive(exclusif)}</div>`
+              : `<img class="face scrap-img" src="${imgScrap(id)}" alt="${esc(s.titre)}" style="aspect-ratio:${s.ratio}">`}
             <div class="face face--verso verso-carte">
               <div class="verso-haut">${logo(15)}<span class="t-texte-meta secondaire">${esc(r.nom)}</span></div>
               <div class="verso-numero">
@@ -478,14 +492,21 @@ function rectoVerso(verso) {
                 ${lignes.map(([k, v], i) => `<div class="ligne" style="--i:${i}"><span class="cle t-texte-meta secondaire">${k}</span><span class="t-texte-petit">${esc(v)}</span></div>`).join("")}
               </div>
               <div class="verso-bas">
-                <span class="t-texte-meta secondaire">${s.scans} captures<br>${pluriel(s.murs, "scrapbook")}</span>
-                <span class="verso-sticker" id="sticker-verso">${tampon("N° " + pad3(s.num), `${s.arr} · ${s.date}`, { plein: !col || complete(s.collection) })}</span>
+                <span class="t-texte-meta secondaire">${s.scans} captures · ${pluriel(s.murs, "scrapbook")}</span>
+                <span class="t-texte-meta accent">${esc(s.arr)}</span>
               </div>
               <i class="verso-codebarre" aria-hidden="true"></i>
             </div>
           </div>
         </div>
       </div>
+      <i class="viseur-scrap couche" style="--p:-10">${"<i></i>".repeat(4)}</i>
+      <span class="repere-scrap haut-gauche couche" style="--p:30">${icone("plus", 14)}</span>
+      <span class="repere-scrap bas-droit couche" style="--p:40">${icone("plus", 14)}</span>
+      <span class="flottant etiquette-flottante couche" style="--p:34">${esc(col ? col.nom : "Exclusif")}</span>
+      <span class="flottant num-flottant couche" style="--p:46">N° ${pad3(s.num)}</span>
+      <span class="flottant date-flottante couche" style="--p:24">${esc(s.date)}</span>
+      <i class="regle-scrap couche" style="--p:16"></i>
       <span class="scrap-tampon couche" style="--p:20">${tampon("Scrap N° " + pad3(s.num), `${s.arr} · ${s.date}`, { grand: true, plein: !col || complete(s.collection), pose: frais })}</span>
     </div>
 
@@ -525,8 +546,6 @@ function animerVerso() {
   const s = scrap(ETAT.ctx.scrap);
   el.classList.remove("pose");
   compteurAnime(el, s ? s.num : 0, { duree: 1000 });
-  const st = $("#sticker-verso");
-  if (st) { st.classList.remove("pose"); void st.offsetWidth; st.classList.add("pose"); }
   const t = $(".verso-tableau");
   if (t) { t.classList.remove("entre-en-scene"); void t.offsetWidth; t.classList.add("entre-en-scene"); }
 }
@@ -586,6 +605,7 @@ function scrapbook(ecranId) {
       ${puce("Vue", ecranId === "24" && mode === "regarder", ' data-action="modeMur" data-id="regarder"')}
       ${puce("Disposition", ecranId === "24" && mode === "deplacer", ' data-action="modeMur" data-id="deplacer"')}
       ${puce("Ajouter", ecranId === "24.1", ' data-aller="24.1" data-remplace="1"')}
+      ${puce("Dessiner", ecranId === "24.3", ' data-aller="24.3" data-remplace="1"')}
       ${puce("Scotch", ecranId === "26", ' data-aller="26" data-remplace="1"')}
       ${puce("Déchirer", ecranId === "27", ' data-aller="27" data-remplace="1"')}
       ${puce("Fond", ecranId === "25", ' data-aller="25" data-remplace="1"')}
@@ -600,6 +620,17 @@ function scrapbook(ecranId) {
         <div class="palette">${TYPES_NOTE.map((t) => `<button data-action="ajouterNote" data-id="${t.type}">
           <span class="palette-apercu note-${t.type}">${estTexte(t.type) ? esc(t.exemple || "Texte") : icone(t.icone, 22)}</span>
           <span class="t-texte-meta">${t.nom}</span></button>`).join("")}</div>
+        ${outils}</div>`,
+    "24.3": `<div class="pied filet">
+        <div class="rangee entre"><span class="t-titre-m">Dessiner</span>${lien("OK", { action: "fermerOutil" })}</div>
+        <p class="t-texte-petit secondaire" style="margin:6px 0 12px">Trace directement sur la page : entoure, souligne, gribouille. Deux doigts zooment toujours.</p>
+        <div class="rangee entre" style="gap:16px">
+          <div class="rangee" style="gap:8px">${[["#111111", "Noir"], ["#FF0000", "Rouge"], ["#FFFFFF", "Blanc"]].map(([c, nom]) =>
+            `<button class="pastille-couleur${(m.dessin && m.dessin.couleur || "#111111") === c ? " choisi" : ""}" style="--c:${c}" data-action="couleurTrait" data-id="${c}" aria-label="${nom}"></button>`).join("")}</div>
+          <div class="rangee" style="gap:8px">${[[2, "Fin"], [4, "Moyen"], [8, "Gros"]].map(([w, nom]) =>
+            `<button class="epaisseur-trait${(m.dessin && m.dessin.w || 4) === w ? " choisi" : ""}" data-action="epaisseurTrait" data-id="${w}" aria-label="${nom}"><i style="height:${w}px"></i></button>`).join("")}</div>
+        </div>
+        <div class="deux-col" style="margin-top:12px">${bouton("Annuler le trait", { type: "secondaire", action: "annulerTrait" })}${bouton("Tout effacer", { type: "secondaire", action: "effacerTraits" })}</div>
         ${outils}</div>`,
     "25": `<div class="pied filet">
         <div class="rangee entre"><span class="t-titre-m">Fond</span>${lien("OK", { action: "fermerOutil" })}</div>
@@ -630,7 +661,7 @@ function scrapbook(ecranId) {
         ${outils}</div>`,
   };
 
-  const nomOutil = { "24.1": "Ajouter", 25: "Fond", 26: "Scotch", 27: "Déchirer" }[ecranId];
+  const nomOutil = { "24.1": "Ajouter", "24.3": "Dessiner", 25: "Fond", 26: "Scotch", 27: "Déchirer" }[ecranId];
   return `
   <header class="entete"><div class="entete-ligne">
     <div class="entete-gauche"><span class="t-titre-m">Mon scrapbook</span>
@@ -641,6 +672,10 @@ function scrapbook(ecranId) {
         ? `<button class="icone-bouton" data-aller="24.2" aria-label="Partager mon scrapbook">${icone("partager")}</button>`
         : `<span class="t-texte-meta secondaire">${nomOutil}</span>`}
   </div></header>
+  ${ecranId === "24" && !ETAT.ctx.livreOuvert ? `<div class="livre" id="livre" aria-hidden="true">
+    <i class="livre-couv gauche"></i><i class="livre-couv droite"></i>
+    <span class="livre-titre">${logo(28)}<span class="t-texte-meta">${esc(ETAT.utilisateur.quartier)}</span></span>
+  </div>` : ""}
   <div class="mur-zone fond-${m.fond} mode-${ecranId === "24" ? mode : ecranId}" id="mur" style="${styleFond(m)}">
     ${m.fond === "photo" && m.voile ? `<i class="voile-fond" style="opacity:${(m.voile || 0) / 100}"></i>` : ""}
     <div class="mur-plan" id="plan"></div>
@@ -649,14 +684,26 @@ function scrapbook(ecranId) {
   </div>
   ${panneaux[ecranId]}`;
 }
-ecran("24", "C", "Mon scrapbook", "", () => scrapbook("24"), (r) => murMonter(r, modeMur()));
+ecran("24", "C", "Mon scrapbook", "", () => scrapbook("24"), (r) => {
+  const n = murMonter(r, modeMur());
+  // le carnet s'ouvre en arrivant, une seule fois par visite
+  const livre = $("#livre", r);
+  let t = null;
+  if (livre) {
+    ETAT.ctx.livreOuvert = true;
+    requestAnimationFrame(() => livre.classList.add("ouvre"));
+    t = setTimeout(() => livre.remove(), 1100);
+  }
+  return () => { n && n(); clearTimeout(t); };
+});
 ecran("24.1", "C", "Ajouter un élément", "", () => scrapbook("24.1"), (r) => murMonter(r, "deplacer"));
+ecran("24.3", "C", "Dessiner", "", () => scrapbook("24.3"), (r) => murMonter(r, "dessiner"));
 ecran("25", "C", "Personnaliser — fond", "", () => scrapbook("25"), (r) => murMonter(r, "aucun"));
 ecran("26", "C", "Personnaliser — scotch", "", () => scrapbook("26"), (r) => murMonter(r, "scotch"));
 ecran("27", "C", "Personnaliser — déchirer", "", () => scrapbook("27"), (r) => murMonter(r, "dechirer"));
 
 /* 24.2 — exporter la page en image, pour la poster ailleurs */
-const FORMATS_EXPORT = [["story", "Story", "9 / 16"], ["carre", "Carré", "1 / 1"], ["page", "Page entière", "la page telle quelle"]];
+const FORMATS_EXPORT = [["story", "Story", "9 / 16"], ["carre", "Carré", "1 / 1"], ["mur", "Sur un mur", "posée sur ta photo de mur"], ["page", "Page entière", "la page telle quelle"]];
 ecran("24.2", "C", "Partager mon scrapbook", "grille", () => {
   const f = ETAT.ctx.formatExport || "story";
   return `
@@ -668,12 +715,16 @@ ecran("24.2", "C", "Partager mon scrapbook", "grille", () => {
       <div class="apercu-attente t-texte-meta secondaire">Composition…</div>
     </div>
     <p class="t-texte-meta secondaire centre" style="margin:12px 0 0">${esc((FORMATS_EXPORT.find((x) => x[0] === f) || [])[2] || "")}</p>
+    ${f === "mur" ? `<div style="margin-top:14px">${bouton(ETAT.mur.photoMur ? "Reprendre la photo du mur" : "Photographier un mur", { type: "secondaire", aller: "24.4" })}</div>` : ""}
   </div>
   ${pied(`<div class="rang">
     <button class="bouton bouton--secondaire" data-action="telechargerMur">${icone("telecharger", 20)}Enregistrer</button>
-    <button class="bouton" data-action="partagerMur">${icone("partager", 20)}Partager</button></div>
-    ${lien("Le voir sur un vrai mur", { aller: "24.3", centre: true })}`)}`;
-}, () => { majApercuExport(); return null; });
+    <button class="bouton" data-action="partagerMur">${icone("partager", 20)}Partager</button></div>`)}`;
+}, () => {
+  if ((ETAT.ctx.formatExport || "story") === "mur" && !ETAT.mur.photoMur) { aller("24.4", { remplace: true }); return null; }
+  majApercuExport();
+  return null;
+});
 
 function majApercuExport() {
   const boite = $("#apercu-export");
@@ -689,22 +740,22 @@ function majApercuExport() {
   }).catch(() => { const b = $("#apercu-export"); if (b) b.innerHTML = '<div class="apercu-attente t-texte-meta secondaire">Aperçu impossible ici</div>'; });
 }
 
-/* 24.3 — voir son scrapbook posé sur un vrai mur, à travers la caméra */
-ecran("24.3", "C", "Sur un vrai mur", "sombre", () => `
-  <video class="camera" id="video-reel" playsinline autoplay muted></video>
-  <div class="scene-reel" id="scene-reel">
-    <div class="page-reel" id="page-reel"></div>
-  </div>
+/* 24.4 — photographier un vrai mur, pour poser la page dessus dans la story.
+ * C'est une photo, pas de la réalité augmentée : rien n'est suivi en direct,
+ * et c'est justement ce qui marche sur tous les téléphones. */
+ecran("24.4", "C", "Photo d'un mur", "sombre", () => `
+  <video class="camera" id="video-mur" playsinline autoplay muted></video>
+  <i class="cadre-mur" aria-hidden="true"></i>
   <header class="entete transparent" style="color:#fff;z-index:6"><div class="entete-ligne">
     <button class="icone-bouton" data-aller="24.2" aria-label="Fermer">${icone("fermer")}</button>
-    <span class="entete-titre t-texte-meta">Sur un vrai mur</span><span></span>
+    <span class="entete-titre t-texte-meta">Photographie un mur</span><span></span>
   </div></header>
-  <p class="t-texte-petit centre" id="consigne-reel">Vise un mur, place ta page au doigt, pince pour l'agrandir. Penche le téléphone : elle suit le mur.</p>
+  <p class="t-texte-petit centre" id="consigne-mur">Cadre un mur, un rideau de fer, une palissade. Ton scrapbook sera posé dessus.</p>
   <div class="scanner-bas" style="z-index:3">
+    <label class="galerie" aria-label="Choisir une photo">${icone("image")}<input type="file" accept="image/*" class="cache" data-change="photoMur"></label>
+    <button class="declencheur" data-action="prendrePhotoMur" aria-label="Prendre la photo"></button>
     <span style="width:44px"></span>
-    <button class="declencheur" data-action="photoMurReel" aria-label="Prendre la photo"></button>
-    <span style="width:44px"></span>
-  </div>`, (r) => reelMonter(r));
+  </div>`, (r) => cameraMurDemarrer($("#video-mur", r)));
 
 /* ═════════ D. Collections */
 const FILTRES_COLL = [["derniers", "Derniers"], ["rares", "Plus rares"], ["favoris", "Favoris"], ["lieu", "Lieu"], ["etat", "État"], ["theme", "Thème"]];
@@ -861,14 +912,17 @@ function carteExclusive(cid) {
   const mot = c.nom.split(" ")[0].toUpperCase();
   return `<div class="carte-exclusive holo" id="carte-exclusive">
     <i class="exc-fond"></i>
-    <i class="holo-film" aria-hidden="true"></i>
+    <i class="holo-guilloche" aria-hidden="true"></i>
     <i class="exc-cadre couche" style="--p:8"></i>
     <span class="exc-entete couche" style="--p:14">SCRAP · ÉDITION EXCLUSIVE</span>
-    <span class="exc-mot couche" style="--p:30;font-size:${Math.min(23, 134 / Math.max(4, mot.length)).toFixed(1)}cqw">${esc(mot)}</span>
+    <span class="exc-mot couche" style="--p:30;font-size:${Math.min(22, 118 / Math.max(4, mot.length)).toFixed(1)}cqw">${esc(mot)}</span>
+    <i class="exc-filet couche" style="--p:36"></i>
     <i class="exc-carre couche" style="--p:44"></i>
     <span class="exc-zone couche" style="--p:20">${esc(c.zone.toUpperCase())}</span>
     <span class="exc-etat couche" style="--p:20">COLLECTION COMPLÈTE</span>
     <span class="exc-num couche" style="--p:26">N° 001</span>
+    <span class="exc-serie couche" style="--p:18">001 / 064</span>
+    <i class="holo-prisme" aria-hidden="true"></i>
     <i class="holo-eclat" aria-hidden="true"></i>
   </div>`;
 }
@@ -1006,6 +1060,7 @@ ecran("35", "E", "Profil vu par les autres", "grille", () => {
       <div class="quatre-col">${badgesOk.map((b) => `<button ${autre ? "" : 'data-aller="36"'} style="text-align:left">${badgeHtml(b, { ok: true, choisi: b.id === u.badge })}<span class="t-texte-meta" style="display:block;margin-top:8px">${esc(b.nom)}</span></button>`).join("")}</div>
     </div>
   </div>
+  ${autre ? "" : onglets(-1)}
   ${pied(autre
     ? `<div class="rang">${bouton(autre.suivi ? "Suivi" : "Suivre", { type: autre.suivi ? "secondaire" : "", action: "suivre", data: ` data-id="${ETAT.ctx.personne}"` })}${bouton("Partager", { type: "secondaire", aller: "39" })}</div>`
     : `<div class="rang">${bouton("Modifier le profil", { aller: "37" })}${bouton("Réglages", { type: "secondaire", aller: "41" })}</div>`)}`;
@@ -1124,7 +1179,8 @@ ecran("41", "F", "Réglages", "grille", () => {
     <p class="t-texte-meta secondaire" style="margin:20px 0 4px">Infos</p>
     <div class="liste">${ligne("Aide et mentions", { aller: "46", icone: "aide" })}${ligne("Vie privée", { aller: "47", icone: "cadenas" })}</div>
     <p class="t-texte-meta secondaire centre" style="margin-top:32px">SCRAP · version 1.0 · prototype</p>
-  </div>`;
+  </div>
+  ${onglets(-1)}`;
 });
 const reglagesListe = (titre, note, lignes) => `${entete(titre)}<div class="defile"><p class="t-texte-petit secondaire" style="margin:0 0 16px">${note}</p><div class="liste">${lignes}</div></div>`;
 ecran("42", "F", "Confidentialité", "grille", () => reglagesListe("Confidentialité", "Par défaut, ton scrapbook est privé. Tu choisis ce que les autres voient.",
