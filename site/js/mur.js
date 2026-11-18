@@ -1080,15 +1080,17 @@ function exporterMur(format) {
 }
 
 /* ═════════ Vitrine du profil (plan 370 × 300) */
-function vitrineMonter(el, editable) {
+/* liste : la vitrine de quelqu'un d'autre (ses affiches à lui). Sans elle,
+ * c'est celle d'Inès. */
+function vitrineMonter(el, editable, liste) {
   if (!el) return null;
   const plan = $("#vplan", el);
   if (!plan) return null;
-  const V = ETAT.vitrine;
+  const V = liste || ETAT.vitrine;
   let echelle = 1;
   const dessiner = () => {
     plan.innerHTML = V.map((v) => {
-      const s = scrap(v.id); if (!s) return "";
+      if (!liste && !scrap(v.id)) return "";
       const choisi = editable && v.id === ETAT.ctx.vitrineSel;
       return `<div class="mur-item${choisi ? " choisi" : ""}" data-v="${v.id}" style="left:${v.x}px;top:${v.y}px;width:${v.w}px;transform:rotate(${v.rot}deg)"><img src="${imgScrap(v.id)}" alt="" draggable="false"><i class="scotch kraft hg"></i></div>`;
     }).join("");

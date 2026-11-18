@@ -403,13 +403,17 @@ const ACTIONS = {
     const id = "don-" + ami.pseudo.replace(/\W/g, "");
     if (!ETAT.scraps[id]) {
       const { date, heure } = aujourdhui();
+      // on reçoit une affiche du carnet de CELUI QUI DONNE, pas une image
+      // choisie d'avance : c'est son double à lui qui change de main
+      const cle = (ami.affiches && ami.affiches[0]) || "fiasco";
+      const f = (D.catalogue && D.catalogue[cle]) || D.scraps[cle] || {};
       // le scrap reçu garde le nom de celui qui l'a donné : c'est ce qui en
       // fait autre chose qu'une image de plus
       ETAT.scraps[id] = {
-        titre: "Club Fiasco — tirage de " + ami.pseudo, artiste: "Échangé en main propre",
-        ratio: 0.7503, num: 6, lieu: ami.quartier, arr: "Paris 20e", date, heure,
-        collection: "concerts", themes: ["Échange", "Club"], scans: 44, murs: 2,
-        img: "assets/affiches/fiasco.jpg", offert: ami.pseudo,
+        titre: `${f.titre || "Affiche"} — tirage de ${ami.pseudo}`, artiste: "Échangé en main propre",
+        ratio: f.ratio || 0.75, num: 6, lieu: ami.quartier, arr: "Paris 20e", date, heure,
+        collection: f.collection || "fetes", themes: ["Échange", "Relais"], scans: 44, murs: 2,
+        img: `assets/affiches/${cle}.jpg`, offert: ami.pseudo,
       };
     }
     e.recu = id;

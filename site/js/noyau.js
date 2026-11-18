@@ -212,6 +212,35 @@ function repartitionRarete() {
   }).filter((x) => x.n > 0);
 }
 
+/* Le carnet de quelqu'un d'autre : on n'a pas ses scraps un par un, seulement
+ * son total. On en déduit une répartition stable — toujours la même pour la
+ * même personne — plutôt que de montrer celle d'Inès sur tous les profils. */
+function repartitionDe(p) {
+  if (!p) return repartitionRarete();
+  const total = Math.max(1, p.scraps);
+  const parts = [["mythique", "Mythiques", 0.05], ["rare", "Rares", 0.15], ["peuvue", "Peu vues", 0.3]];
+  let reste = total;
+  const out = parts.map(([cle, nom, f]) => {
+    const n = clamp(Math.round(total * f), cle === "mythique" ? 0 : 1, reste - 1);
+    reste -= n;
+    return { cle, nom, n, part: n / total };
+  });
+  out.push({ cle: "commune", nom: "Communes", n: reste, part: reste / total });
+  return out.filter((x) => x.n > 0);
+}
+/* Les badges d'un autre colleur : un petit jeu stable, tiré de son pseudo. */
+function badgesDe(p) {
+  if (!p) return D.badges.filter(badgeDebloque).slice(0, 4);
+  const dispo = D.badges.filter((b) => !b.objectif);
+  const saut = 2 + (p.pseudo.length % 3);
+  const out = [];
+  for (let i = 0; out.length < 4 && i < dispo.length * 2; i++) {
+    const b = dispo[(1 + i * saut) % dispo.length];
+    if (!out.includes(b)) out.push(b);
+  }
+  return out;
+}
+
 /* ───────── Composants HTML */
 const tampon = (l1, l2, o = {}) =>
   `<span class="tampon${o.plein ? " plein" : ""}${o.grand ? " grand" : ""}${o.pose ? " pose" : ""}"><span>${esc(l1)}<br>${esc(l2)}</span></span>`;
@@ -241,8 +270,32 @@ const lien = (txt, o = {}) => {
   return `<button class="bouton-lien${o.centre ? " lien-centre" : ""}"${attrs}>${esc(txt)}</button>`;
 };
 const puce = (txt, active, attrs = "") => `<button class="puce${active ? " active" : ""}"${attrs}>${esc(txt)}</button>`;
-const avatar = (taille, initiales, img) =>
-  `<span class="avatar" style="width:${taille}px;height:${taille}px">${img ? `<img src="${img}" alt="">` : `<span class="${taille > 70 ? "t-titre-l" : "t-texte-label"}">${esc(initiales)}</span>`}</span>`;
+/* ───────── Photo de profil.
+ * Une photo de profil est un bout de scrap recadré : c'est la seule image
+ * qu'on ait le droit de montrer de quelqu'un, et elle dit tout de suite ce
+ * qu'il collectionne. Autour, un petit cadre — les mêmes gestes que dans le
+ * scrapbook (filet, coins photo, scotch, polaroid, bord noir), pour que le
+ * profil ait la même matière que le carnet.
+ * o : { pos (cadrage), cadre (filet|coins|scotch|polaroid|noir) } */
+const ORNEMENT = {
+  coins: `<i class="pp-coin hg"></i><i class="pp-coin bd"></i>`,
+  scotch: `<i class="pp-ruban"></i>`,
+};
+const avatar = (taille, initiales, img, o = {}) => {
+  const cadre = o.cadre ? ` pp-${o.cadre}` : "";
+  const dedans = img
+    ? `<img src="${img}" alt=""${o.pos ? ` style="object-position:${esc(o.pos)}"` : ""}>`
+    : `<span class="${taille > 70 ? "t-titre-l" : "t-texte-label"}">${esc(initiales)}</span>`;
+  return `<span class="avatar${cadre}" style="width:${taille}px;height:${taille}px">${dedans}${
+    (img && o.cadre && ORNEMENT[o.cadre]) || ""}</span>`;
+};
+/* La photo d'une autre personne (ou celle d'Inès si on ne passe rien) */
+const avatarPersonne = (taille, p) => p
+  ? avatar(taille, p.initiales, p.photo, { pos: p.pos, cadre: p.cadre })
+  : avatar(taille, ETAT.utilisateur.initiales, ETAT.utilisateur.avatar,
+    { pos: ETAT.utilisateur.avatarPos, cadre: ETAT.utilisateur.cadre });
+/* Les affiches d'un carnet : celui d'Inès, ou celui de la personne qu'on visite */
+const affichesDe = (p) => (p && p.affiches && p.affiches.length ? p.affiches : idsScraps());
 const champ = (label, valeur, o = {}) =>
   `<label class="champ"><span class="t-texte-meta secondaire">${esc(label)}</span>${o.multi
     ? `<textarea ${o.id ? `id="${o.id}"` : ""} maxlength="80">${esc(valeur)}</textarea>`

@@ -58,5 +58,85 @@
   "viudas": {
     "fichier": "assets/affiches/viudas.jpg",
     "ratio": 0.7503
+  },
+  "maldeojo": {
+    "fichier": "assets/affiches/maldeojo.jpg",
+    "ratio": 0.8306
+  },
+  "organik": {
+    "fichier": "assets/affiches/organik.jpg",
+    "ratio": 0.7962
+  },
+  "rexclub": {
+    "fichier": "assets/affiches/rexclub.jpg",
+    "ratio": 0.8
+  },
+  "goodroom": {
+    "fichier": "assets/affiches/goodroom.jpg",
+    "ratio": 0.6468
+  },
+  "anthem": {
+    "fichier": "assets/affiches/anthem.jpg",
+    "ratio": 0.7656
+  },
+  "juicy": {
+    "fichier": "assets/affiches/juicy.jpg",
+    "ratio": 0.8
+  },
+  "spirito": {
+    "fichier": "assets/affiches/spirito.jpg",
+    "ratio": 0.8
+  },
+  "citylimits": {
+    "fichier": "assets/affiches/citylimits.jpg",
+    "ratio": 0.7087
+  },
+  "osaka": {
+    "fichier": "assets/affiches/osaka.jpg",
+    "ratio": 0.8588
+  },
+  "chindi": {
+    "fichier": "assets/affiches/chindi.jpg",
+    "ratio": 0.58
+  },
+  "mexico": {
+    "fichier": "assets/affiches/mexico.jpg",
+    "ratio": 0.7487
+  },
+  "loquita": {
+    "fichier": "assets/affiches/loquita.jpg",
+    "ratio": 0.7003
+  },
+  "cuba": {
+    "fichier": "assets/affiches/cuba.jpg",
+    "ratio": 0.707
+  },
+  "colectivo": {
+    "fichier": "assets/affiches/colectivo.jpg",
+    "ratio": 0.7077
+  },
+  "icesea": {
+    "fichier": "assets/affiches/icesea.jpg",
+    "ratio": 0.7321
+  },
+  "kalayaan": {
+    "fichier": "assets/affiches/kalayaan.jpg",
+    "ratio": 0.8
+  },
+  "saturday": {
+    "fichier": "assets/affiches/saturday.jpg",
+    "ratio": 0.8
+  },
+  "back2base": {
+    "fichier": "assets/affiches/back2base.jpg",
+    "ratio": 0.8
+  },
+  "timetable": {
+    "fichier": "assets/affiches/timetable.jpg",
+    "ratio": 0.8
+  },
+  "bday": {
+    "fichier": "assets/affiches/bday.jpg",
+    "ratio": 0.5627
   }
 }

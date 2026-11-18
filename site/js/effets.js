@@ -140,6 +140,25 @@ function poussiere(n = 14) {
   return `<div class="poussiere" aria-hidden="true">${out}</div>`;
 }
 
+/* ───────── Étoiles : les points qui gravitaient autour d'un objet précieux
+ * sont devenus des étoiles à quatre branches. Chacune tourne et respire toute
+ * seule — l'écran vit même quand le téléphone est posé sur la table — et se
+ * décale en plus avec l'inclinaison, à sa propre profondeur. */
+const ETOILE_D = "M12 0c.6 6.6 4.8 11 11.4 12-6.6 1-10.8 5.4-11.4 12-.6-6.6-4.8-11-11.4-12C7.2 11 11.4 6.6 12 0z";
+function etoiles(n = 10, o = {}) {
+  if (MOINS_ANIM) return "";
+  let out = "";
+  for (let i = 0; i < n; i++) {
+    const p = (o.prof || 10) + Math.random() * (o.ecart || 44);
+    const t = (o.taille || 7) + Math.random() * (o.variation || 11);
+    out += `<svg class="etoile-flottante couche" viewBox="0 0 24 24" style="--p:${p.toFixed(0)};
+      left:${(Math.random() * 96).toFixed(1)}%;top:${(Math.random() * 94).toFixed(1)}%;
+      width:${t.toFixed(1)}px;--t:${(6 + Math.random() * 9).toFixed(1)}s;--d:${(-Math.random() * 9).toFixed(1)}s;
+      --o:${(0.35 + Math.random() * 0.5).toFixed(2)}" aria-hidden="true"><path d="${ETOILE_D}"/></svg>`;
+  }
+  return `<div class="ciel${o.classe ? " " + o.classe : ""}" aria-hidden="true">${out}</div>`;
+}
+
 /* ───────── Vol d'un scrap d'un écran à l'autre (l'affiche qu'on colle).
  * On garde la position de départ, et le scrapbook termine le mouvement. */
 function volPreparer(el) {

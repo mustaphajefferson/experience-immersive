@@ -139,7 +139,7 @@ img { display: block; }
   height: 56px; width: 100%;
   display: flex; align-items: center; justify-content: center; gap: 8px;
   font-weight: 500; font-size: 15px; line-height: 20px; letter-spacing: -.005em;
-  background: var(--fond-inverse); color: var(--texte-inverse);
+  background: var(--accent-capture); color: var(--accent-sur-accent);
   transition: transform .08s;
 }
 .bouton:active { transform: scale(.985); }
@@ -160,7 +160,7 @@ img { display: block; }
   background: var(--fond-principal); box-shadow: inset 0 0 0 1px var(--trait-fort);
   font-weight: 500; font-size: 15px; letter-spacing: -.005em; white-space: nowrap;
 }
-.puce.active { background: var(--fond-inverse); color: var(--texte-inverse); box-shadow: none; }
+.puce.active { background: var(--accent-capture); color: var(--accent-sur-accent); box-shadow: none; }
 .etiquette {
   display: inline-flex; align-items: center; height: 20px; padding: 0 6px; white-space: nowrap; flex: none;
   font-weight: 500; font-size: 11px; letter-spacing: .04em; text-transform: uppercase;
@@ -196,7 +196,7 @@ img { display: block; }
 .carte-scrap .coche { position: absolute; top: 8px; right: 8px; }
 .carte-scrap.choisie img { outline: 3px solid var(--accent-capture); outline-offset: -3px; }
 .coche { width: 24px; height: 24px; display: grid; place-items: center; background: var(--fond-principal); box-shadow: inset 0 0 0 1px var(--trait-fort); }
-.coche.active { background: var(--fond-inverse); color: var(--texte-inverse); box-shadow: none; }
+.coche.active { background: var(--accent-capture); color: var(--accent-sur-accent); box-shadow: none; }
 .coche.num { background: var(--accent-capture); color: var(--accent-sur-accent); font-size: 11px; font-weight: 500; letter-spacing: .04em; }
 
 /* Recto / verso */
@@ -263,7 +263,7 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: v
 /* ───────── Badges : des sceaux au cadre perforé (voir badgeSvg dans noyau.js) */
 .badge { position: relative; width: 64px; height: 64px; display: grid; place-items: center; background: var(--fond-principal); flex: none; }
 .badge .badge-svg { display: block; width: 100%; height: 100%; }
-.badge.choisi { background: var(--fond-inverse); color: var(--texte-inverse); }
+.badge.choisi { background: var(--accent-capture); color: var(--accent-sur-accent); }
 .badge.verrou { color: var(--trait-defaut); }
 .badge-cadenas { position: absolute; right: -4px; bottom: -4px; display: grid; place-items: center; width: 22px; height: 22px; background: var(--fond-principal); box-shadow: inset 0 0 0 1px var(--trait-defaut); color: var(--texte-secondaire); }
 .badge.pose { animation: badge-pose .5s cubic-bezier(.2, 1.7, .4, 1) both; }
@@ -309,8 +309,8 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: v
 .pin.nouveau .pastille { animation: pastille-respire 2.4s ease-in-out infinite; }
 @keyframes pastille-respire { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.4); } }
 .pin.choisi { width: 36px; height: 48px; }
-.pin.choisi .pin-tete { bottom: 13px; background: var(--fond-inverse); color: var(--texte-inverse); box-shadow: 0 0 0 2px #fff; }
-.pin.choisi .pin-pointe { margin-left: -6px; border-width: 6px; border-bottom: 0; border-top-width: 14px; }
+.pin.choisi .pin-tete { bottom: 13px; background: var(--accent-capture); color: var(--accent-sur-accent); box-shadow: 0 0 0 2px #fff; }
+.pin.choisi .pin-pointe { margin-left: -6px; border-width: 6px; border-bottom: 0; border-top-width: 14px; border-top-color: var(--accent-capture); }
 
 .ma-position { position: relative; display: block; width: 16px; height: 16px; border-radius: 50%; background: var(--accent-capture); box-shadow: 0 0 0 3px #fff; }
 .ma-position i { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--accent-capture); animation: radar 2.6s ease-out infinite; }
@@ -369,7 +369,7 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: v
 .declencheur::after { content: ""; width: 60px; height: 60px; border-radius: 50%; background: var(--accent-capture); transition: transform .1s; }
 .declencheur:active::after { transform: scale(.9); }
 .puce--sombre { background: transparent; color: #fff; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .5); height: 28px; }
-.puce--sombre.active { background: #fff; color: #111; box-shadow: none; }
+.puce--sombre.active { background: var(--accent-capture); color: var(--accent-sur-accent); box-shadow: none; }
 
 /* 19.1 — on vérifie le scan avant de l'identifier */
 .verif-zone { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; padding: 0 var(--marge); position: relative; }
@@ -756,7 +756,7 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: v
 .carte-collection.choisie { box-shadow: inset 0 0 0 2px var(--trait-fort); }
 .carte-collection-haut { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 6px; }
 .carte-collection-icone { width: 34px; height: 34px; display: grid; place-items: center; box-shadow: inset 0 0 0 1px var(--trait-fort); }
-.carte-collection.choisie .carte-collection-icone { background: var(--fond-inverse); color: var(--texte-inverse); box-shadow: none; }
+.carte-collection.choisie .carte-collection-icone { background: var(--accent-capture); color: var(--accent-sur-accent); box-shadow: none; }
 .carte-collection-nom { display: block; }
 .carte-collection-sous, .carte-collection-resume { display: block; }
 .carte-collection .coche { width: 22px; height: 22px; }
@@ -765,7 +765,7 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: v
 .dispos { display: flex; flex: none; box-shadow: inset 0 0 0 1px var(--trait-defaut); }
 .dispo { width: 34px; height: 30px; display: grid; place-items: center; color: var(--texte-secondaire); }
 .dispo + .dispo { border-left: 1px solid var(--trait-defaut); }
-.dispo.active { background: var(--fond-inverse); color: var(--texte-inverse); }
+.dispo.active { background: var(--accent-capture); color: var(--accent-sur-accent); }
 .grille-scraps.dispo-dense { columns: 3; column-gap: var(--gouttiere); }
 .grille-scraps.dispo-dense .carte-scrap { margin-bottom: 16px; }
 .grille-scraps.dispo-dense .legende .tampon { display: none; }
@@ -1021,16 +1021,18 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: v
    fonds pleins.
    ═════════════════════════════════════════════════════════════════════════ */
 
-/* Le point rouge du logo, repris comme marque de sélection */
-.puce.active, .dispo.active, .carte-collection.choisie, .coche.active,
-.nuancier .choisi, .nuancier label.choisi, .rouleaux .choisi, .onglet.actif { position: relative; }
+/* v10 — ce qui est choisi est ROUGE PLEIN.
+   Avant : un fond noir avec un liseré rouge. De loin, on ne voyait que du
+   noir, et le liseré donnait l'impression d'un bouton en panne. Maintenant
+   la sélection prend la couleur de la capture, franchement. Plus aucun
+   bouton n'est noir plein dans l'app. */
+.carte-collection.choisie, .nuancier .choisi, .nuancier label.choisi,
+.rouleaux .choisi, .onglet.actif { position: relative; }
 
-.puce.active::after, .dispo.active::after {
-  content: ""; position: absolute; top: 4px; right: 4px; width: 5px; height: 5px;
-  background: var(--accent-capture);
+.puce.active, .dispo.active {
+  background: var(--accent-capture); color: var(--accent-sur-accent); box-shadow: none;
 }
-.puce.active { box-shadow: inset 0 0 0 1px var(--accent-capture); }
-.puce--sombre.active::after { top: 3px; right: 3px; }
+.puce--sombre.active { background: var(--accent-capture); color: var(--accent-sur-accent); box-shadow: none; }
 
 /* La barre de l'onglet actif */
 .onglet.actif::before { background: var(--accent-capture); height: 3px; }
@@ -1613,3 +1615,217 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: v
   100% { transform: scale(2.6); opacity: 0; }
 }
 .echange-recu { margin-top: 20px; animation: carte-entre .7s cubic-bezier(.2, 1.1, .3, 1) both; }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   v10 — LE ROUGE, LA PROFONDEUR, LES PHOTOS DE PROFIL
+   Trois décisions :
+   1. plus aucun bouton plein noir — ce qui agit et ce qui est choisi est
+      rouge, et il n'y a plus de fond noir à liseré rouge nulle part ;
+   2. l'inclinaison ne fait plus sortir les couches de l'écran, elle creuse
+      la carte : une fenêtre découpée, et une pièce derrière ;
+   3. une photo de profil est un bout de scrap, dans un petit cadre.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* ───────── 1. Ce qui reste noir
+   Le noir n'est plus une couleur d'action : il ne sert plus qu'aux surfaces
+   qui ne sont pas des boutons (barre de notification, toast, tampon encré)
+   et au texte. */
+.bouton--secondaire:active { background: var(--fond-secondaire); }
+.bouton--capture { background: var(--accent-capture); color: var(--accent-sur-accent); }
+/* un bouton principal posé sur du noir garde le rouge, sans liseré ajouté */
+.sombre .bouton, .feuille.sombre .bouton { box-shadow: none; }
+
+/* ───────── 2. Les étoiles qui gravitent
+   Elles remplacent les points : même rôle (rendre la profondeur visible),
+   mais une forme qui appartient à la culture de l'affiche. Chacune tourne
+   et respire toute seule, donc l'écran vit sans le gyroscope. */
+.ciel { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+.etoile-flottante {
+  position: absolute; display: block; height: auto;
+  fill: var(--texte-principal); opacity: var(--o, .5);
+  animation: etoile-vit var(--t, 8s) ease-in-out var(--d, 0s) infinite;
+  will-change: transform, opacity;
+}
+.etoile-flottante:nth-child(3n) { fill: var(--accent-capture); }
+@keyframes etoile-vit {
+  0%, 100% { transform: rotate(0) scale(.82); opacity: calc(var(--o, .5) * .45); }
+  50% { transform: rotate(90deg) scale(1.15); opacity: var(--o, .5); }
+}
+
+/* ───────── 3. La boîte de profondeur
+   Une fenêtre : le cadre ne bouge pas, et ce qui est derrière glisse. Plus
+   une couche est loin (--z proche de 1), plus elle se décale avec
+   l'inclinaison et plus elle est grande — c'est exactement ce que fait un
+   vrai décor vu par un trou. Tout est rogné par la fenêtre : sans ça, on
+   voit des bouts dépasser et l'illusion tombe. */
+.boite-prof { position: relative; overflow: hidden; isolation: isolate; }
+.boite-prof > i, .boite-prof > svg, .boite-prof > .ciel {
+  position: absolute; inset: -18%;
+  translate: calc(var(--px, 0) * var(--z, 0) * 26px) calc(var(--py, 0) * var(--z, 0) * 19px);
+  scale: calc(1 + var(--z, 0) * .14);
+  will-change: translate;
+}
+/* le fond de la pièce */
+.prof-vide {
+  background: radial-gradient(ellipse at 50% 36%, #FFFFFF 0%, var(--fond-secondaire) 56%, #D8D8D2 100%);
+}
+/* Le sol en fuite. Des fuyantes qui partent toutes d'un même point, et des
+   traverses qui descendent vers nous : c'est ce qui dit « il y a une pièce
+   là-dedans » en une seconde, sans aucune image. Le point de fuite est haut
+   dans la fenêtre, donc on regarde le sol — comme au fond d'une salle. */
+.boite-prof > .prof-sol {
+  inset: 0;
+  background:
+    repeating-conic-gradient(from 186deg at 50% 26%,
+      rgba(17, 17, 17, .38) 0deg .45deg, transparent .45deg 7.2deg),
+    repeating-linear-gradient(0deg, rgba(17, 17, 17, .22) 0 1.2px, transparent 1.2px 13px);
+  opacity: .55;
+  -webkit-mask: linear-gradient(to bottom, transparent 25%, #000 42%);
+  mask: linear-gradient(to bottom, transparent 25%, #000 42%);
+  animation: sol-avance 6s linear infinite;
+}
+@keyframes sol-avance { to { background-position: 0 0, 0 13px; } }
+/* la lumière du fond, pile au point de fuite : elle respire, donc la pièce
+   n'est jamais figée, même téléphone posé */
+.prof-halo {
+  background: radial-gradient(circle at 50% 27%, rgba(255, 0, 0, .34), transparent 48%);
+  animation: halo-respire 5.5s ease-in-out infinite;
+}
+@keyframes halo-respire { 0%, 100% { opacity: .6; scale: 1; } 50% { opacity: 1; scale: 1.12; } }
+/* la poussière du fond, en trame */
+.prof-poussiere {
+  background-image: radial-gradient(circle, rgba(17, 17, 17, .3) 1px, transparent 1.4px);
+  background-size: 13px 13px; opacity: .35;
+  animation: poussiere-derive 14s linear infinite;
+}
+@keyframes poussiere-derive { to { background-position: 26px -26px; } }
+/* le décor en silhouette, posé au fond ; il dérive très lentement */
+.boite-prof > .prof-decor { inset: 0; opacity: .95; animation: decor-derive 11s ease-in-out infinite; }
+@keyframes decor-derive { 0%, 100% { transform: translateX(-1.5%); } 50% { transform: translateX(1.5%); } }
+/* l'égaliseur : sept barres qui montent et descendent, décalées */
+.prof-eq rect { transform-origin: 50% 100%; animation: eq-bat 1.05s ease-in-out infinite alternate; animation-delay: calc(var(--i) * -170ms); }
+@keyframes eq-bat { from { transform: scaleY(.22); } to { transform: scaleY(1); } }
+/* les bras levés de la foule */
+.prof-foule rect { transform-origin: 50% 100%; animation: bras-leve 1.9s ease-in-out infinite alternate; animation-delay: calc(var(--i) * -310ms); }
+@keyframes bras-leve { from { transform: translateY(2px) scaleY(.88); } to { transform: translateY(-3px) scaleY(1.06); } }
+/* le lointain tourne sur lui-même : le projecteur du fond de salle */
+.prof-lointain { transform-origin: 100px 42px; animation: rayons 24s linear infinite; }
+/* la vitre : elle ne bouge jamais, c'est elle qui dit « il y a un verre ».
+   Un liseré noir, un creux dans les angles, un reflet en biais. */
+.boite-prof > .prof-vitre {
+  inset: 0; pointer-events: none;
+  box-shadow: inset 0 0 0 1.5px rgba(17, 17, 17, .9), inset 0 10px 18px -8px rgba(17, 17, 17, .75),
+    inset 0 -8px 16px -8px rgba(17, 17, 17, .5);
+  background: linear-gradient(142deg, rgba(255, 255, 255, .55) 0%, rgba(255, 255, 255, 0) 34%);
+}
+
+/* Le creux derrière un scrap (écrans 21 / 22) : l'affiche ne bouge presque
+   pas, mais la pièce derrière elle s'enfonce. L'affiche reste intouchée. */
+.scrap-creux {
+  position: absolute; inset: 4% 7% 11%; z-index: 0; opacity: .85;
+  /* pas de bord net : la pièce se perd dans la page, sinon on voit un
+     rectangle posé derrière l'affiche au lieu d'un fond qui s'enfonce */
+  -webkit-mask: radial-gradient(ellipse at 50% 42%, #000 40%, transparent 80%);
+  mask: radial-gradient(ellipse at 50% 42%, #000 40%, transparent 80%);
+}
+.scrap-creux .prof-halo { animation-duration: 7s; }
+.rarete-commune .scrap-creux { opacity: .45; }
+
+/* ───────── 4. La carte exclusive : une fenêtre dans le foil
+   On ne regarde plus un relief posé dessus, on regarde dedans. */
+.exc-fond { animation: foil-vit 16s ease-in-out infinite; }
+@keyframes foil-vit { 0%, 100% { filter: none; } 50% { filter: hue-rotate(34deg) saturate(1.18); } }
+.exc-fenetre {
+  position: absolute; left: 9%; right: 9%; top: 14%; height: 39.5%;
+  z-index: 2; background: #EFEFEA;
+}
+.carte-exclusive .prof-vide {
+  background:
+    radial-gradient(ellipse at calc(50% + var(--px, 0) * 9%) 32%, rgba(255, 255, 255, .95), rgba(255, 255, 255, 0) 52%),
+    conic-gradient(from calc(140deg + var(--px, 0) * 60deg) at 50% 40%,
+      #ffd4e8, #d6fff1, #fff6cd, #cfe4ff, #efd4ff, #d2fff4, #ffd4e8);
+}
+/* le texte de la carte revient à plat : c'est la fenêtre qui porte la 3D,
+   le reste est de l'encre sur du papier et ne doit pas flotter. */
+.exc-entete { left: 9%; top: 8.5%; font-size: 4.2cqw; }
+.exc-mot { left: 7.5%; top: 56.5%; line-height: .86; }
+.exc-filet { left: 9%; width: 44%; height: 3px; top: 69.5%; }
+.exc-carre { left: 9%; top: 73.5%; width: 9.5%; }
+.exc-zone { left: 22%; top: 75.5%; font-size: 5cqw; }
+.exc-num { left: 7.5%; bottom: 4.5%; font-size: 13cqw; }
+.exc-serie { right: 8%; bottom: 6.5%; font-size: 4.2cqw; }
+.exc-sceau {
+  position: absolute; right: 8%; top: 7%; width: 7.5%; height: auto; z-index: 3;
+  fill: var(--accent-capture); animation: rayons 13s linear infinite;
+}
+/* le reflet balaie la carte tout seul, en plus de suivre l'inclinaison */
+.holo-eclat::after { animation: eclat-balaye 7s ease-in-out infinite; }
+@keyframes eclat-balaye { 0%, 100% { transform: translateX(-16%); } 50% { transform: translateX(16%); } }
+
+/* ───────── 5. Le pack : des petits motifs, rien de plus
+   Une pochette scellée, c'est du papier imprimé : une marque en filigrane,
+   deux rangées d'étoiles, des hachures, des repères de coupe. Rien qui
+   déborde du pack, donc pas besoin de le rogner : « Tire pour ouvrir » vit
+   juste en dessous. */
+.pack-hachures {
+  position: absolute; inset: 13% 0 0; pointer-events: none; opacity: .5;
+  background: repeating-linear-gradient(58deg, rgba(255, 255, 255, .07) 0 1px, transparent 1px 9px);
+}
+.pack-marque {
+  position: absolute; left: 50%; top: 63%; width: 54%; height: auto;
+  translate: -50% -50%; color: rgba(255, 255, 255, .085); pointer-events: none;
+  animation: marque-tourne 26s linear infinite;
+}
+@keyframes marque-tourne { 0%, 100% { rotate: -5deg; } 50% { rotate: 5deg; } }
+.pack-coins {
+  position: absolute; inset: 15% 5% 5%; width: auto; height: auto;
+  color: rgba(255, 255, 255, .3); pointer-events: none;
+}
+.pack-corps { position: relative; z-index: 2; padding-top: 14px; padding-bottom: 6px; }
+.pack-etoiles {
+  display: block; width: 58%; height: 9px; flex: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='9' viewBox='0 0 18 9'%3E%3Cpath d='M9 0c.25 3.3 2 4.5 4.8 4.5C11 4.5 9.25 5.7 9 9c-.25-3.3-2-4.5-4.8-4.5C7 4.5 8.75 3.3 9 0z' fill='%23ffffff' opacity='.55'/%3E%3C/svg%3E");
+  background-repeat: repeat-x; background-position: center;
+  animation: etoiles-glissent 9s linear infinite;
+}
+.pack-etoiles.bas { animation-direction: reverse; }
+@keyframes etoiles-glissent { to { background-position: 36px center; } }
+.pack-mot { position: relative; margin-bottom: 15px; }
+.pack-mot::after {
+  content: ""; position: absolute; left: 50%; bottom: -11px; width: 26px; height: 3px;
+  margin-left: -13px; background: var(--accent-capture);
+}
+
+/* ───────── 6. La photo de profil : un bout de scrap, dans un cadre
+   On ne montre pas le visage de quelqu'un dans SCRAP : on montre ce qu'il
+   collectionne. Le cadre reprend les gestes du scrapbook, en miniature. */
+.avatar img { transition: scale .3s var(--sortie); }
+.pp-filet { box-shadow: inset 0 0 0 2px var(--fond-principal), inset 0 0 0 3.5px var(--texte-principal); }
+.pp-noir { padding: 4px; background: #111; }
+.pp-polaroid { padding: 4px 4px 11px; background: #FDFDFA; box-shadow: 0 1px 6px rgba(17, 17, 17, .22); }
+.pp-polaroid::after {
+  content: ""; position: absolute; left: 22%; right: 22%; bottom: 4px; height: 2px;
+  background: var(--trait-defaut);
+}
+.pp-polaroid, .pp-coins, .pp-scotch { position: relative; }
+.pp-coin {
+  position: absolute; width: 26%; max-width: 15px; aspect-ratio: 1; z-index: 2;
+  background: rgba(33, 28, 22, .85);
+}
+.pp-coin.hg { left: 0; top: 0; clip-path: polygon(0 0, 100% 0, 0 100%); }
+.pp-coin.bd { right: 0; bottom: 0; clip-path: polygon(100% 100%, 0 100%, 100% 0); }
+.pp-ruban {
+  position: absolute; left: -22%; top: 16%; width: 66%; height: 20%; z-index: 2;
+  background: rgba(236, 232, 220, .78); box-shadow: inset 0 0 0 1px rgba(17, 17, 17, .08);
+  rotate: -38deg;
+}
+.proche .avatar, .ligne .avatar { flex: none; }
+
+/* ───────── Si la personne a coupé les animations, tout se fige mais reste
+   lisible : pas d'écran à moitié vide. */
+@media (prefers-reduced-motion: reduce) {
+  .etoile-flottante, .prof-sol, .prof-halo, .prof-poussiere, .prof-decor,
+  .prof-eq rect, .prof-foule rect, .prof-lointain, .exc-fond, .exc-sceau,
+  .holo-eclat::after, .pack-marque, .pack-etoiles { animation: none !important; }
+  .boite-prof > i, .boite-prof > svg, .boite-prof > .ciel { translate: none !important; }
+}

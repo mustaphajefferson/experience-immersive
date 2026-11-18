@@ -15,7 +15,11 @@ window.DONNEES = {
     bio: "Je colle, je décolle, je collectionne.",
     email: "ines@exemple.fr",
     badge: "holo",
-    avatar: null,
+    /* La photo de profil d'Inès : un bout de son scrap le plus rare, recadré.
+     * Elle reste remplaçable depuis « Modifier le profil » (écran 37). */
+    avatar: "assets/affiches/maldeojo.jpg",
+    avatarPos: "50% 40%",
+    cadre: "scotch",
   },
 
   /* Les collections proposées au départ (écran 12) et suivies ensuite.
@@ -52,6 +56,37 @@ window.DONNEES = {
     skeleton: { titre: "Danse macabre", artiste: "Atelier Os", ratio: 0.5924, num: 2, lieu: "Place des Fêtes", arr: "Paris 19e", date: "08.11.26", heure: "23:15", collection: "expos", themes: ["Expo", "Gravure"], holo: true, favori: true, scans: 22, murs: 11 },
     different: { titre: "Different Form", artiste: "Stone Paper", ratio: 0.7063, num: 89, lieu: "Rue des Couronnes", arr: "Paris 20e", date: "02.11.26", heure: "12:20", collection: "expos", themes: ["Expo", "Graphisme"], scans: 89, murs: 2 },
     flea: { titre: "Late Edition Flea Market", artiste: "Late Edition", ratio: 0.7533, num: 33, lieu: "Parc de Belleville", arr: "Paris 20e", date: "01.11.26", heure: "10:05", collection: "marches", themes: ["Marché", "Vintage"], scans: 58, murs: 3 },
+    /* Arrivées v10 : sept affiches de plus dans le carnet d'Inès, choisies
+     * dans des collections encore vides — on voit mieux que le carnet se
+     * remplit par la rue, et pas seulement par les concerts. On ne touche
+     * pas à « concerts » : elle doit rester à 7 sur 8 pour que la démo du
+     * pack de fin de collection reste jouable. */
+    juicy: { titre: "Juicy — Summer Art Show", artiste: "The 3110 Block", ratio: 0.8, num: 14, lieu: "Rue Dénoyez", arr: "Paris 20e", date: "13.11.26", heure: "17:40", collection: "expos", themes: ["Expo", "Graphisme"], favori: true, scans: 44, murs: 6 },
+    maldeojo: { titre: "Mal de Ojo", artiste: "Mal de Ojo ®", ratio: 0.8306, num: 4, lieu: "Rue Ramponeau", arr: "Paris 20e", date: "13.11.26", heure: "12:15", collection: "street", themes: ["Collage", "Peinture"], holo: true, scans: 19, murs: 8 },
+    mexico: { titre: "Mexico Energy", artiste: "Atelier Ruido", ratio: 0.7487, num: 37, lieu: "Rue de Ménilmontant", arr: "Paris 20e", date: "12.11.26", heure: "16:02", collection: "street", themes: ["Collage", "Photo"], scans: 61, murs: 4 },
+    rexclub: { titre: "Rex Club — programmation", artiste: "Rex Club", ratio: 0.8, num: 23, lieu: "Boulevard Poissonnière", arr: "Paris 2e", date: "11.11.26", heure: "22:48", collection: "fetes", themes: ["Club", "Soirée"], scans: 210, murs: 9 },
+    cuba: { titre: "Cuba — projection", artiste: "Ciné-club du Jourdain", ratio: 0.707, num: 9, lieu: "Rue du Jourdain", arr: "Paris 20e", date: "10.11.26", heure: "19:12", collection: "cinema", themes: ["Cinéma", "Documentaire"], scans: 31, murs: 5 },
+    colectivo: { titre: "Colectivo Mierda", artiste: "Anonyme", ratio: 0.7077, num: 6, lieu: "Rue Rébeval", arr: "Paris 19e", date: "09.11.26", heure: "08:55", collection: "messages", themes: ["Tract", "Transports"], holo: true, scans: 26, murs: 7 },
+    osaka: { titre: "Osaka Fashion Issue", artiste: "Tsutenkaku Press", ratio: 0.8588, num: 48, lieu: "Rue Julien-Lacroix", arr: "Paris 20e", date: "07.11.26", heure: "13:30", collection: "typo", themes: ["Typo", "Édition"], scans: 77, murs: 3 },
+  },
+
+  /* Les affiches qui ne sont pas (encore) dans le carnet d'Inès : celles des
+   * autres colleurs. On garde juste de quoi les afficher proprement si l'une
+   * d'elles arrive chez elle — par un passage de relais, par exemple. */
+  catalogue: {
+    organik: { titre: "Organik Takeover", artiste: "Bar Temp. · Bangkok", ratio: 0.7962, collection: "fetes" },
+    goodroom: { titre: "Good Room — October", artiste: "Good Room, Brooklyn", ratio: 0.6468, collection: "fetes" },
+    anthem: { titre: "Youth Anthem Night", artiste: "Church 1132", ratio: 0.7656, collection: "typo" },
+    spirito: { titre: "Spirito Cafone", artiste: "Cafone Recording", ratio: 0.8, collection: "concerts" },
+    citylimits: { titre: "City Limits — n° 6", artiste: "City Limits", ratio: 0.7087, collection: "typo" },
+    chindi: { titre: "Chindi Kitchen", artiste: "Chindi, Moscou", ratio: 0.58, collection: "typo" },
+    loquita: { titre: "Loquita por ti", artiste: "Atomic Films", ratio: 0.7003, collection: "cinema" },
+    icesea: { titre: "Ice, Sea, Dead People", artiste: "Munki", ratio: 0.7321, collection: "concerts" },
+    kalayaan: { titre: "Araw ng Kalayaan", artiste: "Ayala Museum", ratio: 0.8, collection: "messages" },
+    saturday: { titre: "Saturday Party", artiste: "367 Studios", ratio: 0.8, collection: "fetes" },
+    back2base: { titre: "Back 2 Base Pop Up", artiste: "T!NT", ratio: 0.8, collection: "vintage" },
+    timetable: { titre: "Timetable — No Alto", artiste: "No Alto", ratio: 0.8, collection: "fetes" },
+    bday: { titre: "In Da Club", artiste: "DSTRKT", ratio: 0.5627, collection: "fetes" },
   },
 
   /* Affiches repérées sur la carte, pas encore capturées. */
@@ -130,6 +165,13 @@ window.DONNEES = {
       { id: "flea", x: 286, y: 462, w: 70, rot: 4, scotch: [["hg", "kraft"], ["hd", "kraft"]] },
       { id: "viudas", x: 36, y: 686, w: 66, rot: 5, scotch: [["hd", "papier"]] },
       { id: "white", x: 232, y: 742, w: 60, rot: -3, scotch: [["hg", "papier"]] },
+      { id: "juicy", x: 40, y: 880, w: 74, rot: -4, scotch: [["hg", "transparent"]] },
+      { id: "maldeojo", x: 232, y: 904, w: 82, rot: 3, scotch: [["hd", "kraft"]] },
+      { id: "mexico", x: 54, y: 1052, w: 66, rot: 5 },
+      { id: "rexclub", x: 236, y: 1086, w: 72, rot: -3, scotch: [["hg", "papier"]] },
+      { id: "cuba", x: 40, y: 1226, w: 70, rot: 2, scotch: [["hd", "transparent"]] },
+      { id: "colectivo", x: 220, y: 1254, w: 64, rot: -5 },
+      { id: "osaka", x: 118, y: 1392, w: 88, rot: 1, scotch: [["hg", "kraft"], ["hd", "kraft"]] },
     ],
   },
 
@@ -141,14 +183,38 @@ window.DONNEES = {
   ],
   miseEnAvant: "seb",
 
+  /* Les autres colleurs.
+   * affiches : ce qu'il y a dans LEUR carnet. Chaque profil montre des
+   * affiches qu'on n'a pas déjà vues dans le scrapbook d'Inès — sinon
+   * découvrir quelqu'un ne donne rien à voir. Deux personnes peuvent avoir
+   * la même affiche (c'est tout le principe du numéro de capture), mais
+   * jamais la même série.
+   * photo : la photo de profil est un bout de scrap, recadré. C'est la
+   * seule image qu'on ait le droit de montrer d'un colleur, et ça dit ce
+   * qu'il collectionne avant même d'ouvrir son carnet.
+   * cadre : le petit cadre posé autour de la photo (voir .pp-cadre). */
   personnes: [
-    { pseudo: "@marius.b", initiales: "MA", scraps: 62, quartier: "Ménilmontant", suivi: true },
-    { pseudo: "@lsa.colle", initiales: "LS", scraps: 18, quartier: "Belleville", suivi: false },
-    { pseudo: "@tom_affiches", initiales: "TO", scraps: 104, quartier: "11e", suivi: true },
-    { pseudo: "@nk.paris", initiales: "NK", scraps: 9, quartier: "19e", suivi: false },
-    { pseudo: "@juju.scrap", initiales: "JU", scraps: 33, quartier: "20e", suivi: true },
-    { pseudo: "@ab.collage", initiales: "AB", scraps: 51, quartier: "10e", suivi: false },
-    { pseudo: "@rem.r", initiales: "RE", scraps: 27, quartier: "20e", suivi: false },
+    { pseudo: "@marius.b", initiales: "MA", scraps: 62, quartier: "Ménilmontant", suivi: true,
+      photo: "assets/affiches/organik.jpg", pos: "52% 42%", cadre: "scotch",
+      affiches: ["organik", "timetable", "icesea", "spirito", "goodroom", "kalayaan"] },
+    { pseudo: "@lsa.colle", initiales: "LS", scraps: 18, quartier: "Belleville", suivi: false,
+      photo: "assets/affiches/goodroom.jpg", pos: "50% 72%", cadre: "coins",
+      affiches: ["goodroom", "saturday", "bday", "anthem", "back2base"] },
+    { pseudo: "@tom_affiches", initiales: "TO", scraps: 104, quartier: "11e", suivi: true,
+      photo: "assets/affiches/citylimits.jpg", pos: "50% 30%", cadre: "filet",
+      affiches: ["spirito", "citylimits", "chindi", "osaka", "icesea", "timetable"] },
+    { pseudo: "@nk.paris", initiales: "NK", scraps: 9, quartier: "19e", suivi: false,
+      photo: "assets/affiches/kalayaan.jpg", pos: "50% 46%", cadre: "polaroid",
+      affiches: ["kalayaan", "anthem", "colectivo"] },
+    { pseudo: "@juju.scrap", initiales: "JU", scraps: 33, quartier: "20e", suivi: true,
+      photo: "assets/affiches/loquita.jpg", pos: "46% 62%", cadre: "noir",
+      affiches: ["loquita", "back2base", "organik", "cuba", "bday"] },
+    { pseudo: "@ab.collage", initiales: "AB", scraps: 51, quartier: "10e", suivi: false,
+      photo: "assets/affiches/chindi.jpg", pos: "50% 26%", cadre: "filet",
+      affiches: ["citylimits", "bday", "kalayaan", "saturday", "chindi", "juicy"] },
+    { pseudo: "@rem.r", initiales: "RE", scraps: 27, quartier: "20e", suivi: false,
+      photo: "assets/affiches/icesea.jpg", pos: "54% 38%", cadre: "scotch",
+      affiches: ["anthem", "goodroom", "spirito", "icesea", "maldeojo"] },
   ],
 
   reglages: {

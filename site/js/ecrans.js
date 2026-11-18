@@ -187,7 +187,7 @@ ecran("10", "A", "Mot de passe oublié", "grille", () => `
 ecran("11", "A", "Pseudo et avatar", "grille", () => `
   ${entete("Ton profil", { droite: `<span class="t-texte-meta secondaire">1 / 2</span>` })}
   <div class="defile">
-    <label style="display:block;width:120px;margin:8px auto 0;cursor:pointer">${avatar(120, ETAT.utilisateur.initiales, ETAT.utilisateur.avatar)}
+    <label style="display:block;width:120px;margin:8px auto 0;cursor:pointer">${avatarPersonne(120)}
       <input type="file" accept="image/*" class="cache" data-change="photoProfil"></label>
     <label class="bouton-lien lien-centre" style="text-align:center">Choisir une photo<input type="file" accept="image/*" class="cache" data-change="photoProfil"></label>
     <div style="height:24px"></div>
@@ -243,7 +243,7 @@ ecran("13", "B", "Carte d'accueil", "", () => {
   <div class="carte" id="carte"></div>
   <div class="carte-ui" style="position:relative;flex:1">
     <div class="carte-haut">${champCarte()}
-      <button class="carre-bouton" data-action="monProfil" aria-label="Mon profil">${ETAT.utilisateur.avatar ? avatar(46, "", ETAT.utilisateur.avatar) : icone("profil")}</button></div>
+      <button class="carre-bouton" data-action="monProfil" aria-label="Mon profil">${ETAT.utilisateur.avatar ? avatarPersonne(46) : icone("profil")}</button></div>
     <div style="padding:8px var(--marge) 0;display:flex;justify-content:flex-end"><button class="carre-bouton${filtresPoses() ? " actif" : ""}" data-aller="14" aria-label="Filtres">${icone("filtre")}</button></div>
     <div class="carte-bas">
       ${vide ? `<div class="panneau" style="flex-direction:column;align-items:flex-start;padding:16px">
@@ -486,11 +486,16 @@ function rectoVerso(verso) {
   ${entete("Scrap capturé", { droite: `<button class="icone-bouton" data-aller="39" aria-label="Partager">${icone("partager")}</button>` })}
   <div class="defile scrap-page rarete-${r.cle}">
     <div class="scrap-scene${s.holo ? " est-holo" : ""}" id="scene-scrap">
+      <div class="scrap-creux boite-prof" aria-hidden="true">
+        <i class="prof-vide" style="--z:1"></i>
+        <i class="prof-sol" style="--z:.92"></i>
+        <i class="prof-halo" style="--z:.74"></i>
+      </div>
       <i class="decor-halo couche" style="--p:26"></i>
       <i class="decor-rayons couche" style="--p:38"></i>
       <i class="decor-trame couche" style="--p:12"></i>
       ${s.holo ? '<i class="aura-holo couche" style="--p:34"></i>' : ""}
-      ${poussiere(14)}
+      ${poussiere(8)}${etoiles(9, { prof: 16, ecart: 46, taille: 7, variation: 9 })}
       <div class="scrap-inclinaison">
         <div class="retourne${verso ? " verso" : ""}" id="retourne" data-action="retourner">
           <div class="retourne-int">
@@ -997,21 +1002,83 @@ const svgExclusif = (cid) => {
  * fabrique. C'est donc le seul objet de l'app qui a le droit à l'holographie
  * et à des couches séparées — la règle « l'affiche est intouchable » ne
  * s'applique qu'aux vraies affiches. */
+/* ───────── Le décor au fond de la fenêtre.
+ * Du vecteur simple, en silhouette : pas une illustration, des formes qu'on
+ * lit en un coup d'œil même à 3 cm de large. Les concerts ont le décor le
+ * plus écrit, parce que c'est la collection de tête du projet ; les autres
+ * reprennent la même scène avec le motif de leur badge en enseigne. */
+const DECOR_CONCERTS = `
+  <g class="prof-lointain">
+    <circle cx="100" cy="40" r="26" fill="none" stroke="#111" stroke-width="1.2" opacity=".5"/>
+    <circle cx="100" cy="40" r="15" fill="#111" opacity=".9"/>
+    <path d="M100 4v16M100 60v16M64 40h16M120 40h16M74 14l11 11M126 55l-11-11M126 25l-11 11M74 66l11-11"
+      stroke="#111" stroke-width="1.2" opacity=".45"/>
+  </g>
+  <g class="prof-eq">
+    ${[0, 1, 2, 3, 4, 5, 6].map((i) => `<rect x="${73 + i * 9}" y="58" width="5" height="26" fill="#111" style="--i:${i}"/>`).join("")}
+  </g>
+  <g fill="#111">
+    <path d="M2 56h30v48H2zM168 56h30v48h-30z"/>
+    <path d="M8 44h18v12H8zM174 44h18v12h-18z"/>
+  </g>
+  <g fill="none" stroke="#FFF" stroke-width="1.6">
+    <circle cx="17" cy="72" r="8"/><circle cx="17" cy="92" r="5"/>
+    <circle cx="183" cy="72" r="8"/><circle cx="183" cy="92" r="5"/>
+  </g>
+  <g class="prof-foule" fill="#111">
+    <path d="M0 104h200v16H0z"/>
+    ${[6, 20, 33, 47, 60, 74, 88, 101, 115, 128, 142, 155, 169, 182, 195].map((x, i) =>
+      `<rect x="${x}" y="${90 + (i % 3) * 4}" width="4" height="18" style="--i:${i % 5}"/>`).join("")}
+  </g>`;
+const decorExclusif = (cid) => cid === "concerts" ? DECOR_CONCERTS : `
+  <g class="prof-lointain">
+    <circle cx="100" cy="46" r="30" fill="none" stroke="#111" stroke-width="1.2" opacity=".5"/>
+    <g transform="translate(68 14) scale(1)" stroke="#111" stroke-width="2.4" fill="none" stroke-linecap="square">
+      <path d="${MOTIFS_BADGE[cid] || MOTIFS_BADGE.holo}"/>
+    </g>
+  </g>
+  <g class="prof-foule" fill="#111">
+    <path d="M0 104h200v16H0z"/>
+    ${[8, 26, 44, 62, 80, 98, 116, 134, 152, 170, 188].map((x, i) =>
+      `<rect x="${x}" y="${92 + (i % 2) * 5}" width="5" height="16" style="--i:${i % 5}"/>`).join("")}
+  </g>`;
+
+/* La carte exclusive n'est pas une affiche de la rue : c'est SCRAP qui la
+ * fabrique. C'est donc le seul objet de l'app qui a le droit à l'holographie
+ * et à des couches séparées — la règle « l'affiche est intouchable » ne
+ * s'applique qu'aux vraies affiches.
+ *
+ * v10 — une fenêtre découpée dans le foil. On ne regarde plus un relief posé
+ * sur la carte : on regarde DEDANS. Le cadre de la fenêtre ne bouge pas, le
+ * fond s'enfonce, et les couches glissent les unes derrière les autres quand
+ * on penche — l'impression d'une pièce derrière le papier. Tout tourne aussi
+ * tout seul : la carte est vivante même téléphone posé. */
 function carteExclusive(cid) {
   const c = collection(cid);
   const mot = c.nom.split(" ")[0].toUpperCase();
   return `<div class="carte-exclusive holo" id="carte-exclusive">
     <i class="exc-fond"></i>
     <i class="holo-guilloche" aria-hidden="true"></i>
-    <i class="exc-cadre couche" style="--p:8"></i>
-    <span class="exc-entete couche" style="--p:14">SCRAP · ÉDITION EXCLUSIVE</span>
-    <span class="exc-mot couche" style="--p:30;font-size:${Math.min(22, 118 / Math.max(4, mot.length)).toFixed(1)}cqw">${esc(mot)}</span>
-    <i class="exc-filet couche" style="--p:36"></i>
-    <i class="exc-carre couche" style="--p:44"></i>
-    <span class="exc-zone couche" style="--p:20">${esc(c.zone.toUpperCase())}</span>
-    <span class="exc-etat couche" style="--p:20">COLLECTION COMPLÈTE</span>
-    <span class="exc-num couche" style="--p:26">N° 001</span>
-    <span class="exc-serie couche" style="--p:18">001 / 064</span>
+    <i class="exc-cadre"></i>
+    <span class="exc-entete">SCRAP · ÉDITION EXCLUSIVE</span>
+
+    <div class="exc-fenetre boite-prof" aria-hidden="true">
+      <i class="prof-vide" style="--z:1"></i>
+      <i class="prof-sol" style="--z:.92"></i>
+      <i class="prof-halo" style="--z:.78"></i>
+      <svg class="prof-decor" style="--z:.6" viewBox="0 0 200 120" preserveAspectRatio="xMidYMax meet">${decorExclusif(cid)}</svg>
+      <i class="prof-poussiere" style="--z:.3"></i>
+      ${etoiles(7, { classe: "prof-ciel", prof: 10, ecart: 26, taille: 6, variation: 8 })}
+      <i class="prof-vitre"></i>
+    </div>
+
+    <span class="exc-mot" style="font-size:${Math.min(20, 108 / Math.max(4, mot.length)).toFixed(1)}cqw">${esc(mot)}</span>
+    <i class="exc-filet"></i>
+    <i class="exc-carre"></i>
+    <span class="exc-zone">${esc(c.zone.toUpperCase())}</span>
+    <span class="exc-num">N° 001</span>
+    <span class="exc-serie">001 / 064</span>
+    <svg class="exc-sceau" viewBox="0 0 24 24" aria-hidden="true"><path d="${ETOILE_D}"/></svg>
     <i class="holo-prisme" aria-hidden="true"></i>
     <i class="holo-eclat" aria-hidden="true"></i>
   </div>`;
@@ -1029,14 +1096,21 @@ ecran("32", "D", "Collection complète — scrap exclusif", "grille", () => {
     <div class="scene-exclusif" id="scene-exclusif">
       <i class="decor-halo couche" style="--p:30"></i>
       <i class="decor-rayons couche" style="--p:44"></i>
-      ${poussiere(16)}
+      ${poussiere(8)}${etoiles(13, { prof: 14, ecart: 54, taille: 8, variation: 12 })}
       <div class="pack" id="pack" data-action="ouvrirPack" role="button" tabindex="0">
         <i class="pack-haut"></i>
+        <i class="pack-hachures" aria-hidden="true"></i>
+        <svg class="pack-marque" viewBox="0 0 64 64" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
+          <path d="${MOTIFS_BADGE[cid] || MOTIFS_BADGE.holo}"/></svg>
+        <svg class="pack-coins" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M4 14V4h10M86 4h10v10M96 86v10H86M14 96H4V86" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
         <div class="pack-corps">
+          <i class="pack-etoiles haut" aria-hidden="true"></i>
           <span class="pack-logo">${logo(22)}</span>
           <span class="pack-titre t-texte-meta">Édition exclusive</span>
           <span class="pack-mot">${esc(c.nom.split(" ")[0].toUpperCase())}</span>
           <span class="pack-pied t-texte-meta">1 scrap · numéroté</span>
+          <i class="pack-etoiles bas" aria-hidden="true"></i>
         </div>
         <i class="pack-languette"></i>
         <span class="pack-aide t-texte-meta">Tire pour ouvrir</span>
@@ -1091,7 +1165,7 @@ ecran("34", "E", "Placer sur ma vitrine", "grille", () => {
   return `
   ${entete("Ma vitrine", { droite: lien("Annuler", { aller: "35" }) })}
   <div class="defile">
-    <div class="rangee">${avatar(48, u.initiales, u.avatar)}<div><span class="t-titre-m" style="display:block">${esc(u.nom)}</span><span class="t-texte-meta secondaire">${esc(u.quartier)} · rang ${u.rang}</span></div></div>
+    <div class="rangee">${avatarPersonne(48)}<div><span class="t-titre-m" style="display:block">${esc(u.nom)}</span><span class="t-texte-meta secondaire">${esc(u.quartier)} · rang ${u.rang}</span></div></div>
     <p class="t-texte-meta secondaire" style="margin:20px 0 8px">Vitrine · glisse un scrap pour le placer</p>
     <div class="vitrine fond-papier" id="vitrine"><div class="vitrine-plan" id="vplan"></div></div>
     <div id="reglages-vitrine" style="margin-top:16px">${sel ? `
@@ -1109,20 +1183,22 @@ ecran("35", "E", "Profil vu par les autres", "grille", () => {
   const autre = ETAT.ctx.personne != null ? ETAT.personnes[ETAT.ctx.personne] : null;
   const u = ETAT.utilisateur;
   const nom = autre ? autre.pseudo.replace("@", "") : u.nom;
-  const badgesOk = D.badges.filter(badgeDebloque).slice(0, 4);
+  const badgesOk = badgesDe(autre);
   const choisi = D.badges.find((b) => b.id === u.badge);
-  const fond = ETAT.mur.fond || "papier";
-  const rep = repartitionRarete();
+  const fond = autre ? ["kraft", "journal", "beton", "liege", "millimetre", "carton", "seyes"][ETAT.ctx.personne % 7] : (ETAT.mur.fond || "papier");
+  const rep = repartitionDe(autre);
+  const affiches = affichesDe(autre);
+  const avant = autre ? affiches[0] : ETAT.miseEnAvant;
   return `
   ${entete("Profil", { droite: `<button class="icone-bouton" data-aller="39" aria-label="Partager">${icone("partager")}</button>` })}
   <div class="defile plein">
     <div class="profil-banniere fond-${fond}">
-      <div class="banniere-affiches">${(autre ? idsScraps().slice(0, 6) : idsScraps().slice(0, 8)).map((id, i) =>
+      <div class="banniere-affiches">${affiches.slice(0, 8).map((id, i) =>
         `<img src="${imgScrap(id)}" alt="" style="--i:${i}">`).join("")}</div>
       ${autre ? "" : `<button class="banniere-fond" data-aller="25" aria-label="Changer le fond">${icone("fond", 18)}</button>`}
     </div>
     <div class="profil-tete">
-      <div class="profil-avatar">${avatar(96, autre ? autre.initiales : u.initiales, autre ? null : u.avatar)}</div>
+      <div class="profil-avatar">${avatarPersonne(96, autre)}</div>
       ${!autre && choisi ? `<span class="profil-badge">${badgeHtml(choisi, { ok: true, choisi: true, taille: 44 })}</span>` : ""}
     </div>
     <div style="padding:0 var(--marge)">
@@ -1142,7 +1218,7 @@ ecran("35", "E", "Profil vu par les autres", "grille", () => {
 
       <div class="deux-col" style="margin-top:24px">
         <div><p class="t-texte-meta secondaire" style="margin:0 0 8px">Scrap mis en avant</p>
-          <button data-action="ouvrirScrap" data-id="${ETAT.miseEnAvant}"><img src="${imgScrap(ETAT.miseEnAvant)}" alt="" style="width:100%"></button></div>
+          <button ${autre ? "" : `data-action="ouvrirScrap" data-id="${avant}"`}><img src="${imgScrap(avant)}" alt="" style="width:100%"></button></div>
         <div><p class="t-texte-meta secondaire" style="margin:0 0 8px">Vitrine</p>
           <button class="vitrine fond-${fond}" id="vitrine" ${autre ? "" : 'data-aller="34"'} style="display:block"><div class="vitrine-plan" id="vplan"></div></button></div>
       </div>
@@ -1154,7 +1230,16 @@ ecran("35", "E", "Profil vu par les autres", "grille", () => {
   ${pied(autre
     ? `<div class="rang">${bouton(autre.suivi ? "Suivi" : "Suivre", { type: autre.suivi ? "secondaire" : "", action: "suivre", data: ` data-id="${ETAT.ctx.personne}"` })}${bouton("Échanger en vrai", { action: "ouvrirEchange", data: ` data-id="${ETAT.ctx.personne}"` })}</div>`
     : `<div class="rang">${bouton("Modifier le profil", { aller: "37" })}${bouton("Réglages", { type: "secondaire", aller: "41" })}</div>`)}`;
-}, (r) => vitrineMonter($("#vitrine", r), false));
+}, (r) => {
+  const autre = ETAT.ctx.personne != null ? ETAT.personnes[ETAT.ctx.personne] : null;
+  /* La vitrine d'un autre colleur : ses trois affiches à lui, posées de la
+   * même façon pour tout le monde — on vient voir ce qu'il a, pas comment il
+   * range. */
+  const sienne = autre
+    ? affichesDe(autre).slice(0, 3).map((id, i) => ({ id, x: 14 + i * 116, y: [28, 18, 40][i], w: [104, 92, 100][i], rot: [-3, 2, 4][i] }))
+    : null;
+  return vitrineMonter($("#vitrine", r), false, sienne);
+});
 
 ecran("36", "E", "Choisir un badge", "grille", () => {
   const u = ETAT.utilisateur;
@@ -1174,7 +1259,7 @@ ecran("36", "E", "Choisir un badge", "grille", () => {
     }).join("")}</div>
     <p class="t-texte-meta secondaire" style="margin:28px 0 8px">Aperçu sur mon profil</p>
     <div class="rangee fond-blanc" style="padding:16px;box-shadow:inset 0 0 0 1px var(--trait-defaut)">
-      ${avatar(64, u.initiales, u.avatar)}<div style="flex:1"><span class="t-titre-l" style="display:block">${esc(u.nom)}</span><span class="t-texte-meta secondaire">${esc(u.quartier)} · rang ${u.rang}</span></div>
+      ${avatarPersonne(64)}<div style="flex:1"><span class="t-titre-l" style="display:block">${esc(u.nom)}</span><span class="t-texte-meta secondaire">${esc(u.quartier)} · rang ${u.rang}</span></div>
       ${badgeHtml(D.badges.find((b) => b.id === choix) || D.badges[0], { ok: true, choisi: true, taille: 44 })}</div>
   </div>
   ${pied(bouton("Enregistrer", { action: "enregistrerBadge" }))}`;
@@ -1185,7 +1270,7 @@ ecran("37", "E", "Modifier le profil", "grille", () => {
   return `
   ${entete("Modifier le profil", { droite: lien("Enregistrer", { action: "enregistrerProfil" }) })}
   <div class="defile">
-    <div class="rangee" style="gap:16px">${avatar(88, u.initiales, u.avatar)}<label class="bouton-lien">Changer la photo<input type="file" accept="image/*" class="cache" data-change="photoProfil"></label></div>
+    <div class="rangee" style="gap:16px">${avatarPersonne(88)}<label class="bouton-lien">Changer la photo<input type="file" accept="image/*" class="cache" data-change="photoProfil"></label></div>
     <div style="height:24px"></div>
     ${champ("Pseudo", u.pseudo, { id: "p-pseudo" })}
     ${champ("Bio", u.bio, { id: "p-bio", multi: true })}
@@ -1207,7 +1292,7 @@ ecran("38", "E", "Amis", "grille", () => {
       <div class="rangee proches">${proches.map((p) => {
         const i = ETAT.personnes.indexOf(p);
         return `<button class="proche" data-action="voirPersonne" data-id="${i}">
-          ${avatar(54, p.initiales)}
+          ${avatarPersonne(54, p)}
           <span class="t-texte-meta une-ligne">${esc(p.pseudo)}</span>
           <span class="t-texte-meta secondaire une-ligne">${esc(p.quartier)}</span></button>`;
       }).join("")}</div>
@@ -1224,7 +1309,7 @@ function listePersonnes(q) {
   return ETAT.personnes.map((p, i) => [p, i])
     .filter(([p]) => (o === "abonnes" || p.suivi) && p.pseudo.includes(q.toLowerCase()))
     .map(([p, i]) => `<div class="ligne" style="min-height:72px">
-      <button class="rangee" style="flex:1;text-align:left" data-action="voirPersonne" data-id="${i}">${avatar(44, p.initiales)}<span><span class="t-texte-label" style="display:block">${esc(p.pseudo)}</span><span class="t-texte-meta secondaire">${p.scraps} scraps · ${esc(p.quartier)}</span></span></button>
+      <button class="rangee" style="flex:1;text-align:left" data-action="voirPersonne" data-id="${i}">${avatarPersonne(44, p)}<span><span class="t-texte-label" style="display:block">${esc(p.pseudo)}</span><span class="t-texte-meta secondaire">${p.scraps} scraps · ${esc(p.quartier)}</span></span></button>
       <button class="bouton bouton--petit${p.suivi ? " bouton--secondaire" : ""}" data-action="suivre" data-id="${i}">${p.suivi ? "Suivi" : "Suivre"}</button></div>`).join("");
 }
 
@@ -1308,7 +1393,7 @@ ecran("51", "E", "Passage de relais", "grille", () => {
       <div class="echange-duo">
         <span class="echange-tel gauche"><img src="${imgScrap(e.donne)}" alt=""></span>
         <i class="echange-onde"></i><i class="echange-onde" style="animation-delay:.45s"></i>
-        <span class="echange-tel droite">${avatar(44, ami.initiales)}</span>
+        <span class="echange-tel droite">${avatarPersonne(44, ami)}</span>
       </div>
       <h1 class="t-titre-m" style="margin:28px 0 6px">Dos à dos, à quelques centimètres</h1>
       <p class="t-texte-corps secondaire" style="margin:0 auto;max-width:290px">L'échange ne se fait que comme ça : les deux téléphones doivent être au même endroit, au même moment.</p>
@@ -1321,7 +1406,7 @@ ecran("51", "E", "Passage de relais", "grille", () => {
   return `
   ${entete("Passage de relais", { fermer: true })}
   <div class="defile">
-    <div class="rangee" style="margin-bottom:16px">${avatar(44, ami.initiales)}
+    <div class="rangee" style="margin-bottom:16px">${avatarPersonne(44, ami)}
       <span><span class="t-texte-label" style="display:block">${esc(ami.pseudo)}</span>
         <span class="t-texte-meta secondaire">${ami.scraps} scraps · ${esc(ami.quartier)}</span></span></div>
     <p class="t-texte-petit secondaire" style="margin:0 0 16px">Choisis le scrap que tu lui donnes. Tu gardes le tien : c'est le double qui part, avec ton pseudo dessus.</p>
@@ -1350,7 +1435,7 @@ ecran("41", "F", "Réglages", "grille", () => {
   return `
   ${entete("Réglages")}
   <div class="defile">
-    <button class="ligne" data-aller="37" style="min-height:88px">${avatar(56, u.initiales, u.avatar)}<span style="flex:1"><span class="t-texte-label" style="display:block">${esc(u.pseudo)}</span><span class="t-texte-petit secondaire">Modifier le profil</span></span><span class="secondaire">${icone("chevron")}</span></button>
+    <button class="ligne" data-aller="37" style="min-height:88px">${avatarPersonne(56)}<span style="flex:1"><span class="t-texte-label" style="display:block">${esc(u.pseudo)}</span><span class="t-texte-petit secondaire">Modifier le profil</span></span><span class="secondaire">${icone("chevron")}</span></button>
     <p class="t-texte-meta secondaire" style="margin:20px 0 4px">Mon compte</p>
     <div class="liste">${ligne("Confidentialité", { aller: "42", icone: "cadenas" })}${ligne("Notifications", { aller: "43", icone: "cloche" })}${ligne("Position", { aller: "44", icone: "position" })}${ligne("Compte", { aller: "45", icone: "profil" })}</div>
     <p class="t-texte-meta secondaire" style="margin:20px 0 4px">Affichage</p>
