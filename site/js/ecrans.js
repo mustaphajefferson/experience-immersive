@@ -392,6 +392,7 @@ ecran("19", "B", "Scanner", "sombre", () => `
     <span class="t-texte-meta" id="etat-scan">Cherche une affiche…</span>
   </div>
   <p class="t-texte-petit centre" id="consigne">Pas besoin d'appuyer : garde l'affiche dans le champ, la photo se prend toute seule.</p>
+  <button class="coin-magique${ETAT.ctx.forcerVivante ? " arme" : ""}" data-action="forcerVivante" aria-label="Mode démonstration"></button>
   <div class="scanner-bas" style="z-index:3">
     <label class="galerie" aria-label="Choisir une photo">${icone("image")}<input type="file" accept="image/*" class="cache" data-change="photoCapture"></label>
     <button class="declencheur" id="jauge-scan" data-action="capturer" aria-label="Capturer"></button>
@@ -425,6 +426,58 @@ ecran("19.1", "B", "Vérifier le scan", "sombre", () => {
     <button class="bouton bouton--secondaire bouton--sombre" data-action="reprendreScan">${icone("reprendre", 20)}Reprendre</button>
     <button class="bouton bouton--capture" data-action="garderScan">${icone("valider", 20)}Garder</button></div>`, { transparent: true })}`;
 }, (r) => profondeur($("#verif-scrap", r), { amplitude: 1 }));
+
+/* ═════════ 19.3 — L'AFFICHE VIVANTE
+ *
+ * Certaines affiches de la rue sont éditées par SCRAP. Quand on en scanne
+ * une, l'app ne range pas une image de plus : elle la reconnaît et la
+ * réveille. Le papier qu'on vient de photographier redevient du vecteur, se
+ * redessine devant soi, et bouge quand on penche le téléphone ou qu'on le
+ * touche.
+ *
+ * C'est le seul endroit de l'app où une affiche a le droit d'être animée :
+ * parce que celle-là, c'est nous qui l'avons faite. La règle « l'affiche est
+ * intouchable » protège les affiches des autres, pas les nôtres. */
+let SVG_VIVANT = null;          // l'affiche, chargée une fois pour toutes
+
+ecran("19.3", "B", "Affiche vivante", "sombre", () => `
+  <header class="entete transparent" style="color:#fff;z-index:6"><div class="entete-ligne">
+    <button class="icone-bouton" data-aller="19" aria-label="Reprendre">${icone("fermer")}</button>
+    <span class="entete-titre t-texte-meta">Affiche vivante</span><span></span>
+  </div></header>
+  <div class="vivante-zone">
+    <div class="vivante-scene" id="vivante-scene" data-action="secouerAffiche" role="button" tabindex="0">
+      <span class="vivante-attente t-texte-meta">L'affiche se réveille…</span>
+    </div>
+  </div>
+  <div class="vivante-pied">
+    <span class="etiquette etiquette--num">Édition SCRAP · N° 002</span>
+    <p class="t-texte-petit" style="color:#9A9A96;margin:10px 0 0">SCRAP a édité cette affiche : l'app la reconnaît et la fait bouger. Penche le téléphone, ou touche-la.</p>
+  </div>
+  ${pied(`<div class="rang">
+    <button class="bouton bouton--secondaire bouton--sombre" data-aller="19">${icone("reprendre", 20)}Reprendre</button>
+    <button class="bouton" data-aller="19.2">${icone("valider", 20)}Garder</button></div>`, { transparent: true })}`,
+(r) => {
+  const scene = $("#vivante-scene", r);
+  if (!scene) return null;
+  const poser = (texte) => {
+    scene.innerHTML = texte;
+    const svg = scene.querySelector("svg");
+    if (svg) { svg.removeAttribute("width"); svg.removeAttribute("height"); }
+    requestAnimationFrame(() => {
+      scene.classList.add("reveil");
+      vibrer([10, 60, 14, 40, 22]);
+      setTimeout(() => pluieEtoiles(scene, 20), 1500);
+    });
+  };
+  const url = (window.CONFIG && CONFIG.afficheVivante && CONFIG.afficheVivante.fichier) || "assets/affiches/scrap-live.svg";
+  if (SVG_VIVANT) poser(SVG_VIVANT);
+  else {
+    fetch(url).then((x) => x.text()).then((t) => { SVG_VIVANT = t; if ($("#vivante-scene")) poser(t); })
+      .catch(() => { scene.innerHTML = `<img src="${ETAT.ctx.capture ? ETAT.ctx.capture.img : ""}" alt="" style="width:100%">`; });
+  }
+  return null;
+});
 
 ecran("19.2", "B", "Identifier le scrap", "grille", () => {
   const p = ETAT.ctx.capture;
@@ -468,9 +521,12 @@ ecran("20", "B", "Capture échouée", "sombre", () => `
  * l'effet est d'autant plus fort que le scrap est rare : être le 3e à capturer
  * une affiche se voit, être le 300e beaucoup moins. */
 function rectoVerso(verso) {
-  const id = ETAT.ctx.scrap && scrap(ETAT.ctx.scrap) ? ETAT.ctx.scrap : "alta";
+  /* Un scrap d'un carnet rapporté d'ailleurs n'est pas dans la collection
+   * d'Inès : on l'affiche quand même, en lecture seule. */
+  const id = ETAT.ctx.scrap && infoScrap(ETAT.ctx.scrap) ? ETAT.ctx.scrap : "alta";
   ETAT.ctx.scrap = id;
-  const s = scrap(id);
+  const s = infoScrap(id);
+  const archive = !scrap(id);
   const col = collection(s.collection);
   const p = col ? progression(s.collection) : null;
   const surMur = ETAT.mur.items.some((it) => it.id === id);
@@ -524,7 +580,7 @@ function rectoVerso(verso) {
       <span class="repere-scrap haut-gauche couche" style="--p:30">${icone("plus", 14)}</span>
       <span class="repere-scrap bas-droit couche" style="--p:40">${icone("plus", 14)}</span>
       <span class="flottant etiquette-flottante couche" style="--p:34">${esc(col ? col.nom : "Exclusif")}</span>
-      <span class="flottant num-flottant couche" style="--p:32">N° ${pad3(s.num)}</span>
+      <span class="flottant num-flottant couche" style="--p:32">N° <b id="num-recto">${pad3(s.num)}</b></span>
       <span class="flottant date-flottante couche" style="--p:24">${esc(s.date)}</span>
       <i class="regle-scrap couche" style="--p:16"></i>
       <span class="scrap-tampon couche" style="--p:20">${tampon("Scrap N° " + pad3(s.num), `${s.arr} · ${s.date}`, { grand: true, plein: !col || complete(s.collection), pose: frais })}</span>
@@ -540,22 +596,28 @@ function rectoVerso(verso) {
         <h1 class="t-titre-l" style="margin:0 0 4px">${esc(s.titre)}</h1>
         <p class="t-texte-petit secondaire" style="margin:0">${esc(s.lieu)} · ${esc(r.texte.toLowerCase())}</p>
       </div>
-      <button class="coeur${s.favori ? " on" : ""}" data-action="favori" aria-pressed="${!!s.favori}" aria-label="${s.favori ? "Retirer des favoris" : "Ajouter aux favoris"}">
-        ${icone("coeur", 24)}<span class="t-texte-meta">Favori</span></button>
+      ${archive ? `<span class="etiquette">Carnet ${esc(ETAT.mur.nom || "")}</span>`
+        : `<button class="coeur${s.favori ? " on" : ""}" data-action="favori" aria-pressed="${!!s.favori}" aria-label="${s.favori ? "Retirer des favoris" : "Ajouter aux favoris"}">
+        ${icone("coeur", 24)}<span class="t-texte-meta">Favori</span></button>`}
     </div>
     <div class="rangee entre" style="margin-top:18px">
       <span class="t-texte-meta secondaire">Touche la carte pour la retourner</span>${boutonGyro()}
     </div>
     <div class="centre">${lien("Voir l'événement", { aller: "23", centre: true })}</div>
   </div>
-  ${pied(surMur ? bouton("Voir sur mon scrapbook", { aller: "24" }) : bouton("Coller sur mon scrapbook", { action: "coller" }))}`;
+  ${pied(archive
+    ? bouton("Revenir au carnet", { aller: "24" })
+    : surMur ? bouton("Voir sur mon scrapbook", { aller: "24" }) : bouton("Coller sur mon scrapbook", { action: "coller" }))}`;
 }
 const monterRecto = (r) => {
   const toutNeuf = ETAT.ctx.frais === ETAT.ctx.scrap;
   ETAT.ctx.frais = null;
   // le tampon frappe : l'à-coup se voit et se sent
   if (toutNeuf) setTimeout(() => vibrer([16, 40, 12]), 220);
-  const s = scrap(ETAT.ctx.scrap);
+  const s = infoScrap(ETAT.ctx.scrap);
+  // le numéro du recto défile lui aussi avant de se poser
+  const nr = $("#num-recto", r);
+  if (nr && s) setTimeout(() => compteurAnime(nr, s.num, { duree: 820 }), 260);
   const n1 = glisser($("#retourne", r), () => ACTIONS.retourner(), () => ACTIONS.retourner());
   const n2 = profondeur($("#scene-scrap", r), { amplitude: s && rarete(s).cle === "commune" ? 0.6 : 1.15 });
   if ($("#retourne", r) && $("#retourne", r).classList.contains("verso")) setTimeout(animerVerso, 120);
@@ -566,7 +628,7 @@ const monterRecto = (r) => {
 function animerVerso() {
   const el = $("#num-verso");
   if (!el) return;
-  const s = scrap(ETAT.ctx.scrap);
+  const s = infoScrap(ETAT.ctx.scrap);
   el.classList.remove("pose");
   compteurAnime(el, s ? s.num : 0, { duree: 1000 });
   const t = $(".verso-tableau");
@@ -721,6 +783,20 @@ function majFondMur() {
   } else if (t) t.remove();
 }
 
+/* ───────── Les carnets, en haut du scrapbook.
+ * Un carnet par ville : celui du quartier, en cours, et ceux qu'on a
+ * rapportés d'ailleurs, terminés. Changer de carnet tourne une page. */
+function barreCarnets() {
+  const liste = ETAT.carnets || [];
+  if (liste.length < 2) return "";
+  return `<div class="carnets puces">${liste.map((c) => {
+    const actif = c.id === ETAT.carnetActif;
+    return `<button class="puce puce--carnet${actif ? " active" : ""}" data-action="ouvrirCarnet" data-id="${c.id}">
+      <i class="carnet-point${c.termine ? " fini" : ""}"></i>${esc(c.nom)}</button>`;
+  }).join("")}
+  <button class="puce puce--carnet nouveau" data-action="nouveauCarnet" aria-label="Nouveau carnet">${icone("plus", 16)}</button></div>`;
+}
+
 function scrapbook(ecranId) {
   const m = ETAT.mur;
   const mode = modeMur();
@@ -738,19 +814,23 @@ function scrapbook(ecranId) {
   };
 
   const nomOutil = { "24.1": "Ajouter", "24.3": "Dessiner", 25: "Fond", 26: "Scotch", 27: "Déchirer" }[ecranId];
+  const sous = m.termine
+    ? `${esc(m.ville || "")} · ${esc(m.periode || "")} · ${pluriel(m.items.length, "scrap")}`
+    : `${esc(ETAT.utilisateur.quartier)} · ${pluriel(m.items.length, "scrap")} · page remplie à ${remplissage} %`;
   return `
   <header class="entete"><div class="entete-ligne">
-    <div class="entete-gauche"><span class="t-titre-m">Mon scrapbook</span>
-      <span class="t-texte-meta secondaire">${esc(ETAT.utilisateur.quartier)} · ${pluriel(m.items.length, "scrap")} · page remplie à ${remplissage} %</span></div>
+    <div class="entete-gauche"><span class="t-titre-m">${esc(m.nom || "Mon scrapbook")}${m.termine ? " <span class=\"t-texte-meta secondaire\">· terminé</span>" : ""}</span>
+      <span class="t-texte-meta secondaire">${sous}</span></div>
     ${ecranId === "24" && mode === "deplacer"
       ? lien("Valider", { action: "validerMur" })
       : ecranId === "24"
         ? `<button class="icone-bouton" data-aller="24.2" aria-label="Partager mon scrapbook">${icone("partager")}</button>`
         : `<span class="t-texte-meta secondaire">${nomOutil}</span>`}
-  </div></header>
+  </div>
+  ${ecranId === "24" ? barreCarnets() : ""}</header>
   ${ecranId === "24" && !ETAT.ctx.livreOuvert ? `<div class="livre" id="livre" aria-hidden="true">
     <i class="livre-couv gauche"></i><i class="livre-couv droite"></i>
-    <span class="livre-titre">${logo(28)}<span class="t-texte-meta">${esc(ETAT.utilisateur.quartier)}</span></span>
+    <span class="livre-titre">${logo(28)}<span class="t-texte-meta">${esc(m.nom || ETAT.utilisateur.quartier)}</span></span>
   </div>` : ""}
   <div class="mur-zone fond-${m.fond} mode-${ecranId === "24" ? mode : ecranId}" id="mur" style="${styleFond(m)}">
     ${teinteHtml(m)}
@@ -1112,8 +1192,8 @@ ecran("32", "D", "Collection complète — scrap exclusif", "grille", () => {
           <span class="pack-pied t-texte-meta">1 scrap · numéroté</span>
           <i class="pack-etoiles bas" aria-hidden="true"></i>
         </div>
-        <i class="pack-languette"></i>
-        <span class="pack-aide t-texte-meta">Tire pour ouvrir</span>
+        <i class="pack-languette" id="pack-languette"></i>
+        <span class="pack-aide t-texte-meta">Tire la languette</span>
       </div>
       <div class="exclusif-carte couche" style="--p:6">${carteExclusive(cid)}</div>
     </div>
@@ -1131,9 +1211,53 @@ ecran("32", "D", "Collection complète — scrap exclusif", "grille", () => {
 }, (r) => {
   const cid = ETAT.ctx.collection || "concerts";
   const c = collection(cid);
-  if (ETAT.ctx.packOuvert !== cid) revelation(["COLLECTION", "COMPLÈTE"], { sous: c ? c.nom.toUpperCase() : "", duree: 1700 });
-  return profondeur($("#scene-exclusif", r), { amplitude: 1.3 });
+  const ouvert = ETAT.ctx.packOuvert === cid;
+  if (!ouvert) revelation(["COLLECTION", "COMPLÈTE"], { sous: c ? c.nom.toUpperCase() : "", duree: 1700 });
+  else setTimeout(() => pluieEtoiles($("#scene-exclusif", r), 22), 420);
+  const n1 = languetteMonter(r);
+  const n2 = profondeur($("#scene-exclusif", r), { amplitude: 1.3 });
+  return () => { n1 && n1(); n2 && n2(); };
 });
+
+/* ───────── La languette qu'on tire.
+ * Ouvrir un pack au clic, c'est un bouton. Ici la bande résiste, suit le
+ * doigt, vibre par crans, et cède d'un coup passé les trois quarts. Si on
+ * lâche avant, elle revient : on n'ouvre pas un pack par accident. */
+function languetteMonter(racine) {
+  const l = $("#pack-languette", racine), pack = $("#pack", racine);
+  if (!l || !pack) return null;
+  let g = null;
+  const COURSE = 130;
+  const majTension = (t) => pack.style.setProperty("--tire", t.toFixed(3));
+  const debut = (e) => {
+    if (ETAT.ctx.packOuvert === (ETAT.ctx.collection || "concerts")) return;
+    e.preventDefault();
+    g = { x: e.clientX, cran: 0, parti: false };
+    pack.classList.add("tension");
+    l.setPointerCapture && l.setPointerCapture(e.pointerId);
+  };
+  const bouge = (e) => {
+    if (!g || g.parti) return;
+    const t = clamp((e.clientX - g.x) / COURSE, 0, 1);
+    majTension(t);
+    const cran = Math.floor(t * 6);
+    if (cran > g.cran) { g.cran = cran; vibrer(5); }   // la bande craque, cran par cran
+    if (t >= 1) { g.parti = true; fin(e); ACTIONS.ouvrirPack(); }
+  };
+  const fin = (e) => {
+    if (!g) return;
+    const parti = g.parti;
+    g = null;
+    pack.classList.remove("tension");
+    if (!parti) { pack.classList.add("revient"); majTension(0); setTimeout(() => pack.classList.remove("revient"), 320); }
+    if (e && l.releasePointerCapture && e.pointerId !== undefined) { try { l.releasePointerCapture(e.pointerId); } catch (err) { /* rien */ } }
+  };
+  l.addEventListener("pointerdown", debut);
+  l.addEventListener("pointermove", bouge);
+  l.addEventListener("pointerup", fin);
+  l.addEventListener("pointercancel", fin);
+  return () => { l.removeEventListener("pointerdown", debut); l.removeEventListener("pointermove", bouge); l.removeEventListener("pointerup", fin); l.removeEventListener("pointercancel", fin); };
+}
 
 ecran("33", "D", "Badge débloqué", "grille", () => {
   const cid = ETAT.ctx.collection || "concerts";

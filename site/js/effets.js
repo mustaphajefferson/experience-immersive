@@ -159,6 +159,70 @@ function etoiles(n = 10, o = {}) {
   return `<div class="ciel${o.classe ? " " + o.classe : ""}" aria-hidden="true">${out}</div>`;
 }
 
+/* ───────── FLIP : le tri qui se voit.
+ * On note où est chaque carte AVANT de changer l'ordre, on laisse le
+ * navigateur refaire la page, puis on remet chaque carte à son ancienne
+ * place et on la laisse glisser vers la nouvelle. Résultat : on comprend le
+ * tri au lieu de le subir.
+ * racine : un sélecteur (la grille) · cle : l'attribut qui identifie
+ * chaque élément (data-id) · action : ce qui change l'ordre. */
+function flip(racine, cle, action) {
+  const avant = new Map();
+  const lire = () => $$(`${racine} [${cle}]`);
+  lire().forEach((el) => avant.set(el.getAttribute(cle), el.getBoundingClientRect()));
+  action();
+  if (MOINS_ANIM || !avant.size) return;
+  requestAnimationFrame(() => {
+    lire().forEach((el) => {
+      const a = avant.get(el.getAttribute(cle));
+      if (!a) return;                       // il n'était pas là : il surgit normalement
+      const b = el.getBoundingClientRect();
+      if (!b.width) return;
+      const dx = a.left - b.left, dy = a.top - b.top, k = a.width / b.width;
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1 && Math.abs(k - 1) < 0.01) return;
+      el.style.animation = "none";
+      el.style.transformOrigin = "0 0";
+      el.style.transform = `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px) scale(${k.toFixed(3)})`;
+      el.style.zIndex = "2";
+      requestAnimationFrame(() => {
+        el.style.transition = "transform .54s cubic-bezier(.22,.92,.26,1)";
+        el.style.transform = "";
+        setTimeout(() => { el.style.cssText = el.style.cssText.replace(/(transition|transform|transform-origin|animation|z-index)[^;]*;?/g, ""); }, 580);
+      });
+    });
+  });
+}
+
+/* ───────── La page qui se tourne : on change de carnet.
+ * Une feuille passe par-dessus l'écran et le contenu change pendant qu'elle
+ * passe — on ne voit jamais la coupure. */
+function tournerPage(sens, apres) {
+  if (MOINS_ANIM) { apres(); return; }
+  const v = document.createElement("div");
+  v.className = "page-tourne" + (sens < 0 ? " vers-gauche" : "");
+  v.innerHTML = "<i></i>";
+  document.body.appendChild(v);
+  vibrer([8, 30, 6]);
+  setTimeout(apres, 300);
+  setTimeout(() => v.remove(), 680);
+}
+
+/* ───────── La pluie d'étoiles : on vient d'ouvrir quelque chose de rare. */
+function pluieEtoiles(el, n = 18) {
+  if (!el || MOINS_ANIM) return;
+  const boite = document.createElement("div");
+  boite.className = "pluie";
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const d = 60 + Math.random() * 170;
+    boite.innerHTML += `<svg viewBox="0 0 24 24" style="--x:${(Math.cos(a) * d).toFixed(0)}px;--y:${(Math.sin(a) * d - 40).toFixed(0)}px;
+      --r:${(Math.random() * 540 - 270).toFixed(0)}deg;--t:${(0.9 + Math.random() * 0.7).toFixed(2)}s;--d:${(Math.random() * 0.35).toFixed(2)}s;
+      width:${(7 + Math.random() * 13).toFixed(0)}px"><path d="${ETOILE_D}"/></svg>`;
+  }
+  el.appendChild(boite);
+  setTimeout(() => boite.remove(), 2000);
+}
+
 /* ───────── Vol d'un scrap d'un écran à l'autre (l'affiche qu'on colle).
  * On garde la position de départ, et le scrapbook termine le mouvement. */
 function volPreparer(el) {
@@ -263,4 +327,22 @@ function rarete(s) {
   if (n <= 20) return { cle: "rare", nom: "Rare", texte: "Parmi les 20 premiers" };
   if (n <= 60) return { cle: "peuvue", nom: "Peu vue", texte: "Encore peu capturée" };
   return { cle: "commune", nom: "Commune", texte: "Déjà bien capturée" };
+}
+
+/* ───────── Le chargement d'une affiche : le papier se remplit du haut.
+ * Une image qui arrive ne doit pas clignoter : elle s'imprime. On marque
+ * toutes les affiches d'un écran au moment où il est posé, et chacune
+ * s'anime quand elle est vraiment arrivée. Le scrapbook est mis de côté :
+ * il se redessine à chaque sélection, l'animation y serait du bruit. */
+const SEL_AFFICHES = ".carte-scrap img, .ligne-scrap img, .banniere-affiches img, .vignettes img, .scrap-img, .mini-affiche img, .echange-tel img";
+function animerAffiches(racine) {
+  if (MOINS_ANIM || !racine) return;
+  $$(SEL_AFFICHES, racine).forEach((im) => {
+    if (im.closest("#plan") || im.closest(".vitrine")) return;
+    im.classList.add("affiche-papier");
+    const prete = () => im.classList.add("prete");
+    if (im.complete && im.naturalWidth) { requestAnimationFrame(prete); return; }
+    im.addEventListener("load", prete, { once: true });
+    im.addEventListener("error", prete, { once: true });
+  });
 }

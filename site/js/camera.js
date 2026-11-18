@@ -379,7 +379,65 @@ function capturerQuad(video, quad) {
   catch (e) { console.error(e); sortie = src; }
 
   const img = sortie.toDataURL("image/jpeg", 0.86);
-  setTimeout(() => nouvelleCapture(img, sortie.width / sortie.height, { scanne: !!quad }), 240);
+  /* Est-ce L'affiche ? Le bouton de démonstration passe devant la mesure :
+   * pendant une soutenance, on ne joue pas sa démo aux dés. */
+  const seuil = (window.CONFIG && CONFIG.afficheVivante && CONFIG.afficheVivante.seuil) || 0.55;
+  const score = scoreAfficheVivante(sortie);
+  const vivante = ETAT.ctx.forcerVivante || score >= seuil;
+  if (score) console.info(`SCRAP · ressemblance avec l'affiche vivante : ${score.toFixed(3)}`);
+  setTimeout(() => nouvelleCapture(img, sortie.width / sortie.height, { scanne: !!quad, vivante }), 240);
+}
+
+/* ═════════ Reconnaître L'affiche
+ *
+ * Une seule affiche nous intéresse : celle que SCRAP a éditée. On la
+ * reconnaît sans réseau de neurones et sans serveur — l'image redressée est
+ * réduite à une grille de 8 × 11, on en garde la luminosité et la « rougeur »
+ * de chaque case, on normalise, et on compare à l'empreinte de référence
+ * (config.js). La normalisation efface la lumière de la rue, le flou et les
+ * écarts de cadrage ; il reste la composition, qui ne ressemble à aucune
+ * autre affiche.
+ *
+ * On teste aussi l'affiche à l'envers : on ne sait jamais comment elle sera
+ * collée, ni dans quel sens on la photographiera. */
+function empreinteVisuelle(source, retournee) {
+  const cfg = (window.CONFIG && CONFIG.afficheVivante) || {};
+  const [GX, GY] = cfg.grille || [8, 11];
+  const c = document.createElement("canvas");
+  c.width = GX; c.height = GY;
+  const x = c.getContext("2d", { willReadFrequently: true });
+  x.imageSmoothingEnabled = true;
+  x.imageSmoothingQuality = "high";
+  if (retournee) { x.translate(GX, GY); x.rotate(Math.PI); }
+  x.drawImage(source, 0, 0, GX, GY);
+  const d = x.getImageData(0, 0, GX, GY).data;
+  const lum = [], rouge = [];
+  for (let i = 0; i < GX * GY; i++) {
+    const r = d[i * 4], v = d[i * 4 + 1], b = d[i * 4 + 2];
+    lum.push(0.299 * r + 0.587 * v + 0.114 * b);
+    rouge.push(r - (v + b) / 2);
+  }
+  const norme = (t) => {
+    const m = t.reduce((a2, b2) => a2 + b2, 0) / t.length;
+    const e = Math.sqrt(t.reduce((a2, b2) => a2 + (b2 - m) * (b2 - m), 0) / t.length) || 1;
+    return t.map((v) => (v - m) / e);
+  };
+  return norme(lum).concat(norme(rouge));
+}
+
+/* Le score de ressemblance avec l'affiche de SCRAP, de -1 à 1. */
+function scoreAfficheVivante(source) {
+  const ref = (window.CONFIG && CONFIG.afficheVivante && CONFIG.afficheVivante.empreinte) || [];
+  if (!ref.length || !source || !source.width) return 0;
+  let best = 0;
+  for (const retournee of [false, true]) {
+    const e = empreinteVisuelle(source, retournee);
+    if (e.length !== ref.length) return 0;
+    let s = 0;
+    for (let i = 0; i < e.length; i++) s += e[i] * ref[i];
+    best = Math.max(best, s / e.length);
+  }
+  return best;
 }
 
 /* ───────── Redressement : la perspective corrigée, comme un scanner.
@@ -474,13 +532,22 @@ function photoFichier(fichier) {
 function nouvelleCapture(img, ratio, o = {}) {
   const ouverte = D.collections.find((c) => !complete(c.id));
   const num = 4 + Math.floor(Math.random() * 120);
-  ETAT.ctx.capture = {
-    img, ratio, num, titre: "", lieu: "Rue de Belleville",
-    collection: ouverte ? ouverte.id : "concerts", themes: [],
-    holo: Math.random() < 0.3, tagsPerso: [], scanne: !!o.scanne,
-  };
+  const av = (window.CONFIG && CONFIG.afficheVivante) || {};
+  ETAT.ctx.capture = o.vivante
+    ? {
+      /* L'affiche de SCRAP : elle arrive déjà identifiée, et rare. C'est une
+       * édition numérotée — il n'y en a pas trente. */
+      img, ratio, num: 2, titre: av.titre || "Colle fraîche", lieu: av.lieu || "Rue de Belleville",
+      collection: "concerts", themes: ["Concert", "Collage", "Édition SCRAP"],
+      holo: true, tagsPerso: [], scanne: !!o.scanne, vivante: true,
+    }
+    : {
+      img, ratio, num, titre: "", lieu: "Rue de Belleville",
+      collection: ouverte ? ouverte.id : "concerts", themes: [],
+      holo: Math.random() < 0.3, tagsPerso: [], scanne: !!o.scanne,
+    };
   cameraArreter();
-  aller("19.1", { remplace: true });
+  aller(o.vivante ? "19.3" : "19.1", { remplace: true });
 }
 
 function validerCapture() {
@@ -493,7 +560,7 @@ function validerCapture() {
     titre: p.titre.trim() || "Affiche sans titre", artiste: "—", ratio: p.ratio, num: p.num,
     lieu: p.lieu.trim() || "Belleville", arr: ETAT.utilisateur.arrondissement, date, heure,
     collection: p.collection, themes: p.themes.length ? p.themes : ["Affiche"], holo: p.holo,
-    scans: p.num, murs: 0, img: p.img, capture: true,
+    scans: p.num, murs: 0, img: p.img, capture: true, vivante: !!p.vivante,
   };
   ETAT.captures.push(id);
   ETAT.ctx.capture = null;

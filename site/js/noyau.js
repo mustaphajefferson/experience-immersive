@@ -130,7 +130,12 @@ function etatInitial() {
     utilisateur: { ...D.utilisateur },
     scraps: JSON.parse(JSON.stringify(D.scraps)),
     captures: [],               // ordre des scraps capturés pendant la démo
-    mur: JSON.parse(JSON.stringify(D.mur)),
+    /* Les carnets. Le premier est celui d'Inès, en cours ; les suivants sont
+     * des carnets terminés, rapportés d'ailleurs. ETAT.mur pointe toujours
+     * sur celui qui est ouvert — tout le reste du code continue de parler à
+     * ETAT.mur sans rien savoir des autres. */
+    carnets: JSON.parse(JSON.stringify(D.carnets)),
+    carnetActif: D.carnets[0].id,
     vitrine: JSON.parse(JSON.stringify(D.vitrine)),
     miseEnAvant: D.miseEnAvant,
     personnes: JSON.parse(JSON.stringify(D.personnes)),
@@ -142,26 +147,45 @@ function etatInitial() {
     ctx: {},
   };
 }
+/* ETAT.mur n'est pas une donnée à part : c'est le carnet ouvert, pris dans
+ * ETAT.carnets. On le rebranche après chaque chargement et à chaque
+ * changement de carnet, et on ne l'enregistre jamais deux fois. */
+function brancherCarnet(id) {
+  if (!ETAT.carnets || !ETAT.carnets.length) ETAT.carnets = JSON.parse(JSON.stringify(D.carnets));
+  const c = ETAT.carnets.find((x) => x.id === (id || ETAT.carnetActif)) || ETAT.carnets[0];
+  ETAT.carnetActif = c.id;
+  ETAT.mur = c;
+  return c;
+}
+const carnetsOuverts = () => (ETAT.carnets || []).filter((c) => !c.termine);
 function charger() {
   try {
     const brut = localStorage.getItem(CLE);
     ETAT = brut ? { ...etatInitial(), ...JSON.parse(brut) } : etatInitial();
   } catch (e) { ETAT = etatInitial(); }
+  brancherCarnet();
 }
 function sauver() {
-  try { localStorage.setItem(CLE, JSON.stringify(ETAT)); }
-  catch (e) { toast("Mémoire du téléphone pleine : la dernière capture n'est pas sauvegardée."); }
+  try {
+    const copie = { ...ETAT };
+    delete copie.mur;   // c'est ETAT.carnets[carnetActif] : on ne le copie pas
+    localStorage.setItem(CLE, JSON.stringify(copie));
+  } catch (e) { toast("Mémoire du téléphone pleine : la dernière capture n'est pas sauvegardée."); }
 }
 function reinitialiser() {
   try { localStorage.removeItem(CLE); } catch (e) { /* rien */ }
   ETAT = etatInitial();
+  brancherCarnet();
 }
 /* Compte vierge : le premier lancement, carnet vide, rien de capturé.
  * Sert à rejouer l'inscription et les écrans vides. */
 function reinitialiserVide() {
   reinitialiser();
   ETAT.scraps = {};
-  ETAT.mur = { fond: "papier", fondImage: null, voile: 0, notes: [], traits: [], hauteur: 1600, items: [] };
+  /* Compte vierge : on garde les carnets rapportés d'ailleurs (ils ne sont
+   * pas le fruit de cette démo), mais le carnet du quartier repart à zéro. */
+  ETAT.carnets[0] = { ...ETAT.carnets[0], fond: "papier", fondImage: null, voile: 0, teinte: null, notes: [], traits: [], hauteur: 1600, items: [] };
+  brancherCarnet(ETAT.carnets[0].id);
   ETAT.vitrine = [];
   ETAT.miseEnAvant = null;
   ETAT.utilisateur = { ...D.utilisateur, badge: null };
@@ -172,6 +196,22 @@ charger();
 
 /* ───────── Données calculées */
 const scrap = (id) => ETAT.scraps[id];
+/* Un scrap d'où qu'il vienne : le carnet d'Inès d'abord, sinon le catalogue
+ * des affiches qu'elle n'a pas (carnets rapportés d'ailleurs, carnets des
+ * autres). Les carnets terminés sont pleins d'affiches qui ne sont pas dans
+ * sa collection — il leur faut quand même un format et un titre. */
+function infoScrap(id) {
+  const s = ETAT.scraps[id];
+  if (s) return s;
+  const c = (D.catalogue && D.catalogue[id]) || D.scraps[id];
+  if (!c) return null;
+  return {
+    titre: c.titre || "Affiche", artiste: c.artiste || "—", ratio: c.ratio || 0.75,
+    num: c.num || 42, lieu: c.lieu || "", arr: c.arr || "", date: c.date || "",
+    heure: c.heure || "", collection: c.collection || "typo", themes: c.themes || ["Affiche"],
+    scans: c.scans || 60, murs: c.murs || 1, holo: !!c.holo, archive: true,
+  };
+}
 const imgScrap = (id) => (scrap(id) && scrap(id).img) || `assets/affiches/${id}.jpg`;
 const idsScraps = () => Object.keys(ETAT.scraps);
 const collection = (cid) => D.collections.find((c) => c.id === cid);

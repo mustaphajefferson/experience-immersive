@@ -53,16 +53,19 @@ function normScotch(sc) {
     return b;
   });
 }
+/* La transformation du scotch vit en CSS (--rot) et non dans l'attribut
+ * style : c'est ce qui permet de l'animer quand on vient de le poser —
+ * la bande s'étire du doigt vers ses deux bouts au lieu d'apparaître. */
 const scotchHtml = (b, w) => {
   const l = Math.round(clamp(w * 0.42, 34, 92));
-  return `<i class="scotch libre ${b.type}" style="left:${(b.x * 100).toFixed(1)}%;top:${(b.y * 100).toFixed(1)}%;width:${l}px;transform:translate(-50%,-50%) rotate(${b.rot || 0}deg)"></i>`;
+  return `<i class="scotch libre ${b.type}${b.neuf ? " pose" : ""}" style="left:${(b.x * 100).toFixed(1)}%;top:${(b.y * 100).toFixed(1)}%;width:${l}px;--rot:${b.rot || 0}deg"></i>`;
 };
 
 function itemHtml(it, choisi) {
-  const s = scrap(it.id);
+  const s = infoScrap(it.id);
   if (!s) return "";
   const decoupe = it.dechire ? `clip-path:${polyCss(it.dechire)}` : "";
-  return `<div class="mur-item${choisi ? " choisi" : ""}${it.dechire ? " dechire" : ""}" data-item="${it.id}"
+  return `<div class="mur-item${choisi ? " choisi" : ""}${it.dechire ? " dechire" : ""}${it.neufDechire ? " se-dechire" : ""}" data-item="${it.id}"
     style="left:${it.x}px;top:${it.y}px;width:${it.w}px;transform:rotate(${it.rot || 0}deg)">
     ${it.dechire ? `<i class="bord-dechire" style="${decoupe}"></i>` : ""}
     <div class="mur-papier" style="${decoupe}"><img src="${imgScrap(it.id)}" alt="" draggable="false" style="aspect-ratio:${s.ratio}"></div>
@@ -171,7 +174,7 @@ function traitsHtml() {
 function remplissageMur() {
   const m = ETAT.mur;
   const aire = m.items.reduce((a, it) => {
-    const s = scrap(it.id);
+    const s = infoScrap(it.id);
     return a + (s ? it.w * (it.w / s.ratio) : 0);
   }, 0);
   return clamp(aire / (LARGEUR_MUR * m.hauteur), 0, 1);
@@ -196,7 +199,7 @@ const teinteHtml = (m) => (m.teinte ? `<i class="voile-teinte" style="background
 function rangerMur(type) {
   const m = ETAT.mur;
   const liste = m.items.slice();
-  const hauteurDe = (it, w) => { const s = scrap(it.id); return w / ((s && s.ratio) || 0.75); };
+  const hauteurDe = (it, w) => { const s = infoScrap(it.id); return w / ((s && s.ratio) || 0.75); };
   const marge = 18;
   let y = 56;
 
@@ -319,7 +322,7 @@ function murMonter(racine, outil) {
     const it = m.items.find((i) => i.id === ETAT.ctx.recadrer);
     ETAT.ctx.recadrer = null;
     if (it) {
-      const s = scrap(it.id);
+      const s = infoScrap(it.id);
       vue.k = kLarge();
       vue.x = -MARGE_MUR * vue.k;
       vue.y = zone.clientHeight / 2 - (MARGE_MUR + it.y + it.w / ((s && s.ratio) || 0.75) / 2) * vue.k;
@@ -354,7 +357,7 @@ function murMonter(racine, outil) {
     if (estNote(o)) { o.devant = true; ETAT.mur.notes = notesMur().filter((n) => n !== o).concat(o); }
     else m.items = m.items.filter((i) => i !== o).concat(o);
   };
-  const hauteurDe = (o) => (estNote(o) ? 0 : o.w / scrap(o.id).ratio);
+  const hauteurDe = (o) => (estNote(o) ? 0 : o.w / ((infoScrap(o.id) || {}).ratio || 0.75));
   // point de l'écran ramené dans le repère d'un scrap (0 à 1), rotation comprise
   const local = (el, it, ex, ey) => {
     const r = el.getBoundingClientRect();
@@ -556,9 +559,12 @@ function murMonter(racine, outil) {
           ? (dx * dy > 0 ? -38 : 38) + alea                 // dans un coin : en diagonale
           : Math.abs(dy) > Math.abs(dx) ? alea : 90 + alea; // sur un bord : dans le sens du bord
         if (sc.length >= 2) sc.shift();
-        sc.push({ x: +lx.toFixed(3), y: +ly.toFixed(3), rot, type: m.scotchType || "kraft" });
+        sc.push({ x: +lx.toFixed(3), y: +ly.toFixed(3), rot, type: m.scotchType || "kraft", neuf: true });
       }
-      vibrer(10); sauver(); dessiner();
+      vibrer([6, 18, 10]);
+      dessiner();
+      sc.forEach((x) => { delete x.neuf; });   // l'animation n'a lieu qu'une fois
+      sauver();
       return;
     }
     if (outil === "dechirer") {
@@ -597,8 +603,9 @@ function murMonter(racine, outil) {
     if (!res) { toast("Glisse franchement d'un bord à l'autre du scrap."); return; }
     ETAT.ctx.dechireAvant = { id: it.id, avant: it.dechire || null };
     it.dechire = res.garde;
+    it.neufDechire = true;      // le bord se découpe au lieu d'apparaître
     sauver();
-    vibrer([10, 30, 20]);
+    vibrer([8, 24, 8, 24, 26]);
     const morceau = document.createElement("div");
     morceau.className = "morceau";
     morceau.style.cssText = `left:${it.x}px;top:${it.y}px;width:${it.w}px;--dx:${(Math.random() * 60 - 30).toFixed(0)}px;--dr:${(Math.random() * 50 - 25).toFixed(0)}deg`;
@@ -606,6 +613,7 @@ function murMonter(racine, outil) {
     contenu.appendChild(morceau);
     setTimeout(() => morceau.remove(), 1200);
     dessiner();
+    delete it.neufDechire;
     toast("Déchiré. Le morceau reste dans ta collection.");
   }
 
@@ -642,7 +650,7 @@ const rangeeCouleurs = (actuelle, action) => `<div class="couleurs">${COULEURS_M
 function panneauElement(o) {
   const note = estNote(o);
   const texte = note && aDuTexte(o.type);
-  const nom = note ? (TYPES_NOTE.find((t) => t.type === o.type) || {}).nom || "Élément" : `N° ${pad3(scrap(o.id).num)} · ${scrap(o.id).titre}`;
+  const nom = note ? (TYPES_NOTE.find((t) => t.type === o.type) || {}).nom || "Élément" : `N° ${pad3(infoScrap(o.id).num)} · ${infoScrap(o.id).titre}`;
   const bornes = bornesTaille(o);
   const defaut = (TYPES_NOTE.find((t) => t.type === o.type) || {}).couleur || "#111111";
   return `<div class="panneau-item-int">
@@ -802,7 +810,7 @@ function boiteContenu() {
     x1 = Math.max(x1, bx); y1 = Math.max(y1, by);
   };
   m.items.forEach((it) => {
-    const s = scrap(it.id);
+    const s = infoScrap(it.id);
     const w = it.w, h = s ? it.w / s.ratio : it.w;
     if (it.rot) {
       // tourné : on prend le cercle qui contient le scrap, cadres et scotch compris
@@ -965,7 +973,7 @@ function dessinerMurCanvas(o = {}) {
       .then((paires) => {
         paires.forEach(([it, im]) => {
           if (!im) return;
-          const s = scrap(it.id);
+          const s = infoScrap(it.id);
           const w = it.w, h = w / ((s && s.ratio) || 0.75);
           x.save();
           x.translate(it.x + w / 2, it.y + h / 2);

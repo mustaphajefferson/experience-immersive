@@ -191,7 +191,7 @@ function boussoleMonter(racine, c) {
 function pinHtml(c, o = {}) {
   const col = collection(c.collection);
   const classes = ["pin", o.choisi ? "choisi" : "", c.fait ? "fait" : "", c.nouveau && !c.fait ? "nouveau" : ""].filter(Boolean).join(" ");
-  return `<span class="${classes}" style="--retard:${(o.index || 0) * 60}ms">
+  return `<span class="${classes}" style="--retard:${Math.min(o.index || 0, 44) * 26}ms">
     <span class="pin-tete">${icone(c.fait ? "valider" : col ? col.icone : "scan", 16)}</span>
     <i class="pin-pointe"></i>
     ${c.nouveau && !c.fait ? '<i class="pastille"></i>' : ""}
@@ -251,8 +251,15 @@ function carteMonter(el, o = {}) {
   L.marker(D.position, { icon: divIcone('<span class="ma-position"><i></i></span>', 18, 18), interactive: false, keyboard: false, zIndexOffset: 400 }).addTo(carte);
 
   if (o.marqueurs) {
-    ciblesVisibles().forEach((c, i) => {
-      L.marker([c.lat, c.lng], { icon: divIcone(pinHtml(c, { index: i }), ...TAILLE_PIN), keyboard: false, riseOnHover: true })
+    /* L'arrivée sur la carte : les pins tombent du plus proche au plus
+     * lointain. Le quartier se dessine autour de soi, au lieu que tout
+     * apparaisse d'un bloc — et on regarde d'abord ce qui est à portée. */
+    const liste = ciblesVisibles();
+    const rang = new Map(liste.slice()
+      .sort((a, b) => distanceEntre(D.position, [a.lat, a.lng]) - distanceEntre(D.position, [b.lat, b.lng]))
+      .map((c, i) => [c.id, i]));
+    liste.forEach((c) => {
+      L.marker([c.lat, c.lng], { icon: divIcone(pinHtml(c, { index: rang.get(c.id) || 0 }), ...TAILLE_PIN), keyboard: false, riseOnHover: true })
         .on("click", () => { if (!o.statique) { vibrer(8); ETAT.ctx.cible = c.id; aller("16"); } })
         .addTo(carte);
     });

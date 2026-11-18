@@ -878,12 +878,8 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: v
 .scene-pack .apres-pack, .scene-pack .exclusif-carte { opacity: 0; pointer-events: none; }
 .scene-pack.ouvert .apres-pack { opacity: 1; pointer-events: auto; animation: apparait .5s ease .35s both; }
 .scene-pack.ouvert .exclusif-carte { opacity: 1; pointer-events: auto; animation: sort-du-pack .75s cubic-bezier(.2, 1.1, .3, 1) both; }
-.scene-pack.ouvert .pack { display: none; }
-@keyframes sort-du-pack {
-  0% { opacity: 0; transform: translateY(60px) scale(.82); }
-  60% { opacity: 1; }
-  100% { opacity: 1; transform: none; }
-}
+/* (l'ancien « display:none » et l'ancienne sortie de carte sont remplacés
+   par la pochette qui se soulève, plus bas en v11) */
 .pack {
   position: relative; width: 58%; aspect-ratio: .68; z-index: 4; cursor: pointer;
   background: linear-gradient(150deg, #191919, #0d0d0d 60%, #1f1f1f);
@@ -1828,4 +1824,315 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: v
   .prof-eq rect, .prof-foule rect, .prof-lointain, .exc-fond, .exc-sceau,
   .holo-eclat::after, .pack-marque, .pack-etoiles { animation: none !important; }
   .boite-prof > i, .boite-prof > svg, .boite-prof > .ciel { translate: none !important; }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   v11 — LE MOUVEMENT PARTOUT
+   Six gestes qui manquaient : une affiche qui se remplit, un tri qui se
+   voit, une page qui se tourne, du scotch qui s'étire, une déchirure qui se
+   déchire, une languette qui résiste.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* ───────── Le chargement d'une affiche
+   Une image qui arrive ne clignote plus : le papier se remplit du haut vers
+   le bas, comme une impression qui sort. */
+img.affiche-papier { background-color: var(--fond-secondaire); }
+img.affiche-papier.prete { animation: affiche-encre .52s cubic-bezier(.3, .82, .3, 1) both; }
+@keyframes affiche-encre {
+  0% { clip-path: inset(0 0 100% 0); }
+  100% { clip-path: inset(0 0 0 0); }
+}
+
+/* ───────── La page qui se tourne : on change de carnet
+   Une feuille passe en travers de l'écran et le contenu change pendant
+   qu'elle passe. On ne voit jamais la coupure. */
+.page-tourne {
+  position: fixed; inset: 0; z-index: 95; pointer-events: none;
+  max-width: 480px; margin: 0 auto; overflow: hidden; perspective: 1400px;
+}
+.page-tourne i {
+  position: absolute; top: -4%; bottom: -4%; left: -25%; width: 150%;
+  background:
+    linear-gradient(104deg, rgba(255, 255, 255, .2) 0%, #F6F6F2 22%, #E6E6E0 56%, #CFCFC8 82%, #BDBDB6 100%);
+  box-shadow: 0 0 60px rgba(17, 17, 17, .45);
+  animation: page-passe .66s cubic-bezier(.42, .02, .3, 1) both;
+}
+@keyframes page-passe {
+  0% { transform: translateX(112%) rotateY(22deg); }
+  100% { transform: translateX(-112%) rotateY(-22deg); }
+}
+.page-tourne.vers-gauche i { animation-name: page-passe-g; }
+@keyframes page-passe-g {
+  0% { transform: translateX(-112%) rotateY(-22deg); }
+  100% { transform: translateX(112%) rotateY(22deg); }
+}
+
+/* ───────── Les carnets, en haut du scrapbook */
+.carnets { padding: 0 var(--marge) 9px; gap: 6px; }
+.puce--carnet {
+  height: 28px; padding: 0 10px; display: flex; align-items: center; gap: 7px;
+  font-size: 14px; letter-spacing: -.01em;
+}
+.carnet-point { width: 6px; height: 6px; flex: none; background: var(--accent-capture); }
+.carnet-point.fini { background: transparent; box-shadow: inset 0 0 0 1.5px var(--texte-secondaire); }
+.puce--carnet.active .carnet-point { background: var(--accent-sur-accent); box-shadow: none; }
+.puce--carnet.active .carnet-point.fini { background: transparent; box-shadow: inset 0 0 0 1.5px var(--accent-sur-accent); }
+.puce--carnet.nouveau { padding: 0 8px; color: var(--texte-secondaire); }
+
+/* ───────── Le scotch qui se pose
+   La bande s'étire du doigt vers ses deux bouts. Sa transformation vit ici
+   (et non dans l'attribut style) pour pouvoir être animée. */
+.scotch.libre {
+  left: 0; top: 0; right: auto; bottom: auto;
+  transform: translate(-50%, -50%) rotate(var(--rot, 0deg));
+}
+.scotch.libre.pose { animation: scotch-pose .34s cubic-bezier(.2, 1.5, .35, 1) both; }
+@keyframes scotch-pose {
+  0% { transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scaleX(.06); opacity: .3; }
+  58% { transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scaleX(1.14); opacity: 1; }
+  100% { transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scaleX(1); opacity: 1; }
+}
+
+/* ───────── La déchirure qui se déchire
+   Le papier sursaute, le bord blanc se découpe de gauche à droite, et le
+   morceau pivote avant de tomber : il se décolle, il ne disparaît pas. */
+.mur-item.se-dechire .mur-papier { animation: papier-secousse .44s cubic-bezier(.3, .9, .3, 1) both; }
+@keyframes papier-secousse {
+  0% { transform: none; }
+  16% { transform: translateX(2.5px) rotate(.5deg); }
+  38% { transform: translateX(-2.5px) rotate(-.6deg); }
+  62% { transform: translateX(1.5px) rotate(.3deg); }
+  100% { transform: none; }
+}
+.mur-item.se-dechire .bord-dechire {
+  -webkit-mask-image: linear-gradient(90deg, #000 0 50%, transparent 50%);
+  mask-image: linear-gradient(90deg, #000 0 50%, transparent 50%);
+  -webkit-mask-size: 200% 100%;
+  mask-size: 200% 100%;
+  animation: bord-coupe .46s cubic-bezier(.35, .75, .4, 1) both;
+}
+@keyframes bord-coupe {
+  from { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  to { -webkit-mask-position: 0 0; mask-position: 0 0; }
+}
+@keyframes tombe {
+  0% { transform: none; opacity: 1; }
+  16% { transform: rotate(calc(var(--dr, 24deg) * .16)) translate(1px, -3px); opacity: 1; }
+  100% { transform: translate(var(--dx, 30px), 420px) rotate(var(--dr, 24deg)); opacity: 0; }
+}
+.morceau { animation-duration: 1.25s; }
+
+/* ───────── La languette qu'on tire
+   Elle résiste, suit le doigt, craque par crans, et cède passé le bout. Un
+   filet rouge dit où on en est. Lâchée avant, elle revient. */
+.pack-languette { transform: translateX(calc(var(--tire, 0) * 44px)); }
+.pack.tension { animation: none; }
+.pack.tension .pack-haut {
+  transform-origin: left center;
+  transform: translateY(calc(var(--tire, 0) * -9px)) rotate(calc(var(--tire, 0) * -2.2deg));
+}
+.pack-haut::after {
+  content: ""; position: absolute; left: 0; bottom: -2px; height: 3px;
+  width: calc(var(--tire, 0) * 100%); background: var(--accent-capture);
+}
+.pack.revient .pack-haut, .pack.revient .pack-languette { transition: transform .32s cubic-bezier(.2, 1.5, .35, 1); }
+
+/* ───────── La carte qui sort de la pochette
+   La pochette ne disparaît plus d'un coup : elle se soulève pendant que la
+   carte monte derrière elle. Un seul geste, pas deux animations. */
+.scene-pack.ouvert .pack { animation: pack-part .74s cubic-bezier(.32, 0, .48, 1) both; pointer-events: none; display: block; }
+@keyframes pack-part {
+  0% { transform: none; opacity: 1; }
+  26% { transform: translateY(-8px) rotate(-2.5deg); opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translateY(-196%) rotate(-12deg); opacity: 0; }
+}
+.scene-pack.ouvert .exclusif-carte { opacity: 1; pointer-events: auto; animation: sort-du-pack .88s cubic-bezier(.2, 1, .3, 1) both; }
+@keyframes sort-du-pack {
+  0% { opacity: 1; transform: translateY(56%) scale(.9); }
+  100% { opacity: 1; transform: none; }
+}
+
+/* ───────── La pluie d'étoiles */
+.pluie { position: absolute; left: 50%; top: 46%; width: 0; height: 0; z-index: 9; pointer-events: none; }
+.pluie svg {
+  position: absolute; left: 0; top: 0; height: auto;
+  fill: var(--texte-principal);
+  animation: pluie-part var(--t, 1.2s) cubic-bezier(.15, .7, .35, 1) var(--d, 0s) both;
+}
+.pluie svg:nth-child(3n) { fill: var(--accent-capture); }
+@keyframes pluie-part {
+  0% { transform: translate(-50%, -50%) scale(.2) rotate(0); opacity: 0; }
+  18% { opacity: 1; }
+  100% { transform: translate(calc(var(--x) - 50%), calc(var(--y) - 50% + 120px)) scale(1) rotate(var(--r, 180deg)); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  img.affiche-papier.prete, .page-tourne i, .scotch.libre.pose,
+  .mur-item.se-dechire .mur-papier, .mur-item.se-dechire .bord-dechire,
+  .scene-pack.ouvert .pack, .scene-pack.ouvert .exclusif-carte, .pluie svg { animation: none !important; }
+  .scene-pack.ouvert .pack { display: none; }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   v11 — L'AFFICHE VIVANTE (écran 19.3)
+   Une affiche éditée par SCRAP, reconnue au scan. Elle ne s'affiche pas :
+   elle se redessine. Chaque morceau a sa propre arrivée, puis sa propre vie
+   — et tout continue de bouger quand on penche le téléphone ou qu'on touche
+   l'écran. C'est le seul endroit où une affiche a le droit d'être animée.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.vivante-zone {
+  flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center;
+  padding: 4px var(--marge) 0; position: relative;
+}
+.vivante-scene {
+  position: relative; width: 100%; max-height: 100%; display: flex; justify-content: center;
+  filter: drop-shadow(0 24px 50px rgba(0, 0, 0, .6));
+  transition: filter .2s;
+}
+.vivante-scene svg { width: auto; max-width: 100%; max-height: 100%; height: auto; display: block; }
+.vivante-attente { color: #6B6B67; padding: 60px 0; }
+.vivante-pied { flex: none; padding: 14px var(--marge) 0; }
+
+/* ───────── L'arrivée, morceau par morceau */
+.vivante-scene.reveil svg { animation: vivante-entre .6s cubic-bezier(.2, .9, .3, 1) both; }
+@keyframes vivante-entre { from { opacity: 0; scale: .94; } to { opacity: 1; scale: 1; } }
+
+/* les lettres tombent, l'une après l'autre */
+.reveil #a-mot1 .lettre, .reveil #a-mot2 .lettre, .reveil #a-meta .lettre,
+.reveil #a-phrase .lettre, .reveil #a-pied .lettre, .reveil #a-marque .lettre {
+  animation: lettre-tombe .56s cubic-bezier(.2, 1.35, .3, 1) both;
+  animation-delay: calc(var(--retard, 0s) + var(--i, 0) * var(--pas, 34ms));
+}
+/* IMPORTANT : les lettres et les groupes de l'affiche portent déjà un
+   attribut « transform » qui les place. Animer la propriété CSS « transform »
+   l'écraserait et tout partirait à l'origine ; on anime donc translate,
+   rotate et scale, qui se cumulent avec l'attribut. */
+@keyframes lettre-tombe {
+  from { opacity: 0; translate: 0 -34px; }
+  to { opacity: 1; translate: 0 0; }
+}
+.reveil #a-mot1 .lettre { --retard: .34s; --pas: 52ms; }
+.reveil #a-mot2 .lettre { --retard: .52s; --pas: 46ms; }
+.reveil #a-meta .lettre { --retard: .14s; --pas: 11ms; }
+.reveil #a-phrase .lettre { --retard: 1.1s; --pas: 9ms; }
+.reveil #a-pied .lettre { --retard: 1.3s; --pas: 6ms; }
+.reveil #a-marque .lettre { --retard: 1.5s; --pas: 40ms; }
+/* ATTENTION : ne jamais poser « transform-box » sur un élément qui porte
+   déjà un attribut transform (les lettres, les chiffres, les mots du
+   bandeau). Changer la boîte de référence déplace aussi cet attribut, et
+   tout part à l'autre bout de la page. Pour eux : translate seulement. */
+
+/* les filets rouges se tirent */
+.reveil #m-filet, .reveil #ph-filet, .reveil #a-marque rect {
+  animation: filet-tire .5s cubic-bezier(.22, .92, .26, 1) both; transform-box: fill-box; transform-origin: 0 50%;
+}
+.reveil #m-filet { animation-delay: .7s; }
+.reveil #ph-filet { animation-delay: 1.5s; }
+.reveil #a-marque rect { animation-delay: 1.7s; transform-origin: 50% 50%; animation-name: carre-pose; }
+@keyframes filet-tire { from { scale: 0 1; } to { scale: 1 1; } }
+@keyframes carre-pose { from { scale: 0; rotate: -40deg; } to { scale: 1; rotate: 0deg; } }
+
+/* la tache et le personnage se dessinent au feutre, puis vivent */
+.reveil #a-tache path, .reveil #a-figure path, .reveil #a-figure circle, .reveil #e-cercle {
+  stroke-dasharray: 1; stroke-dashoffset: 1;
+  animation: trace-feutre var(--duree, .9s) cubic-bezier(.4, 0, .25, 1) var(--retard, 0s) forwards;
+}
+@keyframes trace-feutre { to { stroke-dashoffset: 0; } }
+.reveil #t-contour { --retard: .2s; --duree: 1s; }
+.reveil #t-goutte { --retard: 1.1s; --duree: .35s; }
+.reveil #f-tete { --retard: .9s; --duree: .5s; }
+.reveil #f-corps { --retard: 1.2s; --duree: .35s; }
+.reveil #f-brasG { --retard: 1.4s; --duree: .4s; }
+.reveil #f-brasD { --retard: 1.5s; --duree: .4s; }
+.reveil #f-jambeG { --retard: 1.7s; --duree: .4s; }
+.reveil #f-jambeD { --retard: 1.8s; --duree: .4s; }
+.reveil #e-cercle { --retard: 2.1s; --duree: .55s; }
+
+/* les chiffres de la date tombent du haut */
+.reveil #a-date .chiffre {
+  animation: chiffre-tombe .5s cubic-bezier(.2, 1.4, .3, 1) both;
+  animation-delay: calc(.8s + var(--i, 0) * 60ms);
+}
+@keyframes chiffre-tombe { from { opacity: 0; translate: 0 -40px; } to { opacity: 1; translate: 0 0; } }
+
+/* les carrés se posent */
+.reveil #a-points rect {
+  transform-box: fill-box; transform-origin: 50% 50%;
+  animation: carre-pose .4s cubic-bezier(.2, 1.7, .3, 1) both;
+  animation-delay: calc(1.9s + var(--i, 0) * 70ms);
+}
+
+/* ───────── Puis : la vie, en boucle.
+   Tout ce qui suit tourne tout seul, sans gyroscope et sans doigt. */
+.reveil #f-brasG, .reveil #f-brasD, .reveil #f-jambeG, .reveil #f-jambeD, .reveil #f-tete, .reveil #f-corps {
+  transform-box: view-box;
+}
+.reveil #f-brasG { transform-origin: 392px 512px; animation: trace-feutre .4s cubic-bezier(.4,0,.25,1) 1.4s forwards, danse-brasG 1.05s ease-in-out 2.1s infinite alternate; }
+.reveil #f-brasD { transform-origin: 396px 524px; animation: trace-feutre .4s cubic-bezier(.4,0,.25,1) 1.5s forwards, danse-brasD 1.05s ease-in-out 2.15s infinite alternate; }
+.reveil #f-jambeG { transform-origin: 384px 630px; animation: trace-feutre .4s cubic-bezier(.4,0,.25,1) 1.7s forwards, danse-jambeG 1.05s ease-in-out 2.2s infinite alternate; }
+.reveil #f-jambeD { transform-origin: 386px 632px; animation: trace-feutre .4s cubic-bezier(.4,0,.25,1) 1.8s forwards, danse-jambeD 1.05s ease-in-out 2.1s infinite alternate; }
+.reveil #f-tete { transform-origin: 398px 392px; animation: trace-feutre .5s cubic-bezier(.4,0,.25,1) .9s forwards, danse-tete 1.05s ease-in-out 2.1s infinite alternate; }
+.reveil #f-corps { transform-origin: 398px 450px; animation: trace-feutre .35s cubic-bezier(.4,0,.25,1) 1.2s forwards, danse-corps 1.05s ease-in-out 2.1s infinite alternate; }
+@keyframes danse-brasG { from { transform: rotate(-11deg); } to { transform: rotate(15deg); } }
+@keyframes danse-brasD { from { transform: rotate(13deg); } to { transform: rotate(-12deg); } }
+@keyframes danse-jambeG { from { transform: rotate(7deg); } to { transform: rotate(-8deg); } }
+@keyframes danse-jambeD { from { transform: rotate(-8deg); } to { transform: rotate(9deg); } }
+@keyframes danse-tete { from { transform: translate(-5px, 2px) rotate(-4deg); } to { transform: translate(5px, -3px) rotate(4deg); } }
+@keyframes danse-corps { from { transform: rotate(-2.5deg); } to { transform: rotate(2.5deg); } }
+
+/* la tache respire et tourne très lentement */
+.reveil #a-tache { transform-box: view-box; transform-origin: 718px 330px; animation: tache-vit 9s ease-in-out 1.6s infinite alternate; }
+@keyframes tache-vit { from { transform: rotate(-3deg) scale(.98); } to { transform: rotate(4deg) scale(1.03); } }
+
+/* le bandeau défile, pour de vrai */
+.reveil #a-bande .defile-mot { animation: bande-defile 7s linear 1.2s infinite; }
+@keyframes bande-defile { from { translate: 0 0; } to { translate: calc(-1 * var(--course, 300px)) 0; } }
+
+/* ───────── La profondeur : les couches suivent l'inclinaison du téléphone */
+.reveil #a-tache { translate: calc(var(--px, 0) * 16px) calc(var(--py, 0) * 12px); }
+.reveil #a-figure { translate: calc(var(--px, 0) * -22px) calc(var(--py, 0) * -16px); }
+.reveil #a-date { translate: calc(var(--px, 0) * 10px) calc(var(--py, 0) * 8px); }
+.reveil #a-points { translate: calc(var(--px, 0) * 26px) calc(var(--py, 0) * 20px); }
+.reveil #a-mot1 { translate: calc(var(--px, 0) * 5px) 0; }
+.reveil #a-mot2 { translate: calc(var(--px, 0) * -5px) 0; }
+.reveil #a-entoure { translate: calc(var(--px, 0) * 14px) calc(var(--py, 0) * 10px); }
+
+/* ───────── On touche l'affiche : elle sursaute et s'inverse */
+.vivante-scene.secousse svg { animation: affiche-sursaut .5s cubic-bezier(.2, 1.4, .3, 1) both; }
+@keyframes affiche-sursaut {
+  0% { transform: scale(1); filter: none; }
+  12% { transform: scale(1.04) rotate(-1.2deg); filter: invert(1); }
+  34% { filter: invert(1); }
+  38% { transform: scale(.985) rotate(.8deg); filter: none; }
+  100% { transform: none; filter: none; }
+}
+.vivante-scene.secousse #a-figure { animation: figure-saute .7s cubic-bezier(.2, 1.5, .3, 1) both; transform-box: view-box; transform-origin: 398px 700px; }
+@keyframes figure-saute {
+  0% { transform: translateY(0) scale(1); }
+  30% { transform: translateY(-46px) scale(1.06); }
+  60% { transform: translateY(4px) scale(.97); }
+  100% { transform: none; }
+}
+
+/* ───────── Le bouton de démonstration : un coin, invisible pour la salle.
+   Armé, il porte un point rouge de 5 px que seul l'opérateur voit. */
+.coin-magique {
+  position: absolute; left: 0; bottom: calc(96px + env(safe-area-inset-bottom));
+  width: 52px; height: 52px; z-index: 7; background: none;
+}
+.coin-magique.arme::after {
+  content: ""; position: absolute; left: 9px; bottom: 9px; width: 5px; height: 5px;
+  background: var(--accent-capture);
+  animation: dev-clignote 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vivante-scene.reveil svg, .reveil .lettre, .reveil #a-date .chiffre, .reveil #a-points rect,
+  .reveil #m-filet, .reveil #ph-filet, .reveil #a-marque rect, .reveil #a-tache,
+  .reveil #a-bande .defile-mot, .vivante-scene.secousse svg, .vivante-scene.secousse #a-figure { animation: none !important; }
+  .reveil #a-tache path, .reveil #a-figure path, .reveil #a-figure circle, .reveil #e-cercle {
+    stroke-dasharray: none; stroke-dashoffset: 0; animation: none !important;
+  }
 }

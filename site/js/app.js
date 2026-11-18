@@ -42,6 +42,7 @@ function rendre(id, o = {}) {
   document.title = `SCRAP · ${id} ${e.titre}`;
   if (o.garderDefilement) { const d = $(".defile", s); if (d) d.scrollTop = defil; }
   const g = $("[data-glisser]", s);
+  animerAffiches(s);
   const n1 = g ? glisserDecouverte(g) : null;
   const n2 = e.monter ? e.monter(s) : null;
   nettoyer = () => { n1 && n1(); n2 && n2(); };
@@ -260,7 +261,9 @@ const ACTIONS = {
     sauver(); vibrer(10);
     aller("24", { remplace: true });
   },
-  choisirDispo(el) { ETAT.ctx.dispoColl = el.dataset.id; rafraichir(); },
+  choisirDispo(el) {
+    flip(".grille-scraps, .liste", "data-id", () => { ETAT.ctx.dispoColl = el.dataset.id; rafraichir(); });
+  },
   /* Les réglages d'outil ne redessinent que le panneau et le fond : la page,
    * les affiches et la barre du bas ne rejouent plus leur arrivée à chaque clic. */
   choisirFond(el) { ETAT.mur.fond = el.dataset.id; sauver(); majPanneauOutil(); vibrer(6); },
@@ -279,7 +282,67 @@ const ACTIONS = {
     o.matiere = el.dataset.id;
     sauver(); rafraichir(); vibrer(6);
   },
-  rangerMur(el) { rangerMur(el.dataset.id); ETAT.ctx.murSel = null; ETAT.ctx.vue = null; rafraichir(); toast("Page rangée"); },
+  /* Les rangements animés : les scraps rejoignent leur nouvelle place en se
+   * croisant. On garde le cadrage, sinon tout bouge d'un coup et le FLIP n'a
+   * plus rien à comparer. */
+  rangerMur(el) {
+    flip("#plan", "data-item", () => {
+      rangerMur(el.dataset.id);
+      ETAT.ctx.murSel = null;
+      sauver();
+      const r = $(".ecran");
+      if (r && r._murRedessiner) r._murRedessiner(); else rafraichir();
+    });
+    toast("Page rangée");
+  },
+
+  /* ───────── L'affiche vivante.
+   * Le bouton de démonstration : un coin de l'écran, invisible pour la
+   * salle. Armé, la prochaine capture est traitée comme L'affiche, quoi
+   * qu'en dise la mesure. On ne joue pas sa soutenance aux dés. */
+  forcerVivante(el) {
+    ETAT.ctx.forcerVivante = !ETAT.ctx.forcerVivante;
+    if (el && el.classList) el.classList.toggle("arme", ETAT.ctx.forcerVivante);
+    vibrer(ETAT.ctx.forcerVivante ? [8, 40, 8] : 6);
+  },
+  /* On touche l'affiche : elle sursaute, les couleurs s'inversent une
+   * fraction de seconde, et des étoiles partent. */
+  secouerAffiche(el) {
+    el.classList.remove("secousse");
+    void el.offsetWidth;
+    el.classList.add("secousse");
+    vibrer([12, 30, 16]);
+    pluieEtoiles(el, 12);
+    setTimeout(() => el.classList.remove("secousse"), 900);
+  },
+
+  /* ───────── Les carnets */
+  ouvrirCarnet(el) {
+    const id = el.dataset.id;
+    if (id === ETAT.carnetActif) return;
+    const sens = (ETAT.carnets.findIndex((c) => c.id === id) > ETAT.carnets.findIndex((c) => c.id === ETAT.carnetActif)) ? 1 : -1;
+    tournerPage(sens, () => {
+      brancherCarnet(id);
+      ETAT.ctx.vue = null; ETAT.ctx.murSel = null; ETAT.ctx.murMode = "regarder"; ETAT.ctx.livreOuvert = true;
+      sauver();
+      rendre("24");
+    });
+  },
+  nouveauCarnet() {
+    const nom = (prompt("Le nom du carnet (une ville, un quartier) :") || "").trim();
+    if (!nom) return;
+    const id = "c" + Date.now();
+    ETAT.carnets.push({
+      id, nom, ville: nom, periode: "En cours", termine: false,
+      fond: "papier", fondImage: null, voile: 0, teinte: null,
+      hauteur: 1600, items: [], notes: [], traits: [],
+    });
+    tournerPage(1, () => {
+      brancherCarnet(id);
+      ETAT.ctx.vue = null; ETAT.ctx.murSel = null; ETAT.ctx.livreOuvert = true;
+      sauver(); rendre("24");
+    });
+  },
   couleurTrait(el) { (ETAT.mur.dessin || (ETAT.mur.dessin = {})).couleur = el.dataset.id; sauver(); majPanneauOutil(); vibrer(5); },
   epaisseurTrait(el) { (ETAT.mur.dessin || (ETAT.mur.dessin = {})).w = +el.dataset.id; sauver(); majPanneauOutil(); vibrer(5); },
   annulerTrait() {
@@ -296,7 +359,11 @@ const ACTIONS = {
     ETAT.ctx.dechireAvant = null; sauver(); rafraichir();
   },
   recollerTout() { ETAT.mur.items.forEach((i) => { i.dechire = null; }); sauver(); rafraichir(); toast("Tout est recollé"); },
-  filtreColl(el) { ETAT.ctx.filtreColl = el.dataset.id; rafraichir(); },
+  /* Le tri qui se voit : les scraps glissent vers leur nouvelle place au lieu
+   * de réapparaître ailleurs. On comprend le tri, on ne le subit pas. */
+  filtreColl(el) {
+    flip(".grille-scraps, .liste", "data-id", () => { ETAT.ctx.filtreColl = el.dataset.id; rafraichir(); });
+  },
   ouvrirScrap(el) { ETAT.ctx.scrap = el.dataset.id; aller("21"); },
   choisirSel(el) {
     const s = ETAT.ctx.selection || (ETAT.ctx.selection = []), id = el.dataset.id, i = s.indexOf(id);
@@ -350,12 +417,15 @@ const ACTIONS = {
     if (ETAT.ctx.packOuvert === cid) return;
     const p = $("#pack");
     vibrer([14, 50, 20, 40, 30]);
-    if (p) p.classList.add("ouvre");
+    if (p) { p.classList.remove("tension"); p.classList.add("ouvre"); }
+    /* On rebascule tôt : la carte doit commencer à sortir pendant que la
+     * pochette se soulève encore, sinon on voit deux animations l'une après
+     * l'autre au lieu d'un seul geste. */
     setTimeout(() => {
       ETAT.ctx.packOuvert = cid;
       rafraichir();
-      setTimeout(() => { const c = $("#carte-exclusive"); if (c) eclat(c, { n: 16 }); }, 260);
-    }, 620);
+      setTimeout(() => { const c = $("#carte-exclusive"); if (c) eclat(c, { n: 16 }); }, 420);
+    }, 300);
   },
   collerExclusif() {
     const cid = ETAT.ctx.collection || "concerts", c = collection(cid), id = "excl-" + cid;

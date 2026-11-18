@@ -225,6 +225,147 @@ window.DONNEES = {
   },
 };
 
+/* ═════════ Les carnets
+ *
+ * Le scrapbook n'est plus unique. Inès arrive sur celui de son quartier, en
+ * cours — c'est celui qu'on remplit pendant la démo. À côté, des carnets
+ * TERMINÉS, rapportés d'ailleurs : une ville, une période, une matière de
+ * papier, et des pages pleines à craquer. Ils servent à deux choses : montrer
+ * à quoi ressemble un carnet fini (donc où on va), et donner envie d'en
+ * ouvrir un nouveau en arrivant dans une ville.
+ *
+ * Tout est posé par un générateur à graine fixe : la mise en page ne change
+ * pas d'un rechargement à l'autre, sinon on ne retrouverait jamais sa page.
+ */
+(function fabriquerLesCarnets() {
+  const D = window.DONNEES;
+  const LARGE = 402;
+  const ratioDe = (id) => (D.scraps[id] || D.catalogue[id] || {}).ratio || 0.75;
+
+  const generateur = (graine) => () => {
+    graine |= 0; graine = (graine + 0x6D2B79F5) | 0;
+    let t = Math.imul(graine ^ (graine >>> 15), 1 | graine);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+
+  /* Un carnet terminé : deux colonnes bien remplies, des affiches qui se
+   * chevauchent un peu, du scotch presque partout, deux ou trois déchirures,
+   * et tout ce qu'on pose autour — c'est ce désordre-là qui fait « fini ». */
+  function carnetPlein(def) {
+    const alea = generateur(def.graine);
+    const entre = (a, b) => a + alea() * (b - a);
+    const dans = (l) => l[Math.floor(alea() * l.length)];
+    const scotchs = def.scotchs || ["kraft", "transparent", "papier"];
+
+    const items = [];
+    const bas = [120, 186];                 // le bas courant de chaque colonne
+    def.affiches.forEach((id, i) => {
+      const colonne = bas[0] <= bas[1] ? 0 : 1;
+      const w = Math.round(entre(136, 178));
+      const x = Math.round(colonne === 0 ? entre(8, 30) : entre(LARGE - w - 30, LARGE - w - 6));
+      const y = Math.round(bas[colonne] - entre(0, 16));   // un léger chevauchement
+      const it = { id, x, y, w, rot: Math.round(entre(-7, 7)) };
+      // presque toujours du scotch, souvent deux bouts
+      const bouts = alea() < 0.78 ? (alea() < 0.45 ? 2 : 1) : 0;
+      if (bouts) {
+        it.scotch = [];
+        for (let b = 0; b < bouts; b++) {
+          it.scotch.push({
+            x: +entre(0.08, 0.92).toFixed(3),
+            y: b === 0 ? +entre(0.01, 0.08).toFixed(3) : +entre(0.92, 0.99).toFixed(3),
+            rot: Math.round(entre(-44, 44)), type: dans(scotchs),
+          });
+        }
+      }
+      // deux ou trois affiches déchirées par carnet : un carnet vécu
+      if (i % 5 === 3) {
+        it.dechire = [[0, 0], [1, 0], [1, +entre(0.5, 0.68).toFixed(2)],
+          [+entre(0.76, 0.88).toFixed(2), +entre(0.6, 0.72).toFixed(2)],
+          [+entre(0.86, 0.94).toFixed(2), +entre(0.7, 0.8).toFixed(2)],
+          [+entre(0.6, 0.74).toFixed(2), +entre(0.78, 0.86).toFixed(2)],
+          [+entre(0.7, 0.8).toFixed(2), +entre(0.86, 0.92).toFixed(2)],
+          [+entre(0.46, 0.6).toFixed(2), 1], [0, 1]];
+      }
+      items.push(it);
+      bas[colonne] = y + Math.round(w / ratioDe(id)) + Math.round(entre(16, 40));
+    });
+
+    const hauteur = Math.max(1200, Math.round(Math.max(bas[0], bas[1]) + 220));
+
+    /* Ce qu'on pose autour : titres, étiquettes, papiers, flèches, gommettes.
+     * Posé sur toute la hauteur, jamais au même endroit deux fois. */
+    const notes = [
+      { id: "t1", type: "titre", texte: def.titre, x: 18, y: 26, w: 40, rot: Math.round(entre(-3, 1)), devant: true, couleur: def.encre },
+      { id: "t2", type: "soustitre", texte: def.sousTitre, x: 22, y: 78, w: 19, rot: Math.round(entre(-2, 2)), devant: true },
+    ];
+    const etiquettes = def.etiquettes || [];
+    etiquettes.forEach((txt, i) => notes.push({
+      id: "e" + i, type: "etiquette", texte: txt, w: 13, rot: Math.round(entre(-6, 6)), devant: true,
+      x: Math.round(entre(16, LARGE - 130)), y: Math.round(260 + i * (hauteur - 460) / Math.max(1, etiquettes.length)),
+      couleur: alea() < 0.4 ? def.encre : null,
+    }));
+    (def.papiers || []).forEach((p, i) => notes.push({
+      id: "p" + i, type: p[0], texte: p[1], w: p[0] === "ticket" ? 128 : p[0] === "bulle" ? 112 : 94,
+      rot: Math.round(entre(-9, 9)), devant: true,
+      x: Math.round(entre(20, LARGE - 150)), y: Math.round(entre(300, hauteur - 320)),
+      couleur: p[2] || null,
+    }));
+    const petits = ["etoile", "gommette", "punaise", "fleche", "souligne", "trombone", "entoure", "ruban"];
+    for (let i = 0; i < 11; i++) {
+      const type = petits[i % petits.length];
+      notes.push({
+        id: "x" + i, type,
+        w: type === "etoile" ? Math.round(entre(26, 46)) : type === "gommette" ? Math.round(entre(20, 32))
+          : type === "punaise" ? 22 : type === "trombone" ? 32 : Math.round(entre(72, 132)),
+        rot: Math.round(entre(-20, 20)), devant: alea() < 0.75,
+        x: Math.round(entre(10, LARGE - 120)), y: Math.round(entre(200, hauteur - 240)),
+        couleur: alea() < 0.55 ? def.encre : null,
+        matiere: dans(scotchs),
+      });
+    }
+
+    /* Deux ou trois traits au feutre : une page finie a toujours été annotée */
+    const traits = [];
+    for (let t = 0; t < 3; t++) {
+      const x0 = entre(30, LARGE - 120), y0 = entre(240, hauteur - 260), pts = [];
+      for (let p = 0; p < 9; p++) pts.push([Math.round(x0 + p * entre(8, 16)), Math.round(y0 + Math.sin(p * 0.9) * entre(5, 16))]);
+      traits.push({ id: "tr" + t, pts, w: t === 1 ? 6 : 3, couleur: t === 1 ? def.encre : "#111111" });
+    }
+
+    return {
+      id: def.id, nom: def.nom, ville: def.ville, periode: def.sousTitre, termine: true,
+      fond: def.fond, teinte: def.teinte || null, fondImage: null, voile: 0,
+      scotchType: scotchs[0], hauteur, items, notes, traits,
+    };
+  }
+
+  const belleville = {
+    id: "belleville", nom: "Belleville", ville: "Paris 20e", periode: "En cours",
+    termine: false, ...JSON.parse(JSON.stringify(D.mur)),
+  };
+
+  D.carnets = [
+    belleville,
+    carnetPlein({
+      id: "barcelone", nom: "Barcelone", ville: "Barcelone", titre: "BARCELONA", sousTitre: "Mars 2025 · 9 jours",
+      graine: 70412, fond: "kraft", teinte: "rgba(242,177,0,.18)", encre: "#FF0000",
+      scotchs: ["kraft", "rubalise", "papier", "fluo"],
+      affiches: ["spirito", "chindi", "loquita", "bday", "back2base", "timetable", "organik", "fiasco", "sonda", "scrt"],
+      etiquettes: ["Raval, tout est collé", "Sant Antoni", "le mur de la Gràcia", "dernier soir"],
+      papiers: [["postit", "revenir en septembre", "#F2B100"], ["ticket", "SALA APOLO · 23 H"], ["bulle", "¡ todo pegado !", "#FF0000"]],
+    }),
+    carnetPlein({
+      id: "londres", nom: "Londres", ville: "Londres", titre: "LONDON", sousTitre: "Octobre 2024 · 5 jours",
+      graine: 33187, fond: "journal", teinte: "rgba(27,77,228,.14)", encre: "#1B4DE4",
+      scotchs: ["transparent", "raye", "noir", "papier"],
+      affiches: ["citylimits", "icesea", "saturday", "goodroom", "anthem", "kalayaan", "seb", "habitat", "different"],
+      etiquettes: ["Stoke Newington", "Dalston, 3 h du matin", "Rough Trade", "sous la pluie"],
+      papiers: [["postit", "le mur du Catch", "#FF5BA0"], ["ticket", "THE WAITING ROOM"], ["bulle", "left alone", "#1B4DE4"]],
+    }),
+  ];
+})();
+
 /* ═════════ Une carte bien vivante
  *
  * À côté des affiches écrites à la main ci-dessus, on en sème une centaine
