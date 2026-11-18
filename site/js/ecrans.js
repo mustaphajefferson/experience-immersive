@@ -438,9 +438,16 @@ ecran("19.1", "B", "Vérifier le scan", "sombre", () => {
  * C'est le seul endroit de l'app où une affiche a le droit d'être animée :
  * parce que celle-là, c'est nous qui l'avons faite. La règle « l'affiche est
  * intouchable » protège les affiches des autres, pas les nôtres. */
-let SVG_VIVANT = null;          // l'affiche, chargée une fois pour toutes
+const SVG_VIVANT = {};          // les affiches, chargées une fois pour toutes
+const afficheVivanteCourante = () => {
+  const liste = ((window.CONFIG && CONFIG.afficheVivante && CONFIG.afficheVivante.liste) || []);
+  const id = ETAT.ctx.capture && ETAT.ctx.capture.vivante;
+  return liste.find((a) => a.id === id) || liste[0] || null;
+};
 
-ecran("19.3", "B", "Affiche vivante", "sombre", () => `
+ecran("19.3", "B", "Affiche vivante", "sombre", () => {
+  const a = afficheVivanteCourante();
+  return `
   <header class="entete transparent" style="color:#fff;z-index:6"><div class="entete-ligne">
     <button class="icone-bouton" data-aller="19" aria-label="Reprendre">${icone("fermer")}</button>
     <span class="entete-titre t-texte-meta">Affiche vivante</span><span></span>
@@ -451,15 +458,17 @@ ecran("19.3", "B", "Affiche vivante", "sombre", () => `
     </div>
   </div>
   <div class="vivante-pied">
-    <span class="etiquette etiquette--num">Édition SCRAP · N° 002</span>
-    <p class="t-texte-petit" style="color:#9A9A96;margin:10px 0 0">SCRAP a édité cette affiche : l'app la reconnaît et la fait bouger. Penche le téléphone, ou touche-la.</p>
+    <span class="etiquette etiquette--num">${esc(a ? a.par : "Affiche vivante")} · N° 002</span>
+    <p class="t-texte-petit" style="color:#9A9A96;margin:10px 0 0">Celle-ci a une version animée, publiée avec le papier. SCRAP l'a reconnue. Penche le téléphone, ou touche-la.</p>
   </div>
   ${pied(`<div class="rang">
     <button class="bouton bouton--secondaire bouton--sombre" data-aller="19">${icone("reprendre", 20)}Reprendre</button>
-    <button class="bouton" data-aller="19.2">${icone("valider", 20)}Garder</button></div>`, { transparent: true })}`,
+    <button class="bouton" data-aller="19.2">${icone("valider", 20)}Garder</button></div>`, { transparent: true })}`;
+},
 (r) => {
   const scene = $("#vivante-scene", r);
   if (!scene) return null;
+  const a = afficheVivanteCourante();
   const poser = (texte) => {
     scene.innerHTML = texte;
     const svg = scene.querySelector("svg");
@@ -470,10 +479,10 @@ ecran("19.3", "B", "Affiche vivante", "sombre", () => `
       setTimeout(() => pluieEtoiles(scene, 20), 1500);
     });
   };
-  const url = (window.CONFIG && CONFIG.afficheVivante && CONFIG.afficheVivante.fichier) || "assets/affiches/scrap-live.svg";
-  if (SVG_VIVANT) poser(SVG_VIVANT);
+  if (!a) return null;
+  if (SVG_VIVANT[a.id]) poser(SVG_VIVANT[a.id]);
   else {
-    fetch(url).then((x) => x.text()).then((t) => { SVG_VIVANT = t; if ($("#vivante-scene")) poser(t); })
+    fetch(a.fichier).then((x) => x.text()).then((t) => { SVG_VIVANT[a.id] = t; if ($("#vivante-scene")) poser(t); })
       .catch(() => { scene.innerHTML = `<img src="${ETAT.ctx.capture ? ETAT.ctx.capture.img : ""}" alt="" style="width:100%">`; });
   }
   return null;

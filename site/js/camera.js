@@ -379,12 +379,14 @@ function capturerQuad(video, quad) {
   catch (e) { console.error(e); sortie = src; }
 
   const img = sortie.toDataURL("image/jpeg", 0.86);
-  /* Est-ce L'affiche ? Le bouton de démonstration passe devant la mesure :
-   * pendant une soutenance, on ne joue pas sa démo aux dés. */
-  const seuil = (window.CONFIG && CONFIG.afficheVivante && CONFIG.afficheVivante.seuil) || 0.55;
-  const score = scoreAfficheVivante(sortie);
-  const vivante = ETAT.ctx.forcerVivante || score >= seuil;
-  if (score) console.info(`SCRAP · ressemblance avec l'affiche vivante : ${score.toFixed(3)}`);
+  /* Est-ce une affiche qu'on connaît ? Le bouton de démonstration passe
+   * devant le seuil — pendant une soutenance, on ne joue pas sa démo aux
+   * dés — mais pas devant la mesure : c'est toujours l'affiche la plus
+   * ressemblante qui est jouée, et les deux ne se confondent jamais. */
+  const seuil = (window.CONFIG && CONFIG.afficheVivante && CONFIG.afficheVivante.seuil) || 0.5;
+  const trouve = reconnaitreAffiche(sortie);
+  if (trouve) console.info(`SCRAP · affiche la plus proche : ${trouve.affiche.id} (${trouve.score.toFixed(3)})`);
+  const vivante = trouve && (ETAT.ctx.forcerVivante || trouve.score >= seuil) ? trouve.affiche : null;
   setTimeout(() => nouvelleCapture(img, sortie.width / sortie.height, { scanne: !!quad, vivante }), 240);
 }
 
@@ -425,19 +427,27 @@ function empreinteVisuelle(source, retournee) {
   return norme(lum).concat(norme(rouge));
 }
 
-/* Le score de ressemblance avec l'affiche de SCRAP, de -1 à 1. */
-function scoreAfficheVivante(source) {
-  const ref = (window.CONFIG && CONFIG.afficheVivante && CONFIG.afficheVivante.empreinte) || [];
-  if (!ref.length || !source || !source.width) return 0;
-  let best = 0;
-  for (const retournee of [false, true]) {
-    const e = empreinteVisuelle(source, retournee);
-    if (e.length !== ref.length) return 0;
-    let s = 0;
-    for (let i = 0; i < e.length; i++) s += e[i] * ref[i];
-    best = Math.max(best, s / e.length);
-  }
-  return best;
+/* L'affiche vivante qui ressemble le plus à ce qu'on vient de photographier,
+ * avec son score (de -1 à 1). On compare à toutes celles qu'on connaît : il
+ * n'y en a que deux aujourd'hui, il y en aura dix demain, et la liste vient
+ * de config.js. */
+function reconnaitreAffiche(source) {
+  const cfg = (window.CONFIG && CONFIG.afficheVivante) || {};
+  const liste = cfg.liste || [];
+  if (!liste.length || !source || !source.width) return null;
+  const vues = [empreinteVisuelle(source, false), empreinteVisuelle(source, true)];
+  let meilleure = null;
+  liste.forEach((a) => {
+    const ref = a.empreinte || [];
+    vues.forEach((e) => {
+      if (e.length !== ref.length) return;
+      let s = 0;
+      for (let i = 0; i < e.length; i++) s += e[i] * ref[i];
+      s /= e.length;
+      if (!meilleure || s > meilleure.score) meilleure = { affiche: a, score: s };
+    });
+  });
+  return meilleure;
 }
 
 /* ───────── Redressement : la perspective corrigée, comme un scanner.
@@ -532,14 +542,14 @@ function photoFichier(fichier) {
 function nouvelleCapture(img, ratio, o = {}) {
   const ouverte = D.collections.find((c) => !complete(c.id));
   const num = 4 + Math.floor(Math.random() * 120);
-  const av = (window.CONFIG && CONFIG.afficheVivante) || {};
-  ETAT.ctx.capture = o.vivante
+  const av = o.vivante;
+  ETAT.ctx.capture = av
     ? {
-      /* L'affiche de SCRAP : elle arrive déjà identifiée, et rare. C'est une
-       * édition numérotée — il n'y en a pas trente. */
-      img, ratio, num: 2, titre: av.titre || "Colle fraîche", lieu: av.lieu || "Rue de Belleville",
-      collection: "concerts", themes: ["Concert", "Collage", "Édition SCRAP"],
-      holo: true, tagsPerso: [], scanne: !!o.scanne, vivante: true,
+      /* Une affiche vivante arrive déjà identifiée, et rare : ces tirages-là
+       * sont courts, et peu de gens pensent à les scanner. */
+      img, ratio, num: 2, titre: av.titre, lieu: av.lieu,
+      collection: av.collection || "fetes", themes: av.themes || ["Affiche"],
+      holo: true, tagsPerso: [], scanne: !!o.scanne, vivante: av.id,
     }
     : {
       img, ratio, num, titre: "", lieu: "Rue de Belleville",
