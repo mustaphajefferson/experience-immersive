@@ -2,6 +2,8 @@
 
 *Analyse de ce qu'on voit à l'arrivée sur chaque écran, et de ce qui peut se replier. Rien n'est enlevé : tout reste accessible en un geste.*
 
+**Mis à jour le 19.11.2026 : tout ce qui est marqué ✅ est en ligne.** Les quatre mécaniques sont écrites, les neuf écrans sont faits. Ce qui reste est en bas.
+
 Coût en temps de code, pour une personne :
 **XS** moins de 30 min · **S** 1 h · **M** 2 à 3 h · **L** une demi-journée · **XL** une journée ou plus.
 
@@ -24,17 +26,21 @@ Le point commun : **l'app montre ce qu'elle sait faire au lieu de montrer ce qu'
 
 **Compté, écran par écran** (nombre d'éléments touchables visibles à l'arrivée, hors contenu) :
 
-| Écran | Aujourd'hui | Visé |
-|---|---|---|
-| 24 Scrapbook | 19 | 7 |
-| 25 Fond | 32 | 9 |
-| 19.2 Identifier le scrap | 27 | 9 |
-| 14 Filtres de la carte | 19 | 8 |
-| 28 Ma collection | 16 | 8 |
-| 26 Scotch · 27 Déchirer | 16 / 15 | 9 / 9 |
-| 24.1 Ajouter | 25 | 10 |
-| 12 Collections de départ | 13 | 5 |
-| 35 Profil | 18 | 12 |
+| Écran | Avant | Après | |
+|---|---|---|---|
+| 24 Scrapbook | 19 | **10** | ✅ |
+| 19.2 Identifier le scrap | 29 | **12** | ✅ |
+| 14 Filtres de la carte | 20 | **8** | ✅ |
+| 28 Ma collection | 16 | **8** | ✅ |
+| 29 Sélection | 16 | **8** | ✅ |
+| 25 Fond | 34 | **26** | ✅ |
+| 24.1 Ajouter | 27 | **19** | ✅ |
+| 34 Vitrine | 6 | **4** | ✅ |
+| 12 Collections de départ | 14 | 15 | ✅ (fermé sur un compte neuf) |
+| 35 Profil | 12 | 13 | ✅ (4 barres cachées derrière une ligne) |
+| 26 Scotch · 27 Déchirer | 19 / 18 | 20 / 19 | palettes laissées telles quelles |
+
+*Mesuré sur le site, écran par écran, en comptant les boutons, champs et curseurs visibles à l'arrivée, hors contenu et hors replis fermés. Les trois derniers gagnent une ligne de repli au lieu d'en perdre : ils rangent plus qu'ils n'ajoutent, mais le compte brut ne le voit pas.*
 
 ---
 
@@ -147,13 +153,16 @@ Les deux curseurs Taille et Rotation sont affichés en permanence, même sans sc
 
 ---
 
-## 5. Par où commencer
+## 5. Ce qui est fait, ce qui reste
 
-1. **Écrire le repli (A)** — une fois, tout le reste s'appuie dessus. **S**
-2. **Le tiroir d'outils du scrapbook (C)** — le plus gros gain visuel, et l'écran qu'on filme. **M**
-3. **19.2 : collection en feuille + tags repliés** — l'écran le plus chargé au pire moment. **S**
-4. **28 : tri et disposition en deux boutons** — rapide, se voit tout de suite. **S**
-5. **25 : la teinte dans un repli** — **XS**
-6. **Retrait automatique du zoom et des astuces (D)** — **S**
+**Fait et en ligne (19.11)** — les quatre mécaniques, puis les neuf écrans : scrapbook, 19.2, 14, 28, 29, 25, 24.1, 12, 34, 35. Deux choses vues sur le prototype au passage et corrigées : « Composer » était un aplat noir (la charte l'interdit, il est rouge), et en arrivant droit sur `#/24` la page partait à l'échelle zéro, le carnet restait blanc.
 
-Les six tiennent dans une journée à deux.
+**Ce qui reste, par ordre de ce que ça rapporte :**
+
+1. **26 Scotch et 27 Déchirer : le dernier choix en tête de rangée.** `ETAT.mur.scotchType` et `dechireType` existent déjà, ils ne servent qu'à marquer le choix — ils peuvent aussi le remonter. **XS**
+2. **25 Fond : les 6 matières les plus utilisées, puis « Voir les 6 autres ».** À arbitrer : la rangée défile déjà, et la matière est le sujet de l'outil. **S**
+3. **19 Scanner : effacer la consigne après trois secondes.** Elle dit la même chose que la puce Auto. **XS**
+4. **35 Profil : limiter les badges à 4 avec « Voir les 12 badges ».** **XS**
+5. **27 : Annuler / Recoller dans un repli**, ou remplacés par le geste de retour. **XS**
+
+**À vérifier sur un vrai téléphone avant la soutenance :** que le tiroir s'ouvre du premier coup (la zone de touche fait 28 px de haut), et que le repli s'anime bien sur Safari iOS — il s'appuie sur `grid-template-rows`, animable depuis Safari 16.4.
