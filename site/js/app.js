@@ -91,6 +91,17 @@ const ACTIONS = {
     if (courant === "14") rafraichir();
   },
   cocher(el) { el.classList.toggle("active"); el.innerHTML = el.classList.contains("active") ? icone("valider") : ""; },
+  /* Le repli : il s'ouvre sur place, sans redessiner l'écran — sinon les
+   * affiches et les listes rejouent leur arrivée à chaque ouverture. */
+  basculerRepli(el) {
+    const r = el.closest(".repli");
+    if (!r) return;
+    const ouvert = r.classList.toggle("ouvert");
+    el.setAttribute("aria-expanded", String(ouvert));
+    if (r.id) (ETAT.ctx.replis || (ETAT.ctx.replis = {}))[r.id] = ouvert;
+    vibrer(5);
+  },
+  fermerFeuille() { fermerFeuille(); },
   autoriserCamera() {
     const suite = () => aller("07");
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return suite();
@@ -125,6 +136,12 @@ const ACTIONS = {
   ouvrirCible(el) { ETAT.ctx.cible = el.dataset.id; aller("16"); },
   elargir() { ETAT.reglages.rayon = 2000; ETAT.filtres = { rayon: 2000, collection: "toutes", etat: "tous" }; sauver(); aller("13"); },
   filtreCarte(el) { ETAT.filtres[el.dataset.cle] = el.dataset.val; sauver(); rafraichir(); },
+  ouvrirChoixCollectionCarte() {
+    ouvrirFeuille("Filtrer par collection", null,
+      [{ id: "toutes", nom: "Toutes", actif: ETAT.filtres.collection === "toutes" }].concat(
+        D.collections.map((c) => ({ id: c.id, nom: c.nom, sous: `${progression(c.id).n} / ${c.total}`, actif: ETAT.filtres.collection === c.id }))),
+      (id) => ACTIONS.filtreCarte({ dataset: { cle: "collection", val: id } }));
+  },
   reinitFiltres() { ETAT.filtres = { rayon: 500, collection: "toutes", etat: "tous" }; ETAT.reglages.rayon = 500; ETAT.reglages.manquants = true; sauver(); rafraichir(); },
   capturer() { cameraCapturer(); },
   torche() { basculerTorche(); },
@@ -156,12 +173,23 @@ const ACTIONS = {
     ETAT.ctx.capture.collection = el.dataset.id;
     $$("[data-action='captureCollection']").forEach((b) => b.classList.toggle("active", b === el));
   },
+  /* Les neuf autres collections, à la demande */
+  choixCollectionCapture() {
+    const p = ETAT.ctx.capture;
+    if (!p) return;
+    ouvrirFeuille("Dans quelle collection ?", "Un scrap ne va que dans une collection.",
+      collectionsOrdonnees().map((c) => ({
+        id: c.id, nom: c.nom, sous: `${progression(c.id).n} / ${c.total}`, actif: p.collection === c.id,
+      })),
+      (id) => { p.collection = id; rafraichir(); });
+  },
   captureTag(el) {
     const t = ETAT.ctx.capture.themes, id = el.dataset.id, i = t.indexOf(id);
     if (i >= 0) t.splice(i, 1); else t.push(id);
     el.classList.toggle("active", i < 0);
+    majResumeTags();
   },
-  captureHolo(el) { ETAT.ctx.capture.holo = !ETAT.ctx.capture.holo; el.classList.toggle("on", ETAT.ctx.capture.holo); },
+  captureHolo(el) { ETAT.ctx.capture.holo = !ETAT.ctx.capture.holo; el.classList.toggle("on", ETAT.ctx.capture.holo); majResumeTags(); },
   ajouterTag() { $("#tag-perso").classList.remove("cache"); $("#nouveau-tag").focus(); },
   validerCapture() { validerCapture(); },
   signaler() { toast("Merci : l'affiche est signalée et rejoindra la carte."); },
@@ -192,7 +220,7 @@ const ACTIONS = {
     // on retient d'où part l'affiche : le scrapbook terminera le mouvement
     ETAT.ctx.vol = volPreparer($(".scrap-img"));
     collerSurMur(id);
-    ETAT.ctx.murMode = "regarder";
+    ETAT.ctx.tiroir = false;
     if (s.collection && collection(s.collection) && complete(s.collection) && !ETAT.celebrees.includes(s.collection)) {
       ETAT.celebrees.push(s.collection);
       ETAT.ctx.collection = s.collection;
@@ -204,9 +232,23 @@ const ACTIONS = {
   },
   billetterie() { toast("Ouverture de la billetterie (démo)"); },
   itineraireLieu() { ETAT.ctx.cible = "lieu"; aller("17"); },
-  validerMur() { ETAT.ctx.murSel = null; ETAT.ctx.murMode = "regarder"; sauver(); rafraichir(); toast("Scrapbook enregistré"); },
+  /* ───────── Le tiroir d'outils.
+   * Ouvrir le tiroir, c'est passer en Disposition ; le refermer, c'est
+   * revenir à la page nue et enregistrer. Le mode n'est plus une question
+   * posée à l'arrivée. */
+  ouvrirTiroir() {
+    ETAT.ctx.tiroir = true; ETAT.ctx.murSel = null;
+    vibrer(8);
+    if (courant === "24") rafraichir(); else aller("24", { remplace: true });
+  },
+  fermerTiroir() {
+    ETAT.ctx.tiroir = false; ETAT.ctx.murSel = null;
+    sauver(); vibrer(6);
+    if (courant === "24") rafraichir(); else aller("24", { remplace: true });
+    toast("Scrapbook enregistré");
+  },
   modeMur(el) {
-    ETAT.ctx.murMode = el.dataset.id; ETAT.ctx.murSel = null;
+    ETAT.ctx.tiroir = el.dataset.id !== "regarder"; ETAT.ctx.murSel = null;
     if (courant === "24") rafraichir(); else aller("24", { remplace: true });
   },
   fermerOutil() { ETAT.ctx.murSel = null; aller("24", { remplace: true }); },
@@ -257,12 +299,24 @@ const ACTIONS = {
     };
     (ETAT.mur.notes || (ETAT.mur.notes = [])).push(n);
     ETAT.ctx.murSel = n.id;
-    ETAT.ctx.murMode = "deplacer";
+    ETAT.ctx.tiroir = true;
     sauver(); vibrer(10);
     aller("24", { remplace: true });
   },
   choisirDispo(el) {
     flip(".grille-scraps, .liste", "data-id", () => { ETAT.ctx.dispoColl = el.dataset.id; rafraichir(); });
+  },
+  /* Le tri et la disposition s'ouvrent à la demande, et les scraps glissent
+   * ensuite vers leur nouvelle place : le tri se voit toujours. */
+  ouvrirChoixTri() {
+    ouvrirFeuille("Trier ma collection", null,
+      FILTRES_COLL.map(([id, nom]) => ({ id, nom, actif: (ETAT.ctx.filtreColl || "derniers") === id })),
+      (id) => ACTIONS.filtreColl({ dataset: { id } }));
+  },
+  ouvrirChoixDispo() {
+    ouvrirFeuille("Disposition", null,
+      DISPOS.map(([id, ic, nom]) => ({ id, nom, icone: ic, actif: dispoCourante() === id })),
+      (id) => ACTIONS.choisirDispo({ dataset: { id } }));
   },
   /* Les réglages d'outil ne redessinent que le panneau et le fond : la page,
    * les affiches et la barre du bas ne rejouent plus leur arrivée à chaque clic. */
@@ -270,6 +324,7 @@ const ACTIONS = {
   choisirScotch(el) { ETAT.mur.scotchType = el.dataset.id; sauver(); majPanneauOutil(); vibrer(6); },
   teinteFond(el) { ETAT.mur.teinte = el.dataset.id || null; sauver(); majPanneauOutil(); vibrer(6); },
   choisirDechirure(el) { ETAT.mur.dechireType = el.dataset.id; sauver(); majPanneauOutil(); },
+  familleNote(el) { ETAT.ctx.familleNote = el.dataset.id; majPanneauOutil(); vibrer(5); },
   couleurNote(el) {
     const o = trouverElement(ETAT.ctx.murSel);
     if (!o || !o.type) return;
@@ -317,18 +372,20 @@ const ACTIONS = {
   },
 
   /* ───────── Les carnets */
+  ouvrirChoixCarnet() { ouvrirChoixCarnet(); },
   ouvrirCarnet(el) {
     const id = el.dataset.id;
     if (id === ETAT.carnetActif) return;
     const sens = (ETAT.carnets.findIndex((c) => c.id === id) > ETAT.carnets.findIndex((c) => c.id === ETAT.carnetActif)) ? 1 : -1;
     tournerPage(sens, () => {
       brancherCarnet(id);
-      ETAT.ctx.vue = null; ETAT.ctx.murSel = null; ETAT.ctx.murMode = "regarder"; ETAT.ctx.livreOuvert = true;
+      ETAT.ctx.vue = null; ETAT.ctx.murSel = null; ETAT.ctx.tiroir = false; ETAT.ctx.livreOuvert = true;
       sauver();
       rendre("24");
     });
   },
   nouveauCarnet() {
+    fermerFeuille();
     const nom = (prompt("Le nom du carnet (une ville, un quartier) :") || "").trim();
     if (!nom) return;
     const id = "c" + Date.now();
@@ -496,7 +553,7 @@ const ACTIONS = {
     if (!e.recu) return aller("24");
     ETAT.ctx.scrap = e.recu;
     collerSurMur(e.recu);
-    ETAT.ctx.murMode = "regarder";
+    ETAT.ctx.tiroir = false;
     sauver();
     aller("24");
   },

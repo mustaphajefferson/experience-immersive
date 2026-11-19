@@ -34,6 +34,8 @@ const ICONES = {
   couvert: "M7 3v18M4 3v5a3 3 0 0 0 6 0V3M17 21V3c-2 2-3 4-3 8h3",
   etoile: "M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z",
   chevron: "M9 6l6 6-6 6",
+  chevronBas: "M6 9l6 6 6-6",
+  composer: "M4 20h16M6 15.5 15 6.5l2.5 2.5-9 9H6zM13 4.5 15.5 7",
   camera: "M3 7h4l2-3h6l2 3h4v13H3zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
   cloche: "M6 17v-6a6 6 0 1 1 12 0v6l2 2H4zM10 21h4",
   cadenas: "M6 11h12v10H6zM8 11V7a4 4 0 1 1 8 0v4",
@@ -310,6 +312,69 @@ const lien = (txt, o = {}) => {
   return `<button class="bouton-lien${o.centre ? " lien-centre" : ""}"${attrs}>${esc(txt)}</button>`;
 };
 const puce = (txt, active, attrs = "") => `<button class="puce${active ? " active" : ""}"${attrs}>${esc(txt)}</button>`;
+
+/* ───────── Le repli.
+ * Un bloc d'options fermé à l'arrivée : une ligne de titre, la valeur courante
+ * à droite, un chevron. Il s'ouvre sur place, sans quitter l'écran et sans
+ * rien redessiner. Rien n'est enlevé : c'est l'écran qui ne pose plus qu'une
+ * question à la fois. */
+const repli = (titre, valeur, contenu, o = {}) => `
+  <div class="repli${o.ouvert ? " ouvert" : ""}"${o.id ? ` id="${esc(o.id)}"` : ""}>
+    <button class="repli-tete" data-action="basculerRepli" aria-expanded="${!!o.ouvert}">
+      <span class="t-texte-label">${esc(titre)}</span>
+      ${valeur ? `<span class="t-texte-meta secondaire une-ligne repli-valeur">${esc(valeur)}</span>` : "<span style='flex:1'></span>"}
+      <span class="repli-chevron secondaire">${icone("chevronBas", 20)}</span>
+    </button>
+    <div class="repli-corps"><div class="repli-int">${contenu}</div></div>
+  </div>`;
+
+/* ───────── La feuille de choix.
+ * Un bouton qui porte le choix COURANT (pas le nom du réglage), et qui ouvre
+ * la liste complète par-dessus l'écran. Une liste de douze collections n'a
+ * aucune raison d'occuper une page entière tant qu'on n'a pas demandé à
+ * changer. */
+const boutonChoix = (libelle, valeur, action, o = {}) => `
+  <button class="bouton-choix" data-action="${action}"${o.data || ""}>
+    ${libelle ? `<span class="t-texte-meta secondaire">${esc(libelle)}</span>` : ""}
+    <span class="t-texte-label une-ligne">${esc(valeur)}</span>
+    ${icone("chevronBas", 18)}
+  </button>`;
+
+/* options : [{ id, nom, sous, icone, actif }] */
+function ouvrirFeuille(titre, aide, options, surChoix, bas) {
+  if ($(".voile-feuille")) return;
+  const v = document.createElement("div");
+  v.className = "voile-feuille";
+  v.innerHTML = `<div class="feuille feuille-choix">
+    <div class="rangee entre"><span class="t-titre-m">${esc(titre)}</span>${lien("Fermer", { action: "fermerFeuille" })}</div>
+    ${aide ? `<p class="t-texte-petit secondaire" style="margin:8px 0 0">${esc(aide)}</p>` : ""}
+    <div class="liste" style="margin-top:12px">${options.map((x) => `
+      <button class="ligne${x.actif ? " choisie" : ""}" data-choix="${esc(x.id)}">
+        ${x.icone ? icone(x.icone) : ""}
+        <span class="libelle">${esc(x.nom)}</span>
+        ${x.sous ? `<span class="valeur">${esc(x.sous)}</span>` : ""}
+        <span class="${x.actif ? "accent" : "cache"}">${icone("valider", 20)}</span>
+      </button>`).join("")}</div>
+    ${bas || ""}</div>`;
+  document.body.appendChild(v);
+  requestAnimationFrame(() => v.classList.add("entre"));
+  v.addEventListener("click", (e) => {
+    if (e.target === v) { fermerFeuille(); return; }
+    const b = e.target.closest("[data-choix]");
+    if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    const id = b.dataset.choix;
+    fermerFeuille();
+    vibrer(6);
+    surChoix(id);
+  });
+}
+function fermerFeuille() {
+  const v = $(".voile-feuille");
+  if (!v) return;
+  v.classList.add("sort");
+  setTimeout(() => v.remove(), 220);
+}
 /* ───────── Photo de profil.
  * Une photo de profil est un bout de scrap recadré : c'est la seule image
  * qu'on ait le droit de montrer de quelqu'un, et elle dit tout de suite ce

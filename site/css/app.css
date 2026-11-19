@@ -454,7 +454,6 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: v
 .outils { display: flex; gap: 6px; padding: 8px var(--marge); background: var(--fond-principal); border-top: 1px solid var(--trait-defaut); overflow-x: auto; flex: none; scrollbar-width: none; }
 .outils::-webkit-scrollbar { display: none; }
 .outils .puce { padding: 0 11px; }
-.astuce { padding: 8px var(--marge); background: var(--fond-principal); flex: none; }
 .nuancier { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px var(--gouttiere); }
 .nuancier button { text-align: left; }
 .nuancier .apercu { display: block; aspect-ratio: 1; box-shadow: inset 0 0 0 1px var(--trait-defaut); transition: transform .14s; }
@@ -762,10 +761,7 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: v
 .carte-collection .coche { width: 22px; height: 22px; }
 
 /* ───────── Dispositions de la collection */
-.dispos { display: flex; flex: none; box-shadow: inset 0 0 0 1px var(--trait-defaut); }
 .dispo { width: 34px; height: 30px; display: grid; place-items: center; color: var(--texte-secondaire); }
-.dispo + .dispo { border-left: 1px solid var(--trait-defaut); }
-.dispo.active { background: var(--accent-capture); color: var(--accent-sur-accent); }
 .grille-scraps.dispo-dense { columns: 3; column-gap: var(--gouttiere); }
 .grille-scraps.dispo-dense .carte-scrap { margin-bottom: 16px; }
 .grille-scraps.dispo-dense .legende .tampon { display: none; }
@@ -1477,7 +1473,6 @@ input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: v
 .deux-curseurs input[type="range"] { width: 100%; }
 .panneau-item { padding: 10px var(--marge) 8px; }
 .panneau-item .champ-note { margin-top: 8px; padding: 6px 9px; font-size: 14px; }
-.astuce { padding: 6px var(--marge); }
 
 /* Un réglage ne rejoue pas les animations d'arrivée de toute la page */
 .ecran.sans-anim .surgit, .ecran.sans-anim .entete-gauche,
@@ -1867,18 +1862,6 @@ img.affiche-papier.prete { animation: affiche-encre .52s cubic-bezier(.3, .82, .
   100% { transform: translateX(112%) rotateY(22deg); }
 }
 
-/* ───────── Les carnets, en haut du scrapbook */
-.carnets { padding: 0 var(--marge) 9px; gap: 6px; }
-.puce--carnet {
-  height: 28px; padding: 0 10px; display: flex; align-items: center; gap: 7px;
-  font-size: 14px; letter-spacing: -.01em;
-}
-.carnet-point { width: 6px; height: 6px; flex: none; background: var(--accent-capture); }
-.carnet-point.fini { background: transparent; box-shadow: inset 0 0 0 1.5px var(--texte-secondaire); }
-.puce--carnet.active .carnet-point { background: var(--accent-sur-accent); box-shadow: none; }
-.puce--carnet.active .carnet-point.fini { background: transparent; box-shadow: inset 0 0 0 1.5px var(--accent-sur-accent); }
-.puce--carnet.nouveau { padding: 0 8px; color: var(--texte-secondaire); }
-
 /* ───────── Le scotch qui se pose
    La bande s'étire du doigt vers ses deux bouts. Sa transformation vit ici
    (et non dans l'attribut style) pour pouvoir être animée. */
@@ -2227,3 +2210,83 @@ img.affiche-papier.prete { animation: affiche-encre .52s cubic-bezier(.3, .82, .
   .reveil #affiche-vague .bande, .reveil #affiche-vague .mots .lettre,
   .reveil #affiche-vague .plaque, .reveil #affiche-vague .etoile-spin { animation: none !important; }
 }
+
+/* ═════════ LA DENSITÉ : replis, feuilles de choix, tiroir d'outils
+   Rien n'est enlevé de l'app : ce qui ne sert pas à l'arrivée est rangé, et
+   revient en un geste. L'écran montre ce qu'on fait, pas ce qu'il sait faire. */
+
+/* ───────── Le repli : fermé à l'arrivée, il s'ouvre sur place. */
+.repli { border-top: 1px solid var(--trait-defaut); }
+.repli + .repli { border-top: 1px solid var(--trait-defaut); }
+.repli-tete {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  min-height: 52px; padding: 10px 0; text-align: left;
+}
+.repli-tete .repli-valeur { flex: 1; min-width: 0; text-align: right; }
+.repli-chevron { display: grid; place-items: center; transition: transform .22s cubic-bezier(.3,.7,.3,1); }
+.repli.ouvert .repli-chevron { transform: rotate(180deg); }
+.repli.ouvert .repli-valeur { opacity: 0; }
+.repli-corps {
+  display: grid; grid-template-rows: 0fr;
+  transition: grid-template-rows .26s cubic-bezier(.3,.7,.3,1);
+}
+.repli.ouvert .repli-corps { grid-template-rows: 1fr; }
+.repli-int { overflow: hidden; }
+.repli.ouvert .repli-int { padding-bottom: 16px; }
+
+/* ───────── Le bouton qui porte le choix courant. */
+.bouton-choix {
+  display: flex; align-items: center; gap: 8px; min-height: 44px;
+  padding: 0 12px; background: var(--fond-principal);
+  box-shadow: inset 0 0 0 1px var(--trait-fort); text-align: left;
+}
+.bouton-choix .t-texte-meta { flex: none; }
+.bouton-choix .t-texte-label { flex: 1; min-width: 0; }
+.bouton-choix svg { flex: none; color: var(--texte-secondaire); }
+.bouton-choix:active { transform: scale(.985); }
+
+/* ───────── La feuille de choix, posée par-dessus l'écran. */
+.voile-feuille {
+  position: fixed; inset: 0; z-index: 90; background: rgba(17,17,17,0);
+  display: flex; align-items: flex-end; justify-content: center;
+  max-width: 480px; margin: 0 auto; transition: background .22s ease;
+}
+.voile-feuille.entre { background: rgba(17,17,17,.45); }
+.feuille-choix { position: relative; width: 100%; animation: monte .28s cubic-bezier(.2,.9,.3,1) both; }
+.feuille-choix .ligne.choisie .libelle { color: var(--accent-capture); }
+.voile-feuille.sort { background: rgba(17,17,17,0); }
+.voile-feuille.sort .feuille-choix { animation: descend .2s ease-in both; }
+
+/* ───────── Le tiroir d'outils du scrapbook.
+   Fermé, il ne reste qu'un bouton : on filme une page de scrapbook, pas une
+   barre d'outils. */
+.outils--ferme { align-items: center; gap: 10px; }
+.puce--composer {
+  display: inline-flex; align-items: center; gap: 6px; flex: none;
+  background: var(--fond-inverse); color: var(--texte-inverse); box-shadow: none;
+}
+.puce--composer svg { display: block; }
+.puce--fin { flex: none; margin-left: auto; box-shadow: inset 0 0 0 1px var(--trait-fort); }
+.outils .astuce-ligne { flex: 1; min-width: 0; }
+
+/* ───────── Le titre du scrapbook ouvre la liste des carnets. */
+.titre-carnet { display: flex; align-items: center; gap: 4px; text-align: left; }
+.titre-carnet svg { color: var(--texte-secondaire); display: block; }
+.titre-carnet:active { opacity: .6; }
+
+/* ───────── Les commandes de zoom se rangent toutes seules. */
+.mur-commandes { opacity: 0; transition: opacity .3s ease; pointer-events: none; }
+.mur-commandes.eveil { opacity: 1; pointer-events: auto; }
+
+@media (prefers-reduced-motion: reduce) {
+  .repli-corps, .repli-chevron, .mur-commandes { transition: none; }
+}
+
+/* Le tri et la disposition : deux boutons au lieu de dix. */
+.rangee > .bouton-choix { flex: 1; min-width: 0; }
+.dispo.actif {
+  flex: none; width: 44px; height: 44px; color: var(--texte-principal);
+  box-shadow: inset 0 0 0 1px var(--trait-fort);
+}
+.dispo.actif:active { transform: scale(.96); }
+.feuille-choix .ligne.choisie svg { color: var(--accent-capture); }

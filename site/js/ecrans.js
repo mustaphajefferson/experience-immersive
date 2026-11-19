@@ -225,8 +225,16 @@ ecran("12", "A", "Collections de départ", "grille", () => {
     <div class="compteur-choix"><i style="width:${(n / 3) * 100}%"></i></div>
     <p class="t-texte-meta secondaire" style="margin:16px 0 10px">Autour de Belleville</p>
     <div class="grille-collections">${D.collections.filter((c) => proches.includes(c.id)).map(carte).join("")}</div>
-    <p class="t-texte-meta secondaire" style="margin:24px 0 10px">Tout le reste</p>
-    <div class="grille-collections">${D.collections.filter((c) => !proches.includes(c.id)).map((c, i) => carte(c, i + 3)).join("")}</div>
+    <div style="margin-top:20px">${(() => {
+      const reste = D.collections.filter((c) => !proches.includes(c.id));
+      const prises = reste.filter((c) => ETAT.collectionsDepart.includes(c.id)).length;
+      /* Le texte dit « trois au maximum » : poser les douze à plat le
+       * contredisait. Les trois proches suffisent à démarrer, le reste
+       * s'ouvre si on en veut. */
+      return repli(`Tout le reste`, prises ? `${pluriel(prises, "choisie")} sur ${reste.length}` : `${reste.length} collections`,
+        `<div class="grille-collections">${reste.map((c, i) => carte(c, i + 3)).join("")}</div>`,
+        { id: "repli-collections-depart", ouvert: prises > 0 || (ETAT.ctx.replis || {})["repli-collections-depart"] });
+    })()}</div>
   </div>
   ${pied(`<button class="bouton" data-aller="13"${n ? "" : " disabled"}>Commencer · ${pluriel(n, "collection")}</button>`, { filet: true })}`;
 });
@@ -270,8 +278,8 @@ ecran("14", "B", "Filtres de la carte", "", () => {
     <div class="rangee entre"><span class="t-titre-m">Filtres</span>${lien("Réinitialiser", { action: "reinitFiltres" })}</div>
     <div style="margin-top:20px"><div class="curseur-ligne"><span class="t-texte-petit">Rayon</span><span class="t-texte-petit secondaire" id="rayon-val">${ETAT.reglages.rayon} m</span></div>
       <input type="range" min="200" max="2000" step="100" value="${ETAT.reglages.rayon}" data-input="rayon"></div>
-    <p class="t-texte-meta secondaire" style="margin:20px 0 10px">Collections</p>
-    <div class="puces retour-ligne">${[["toutes", "Toutes"], ...D.collections.map((c) => [c.id, c.nom])].map(([id, nom]) => puce(nom, f.collection === id, ` data-action="filtreCarte" data-cle="collection" data-val="${id}"`)).join("")}</div>
+    <div style="margin-top:20px">${boutonChoix("Collection",
+      f.collection === "toutes" ? "Toutes" : (collection(f.collection) || {}).nom || "Toutes", "ouvrirChoixCollectionCarte")}</div>
     <p class="t-texte-meta secondaire" style="margin:20px 0 10px">État</p>
     <div class="puces retour-ligne">${[["tous", "Tous"], ["nouveaux", "Nouveaux"]].map(([id, nom]) => puce(nom, f.etat === id, ` data-action="filtreCarte" data-cle="etat" data-val="${id}"`)).join("")}</div>
     <div style="margin-top:12px">${ligne("Seulement ce qui me manque", { toggle: "manquants" })}</div>
@@ -505,16 +513,39 @@ ecran("19.2", "B", "Identifier le scrap", "grille", () => {
     ${champ("Titre", p.titre || "", { id: "titre-capture", placeholder: "Ex. Concert au Studio Belleville" })}
     ${champ("Lieu", p.lieu || "Rue de Belleville", { id: "lieu-capture" })}
     <p class="t-texte-meta secondaire" style="margin:4px 0 10px">Collection</p>
-    <div class="puces retour-ligne">${collectionsOrdonnees().map((c) => puce(`${c.nom} · ${progression(c.id).n}/${c.total}`, p.collection === c.id, ` data-action="captureCollection" data-id="${c.id}"`)).join("")}</div>
-    <p class="t-texte-meta secondaire" style="margin:20px 0 10px">Tags</p>
-    <div class="puces retour-ligne" id="tags">${tags.map((t) => puce(t, (p.themes || []).includes(t), ` data-action="captureTag" data-id="${esc(t)}"`)).join("")}
-      <button class="puce" data-action="ajouterTag">+ Tag</button></div>
-    <div id="tag-perso" class="cache" style="margin-top:12px">${champ("Nouveau tag", "", { id: "nouveau-tag", placeholder: "Ex. Rap, Théâtre, Fanzine" })}</div>
-    <div style="margin-top:12px">
-      <div class="ligne"><span class="libelle">Scrap holo</span><button class="interrupteur${p.holo ? " on" : ""}" data-action="captureHolo"></button></div></div>
+    <div class="puces retour-ligne">${collectionsSuggerees().map((cid) => {
+      const c = collection(cid);
+      return puce(`${c.nom} · ${progression(cid).n}/${c.total}`, p.collection === cid, ` data-action="captureCollection" data-id="${cid}"`);
+    }).join("")}
+      <button class="puce" data-action="choixCollectionCapture">Autre…</button></div>
+    <div style="margin-top:20px">${repli("Tags et état", resumeTagsCapture(p), `
+      <div class="puces retour-ligne" id="tags">${tags.map((t) => puce(t, (p.themes || []).includes(t), ` data-action="captureTag" data-id="${esc(t)}"`)).join("")}
+        <button class="puce" data-action="ajouterTag">+ Tag</button></div>
+      <div id="tag-perso" class="cache" style="margin-top:12px">${champ("Nouveau tag", "", { id: "nouveau-tag", placeholder: "Ex. Rap, Théâtre, Fanzine" })}</div>
+      <div class="ligne" style="margin-top:4px"><span class="libelle">Scrap holo</span><button class="interrupteur${p.holo ? " on" : ""}" data-action="captureHolo"></button></div>`,
+      { id: "repli-tags", ouvert: (ETAT.ctx.replis || {})["repli-tags"] })}</div>
   </div>
   ${pied(bouton("Valider le scrap", { action: "validerCapture" }))}`;
 });
+
+/* On ne pose plus les douze collections à plat juste après la capture : les
+ * trois les plus probables (celles qu'on a ouvertes au départ, puis celles où
+ * on a déjà des scraps) et « Autre… » pour le reste. */
+function collectionsSuggerees() {
+  const p = ETAT.ctx.capture || {};
+  const l = collectionsOrdonnees().slice(0, 3).map((c) => c.id);
+  if (p.collection && !l.includes(p.collection)) { l.unshift(p.collection); l.pop(); }
+  return l;
+}
+const resumeTagsCapture = (p) => {
+  const n = (p.themes || []).length;
+  return (n ? pluriel(n, "tag") : "aucun tag") + (p.holo ? " · holo" : "");
+};
+/* Le repli est fermé : sa valeur doit rester juste sans redessiner la page. */
+function majResumeTags() {
+  const el = $("#repli-tags .repli-valeur");
+  if (el && ETAT.ctx.capture) el.textContent = resumeTagsCapture(ETAT.ctx.capture);
+}
 
 ecran("20", "B", "Capture échouée", "sombre", () => `
   <img class="camera" src="assets/affiches/different.jpg" alt="" style="object-fit:contain;opacity:.6">
@@ -674,7 +705,9 @@ const FONDS = [["papier", "Papier"], ["grille", "Quadrillé"], ["millimetre", "M
   ["calque", "Calque"], ["seyes", "Seyès"], ["carton", "Carton"], ["ardoise", "Ardoise"]];
 const SCOTCHS = [["transparent", "Transparent"], ["kraft", "Kraft"], ["papier", "Papier"], ["noir", "Noir"],
   ["rubalise", "Rubalise"], ["raye", "Rayé"], ["fluo", "Fluo"], ["dore", "Doré"]];
-const modeMur = () => (ETAT.ctx.murMode === "deplacer" ? "deplacer" : "regarder");
+/* Le mode n'est plus un choix à faire, c'est l'état du tiroir : fermé on
+ * regarde, ouvert on range. */
+const modeMur = () => (ETAT.ctx.tiroir ? "deplacer" : "regarder");
 
 const commandesZoom = () => `<div class="mur-commandes">
   <button data-zoom="plus" aria-label="Zoomer">${icone("plus", 20)}</button>
@@ -682,6 +715,21 @@ const commandesZoom = () => `<div class="mur-commandes">
   <button data-zoom="ensemble" aria-label="Vue d'ensemble">${icone("vue", 20)}</button>
   <span class="t-texte-meta secondaire" id="zoom-valeur">100 %</span>
 </div>`;
+
+/* Les trois familles d'éléments du scrapbook. On ne montre que celle qu'on
+ * regarde : les seize autres boutons ne servent pas tant qu'on n'a pas décidé
+ * si on écrivait, collait ou marquait. */
+const FAMILLES_NOTE = [
+  ["ecrire", "Écrire", "un titre, une étiquette, une date"],
+  ["papiers", "Papiers", "un papier qu'on colle et sur lequel on écrit"],
+  ["marquer", "Marquer", "flèches, étoiles, scotch, punaises"],
+];
+const MEMBRES_NOTE = {
+  ecrire: ["titre", "soustitre", "etiquette", "date"],
+  papiers: ["postit", "bulle", "ticket"],
+};
+const familleDe = (t) => (MEMBRES_NOTE.ecrire.includes(t) ? "ecrire" : MEMBRES_NOTE.papiers.includes(t) ? "papiers" : "marquer");
+const familleNote = () => ETAT.ctx.familleNote || "ecrire";
 
 const DECHIRURES = [
   ["coin", "Un coin", "Comme une affiche décollée trop vite."],
@@ -691,17 +739,38 @@ const DECHIRURES = [
   ["mesure", "Sur mesure", "Glisse ton doigt à travers le scrap."],
 ];
 
-/* La rangée d'outils, commune à tous les écrans du scrapbook. */
+/* Le tiroir d'outils.
+ *
+ * Avant, les sept outils étaient posés en permanence sous la page, y compris
+ * quand on venait simplement regarder son carnet : on filmait une barre
+ * d'outils plutôt qu'un scrapbook. Maintenant il n'y a qu'un bouton. On le
+ * touche, le tiroir monte, et on est en Disposition — le mode n'est plus une
+ * question posée à l'arrivée, c'est la conséquence du geste.
+ *
+ * Sur les écrans d'outil (24.1, 24.3, 25, 26, 27) le tiroir est ouvert par
+ * définition : on y est entré par lui. */
+const tiroirOuvert = (ecranId) => ecranId !== "24" || !!ETAT.ctx.tiroir;
+
 const OUTILS_SCRAPBOOK = (ecranId) => {
-  const mode = modeMur();
+  if (!tiroirOuvert(ecranId)) {
+    /* L'astuce ne sert que la première fois. Ensuite c'est du bruit : on la
+     * remplace par l'état de la page, qui lui change. */
+    const vue = ETAT.ctx.astuceVue;
+    ETAT.ctx.astuceVue = true;
+    return `<div class="outils outils--ferme">
+      <button class="puce puce--composer" data-action="ouvrirTiroir">${icone("composer", 16)}Composer</button>
+      <span class="t-texte-meta secondaire une-ligne astuce-ligne">${vue
+        ? "" : "Un doigt promène · deux doigts zooment"}</span>
+    </div>`;
+  }
   return `<div class="outils">
-    ${puce("Vue", ecranId === "24" && mode === "regarder", ' data-action="modeMur" data-id="regarder"')}
-    ${puce("Disposition", ecranId === "24" && mode === "deplacer", ' data-action="modeMur" data-id="deplacer"')}
+    ${puce("Ranger", ecranId === "24", ' data-action="modeMur" data-id="deplacer"')}
     ${puce("Ajouter", ecranId === "24.1", ' data-aller="24.1" data-remplace="1"')}
     ${puce("Dessiner", ecranId === "24.3", ' data-aller="24.3" data-remplace="1"')}
     ${puce("Scotch", ecranId === "26", ' data-aller="26" data-remplace="1"')}
     ${puce("Déchirer", ecranId === "27", ' data-aller="27" data-remplace="1"')}
     ${puce("Fond", ecranId === "25", ' data-aller="25" data-remplace="1"')}
+    <button class="puce puce--fin" data-action="fermerTiroir">Terminé</button>
   </div>`;
 };
 
@@ -722,8 +791,12 @@ function panneauOutil(ecranId, outils) {
     ${lien("OK", { action: "fermerOutil" })}</div>`;
 
   const corps = {
-    "24.1": `${tete("Ajouter", "touche un élément, il arrive au milieu")}
-      <div class="palette">${TYPES_NOTE.map((t) => `<button data-action="ajouterNote" data-id="${t.type}">
+    /* Seize éléments à plat, c'était un catalogue. Trois familles : on écrit,
+     * on colle un papier, ou on marque quelque chose. */
+    "24.1": `${tete("Ajouter", (FAMILLES_NOTE.find((f) => f[0] === familleNote()) || [])[2] || "")}
+      <div class="puces" style="margin-bottom:8px">${FAMILLES_NOTE.map(([k, nom]) =>
+        puce(nom, familleNote() === k, ` data-action="familleNote" data-id="${k}"`)).join("")}</div>
+      <div class="palette">${TYPES_NOTE.filter((t) => familleDe(t.type) === familleNote()).map((t) => `<button data-action="ajouterNote" data-id="${t.type}">
         <span class="palette-apercu note-${t.type}">${estTexte(t.type) ? esc((t.exemple || "Texte").slice(0, 3)) : icone(t.icone, 20)}</span>
         <span class="t-texte-meta">${t.nom}</span></button>`).join("")}</div>`,
 
@@ -748,10 +821,13 @@ function panneauOutil(ecranId, outils) {
       ${m.fond === "photo" && m.fondImage
         ? `<div class="curseur-ligne" style="margin-top:8px"><span class="t-texte-meta secondaire">Voile</span><span class="t-texte-meta secondaire" id="voile-val">${m.voile || 0} %</span></div>
            <input type="range" min="0" max="80" value="${m.voile || 0}" data-input="voileFond">`
-        : `<div class="rangee" style="gap:8px;margin-top:8px">
+        /* Neuf fois sur dix on choisit une matière et on s'arrête là : la
+         * teinte n'a pas à occuper une rangée tant qu'on ne la demande pas. */
+        : repli("Teinte", m.teinte ? "posée" : "aucune",
+          `<div class="rangee" style="gap:8px">
              ${rangeeCouleurs(m.teinte || "", "teinteFond")}
              ${m.teinte ? `<button class="puce" data-action="teinteFond" data-id="">Sans teinte</button>` : ""}
-           </div>`}`,
+           </div>`, { id: "repli-teinte", ouvert: !!(ETAT.ctx.replis || {})["repli-teinte"] })}`,
 
     "26": `${tete("Scotch", "touche un scrap où tu veux le poser")}
       <div class="rouleaux">${SCOTCHS.map(([k, nom]) =>
@@ -792,18 +868,25 @@ function majFondMur() {
   } else if (t) t.remove();
 }
 
-/* ───────── Les carnets, en haut du scrapbook.
+/* ───────── Les carnets.
  * Un carnet par ville : celui du quartier, en cours, et ceux qu'on a
- * rapportés d'ailleurs, terminés. Changer de carnet tourne une page. */
-function barreCarnets() {
+ * rapportés d'ailleurs, terminés. Changer de carnet tourne une page.
+ *
+ * La barre des carnets occupait une rangée entière en haut de la page, tout
+ * le temps. Elle est rentrée dans le titre : « Belleville ▾ ». On gagne la
+ * rangée, et le titre redevient un titre. */
+function ouvrirChoixCarnet() {
   const liste = ETAT.carnets || [];
-  if (liste.length < 2) return "";
-  return `<div class="carnets puces">${liste.map((c) => {
-    const actif = c.id === ETAT.carnetActif;
-    return `<button class="puce puce--carnet${actif ? " active" : ""}" data-action="ouvrirCarnet" data-id="${c.id}">
-      <i class="carnet-point${c.termine ? " fini" : ""}"></i>${esc(c.nom)}</button>`;
-  }).join("")}
-  <button class="puce puce--carnet nouveau" data-action="nouveauCarnet" aria-label="Nouveau carnet">${icone("plus", 16)}</button></div>`;
+  if (liste.length < 2) return ACTIONS.nouveauCarnet();
+  ouvrirFeuille("Mes carnets", "Un carnet par ville. Changer de carnet tourne une page.",
+    liste.map((c) => ({
+      id: c.id,
+      nom: c.nom,
+      sous: c.termine ? `${c.ville || ""} · terminé` : `${pluriel(c.items.length, "scrap")} · en cours`,
+      actif: c.id === ETAT.carnetActif,
+    })),
+    (id) => { if (id !== ETAT.carnetActif) ACTIONS.ouvrirCarnet({ dataset: { id } }); },
+    `<div style="margin-top:14px">${bouton("Nouveau carnet", { type: "secondaire", action: "nouveauCarnet" })}</div>`);
 }
 
 function scrapbook(ecranId) {
@@ -813,7 +896,7 @@ function scrapbook(ecranId) {
   const outils = OUTILS_SCRAPBOOK(ecranId);
 
   const panneaux = {
-    "24": `${mode === "deplacer" ? '<div class="panneau-item vide" id="panneau-item"></div>' : `<p class="astuce t-texte-meta secondaire">Un doigt promène la page · deux doigts zooment · touche un scrap pour l'ouvrir</p>`}
+    "24": `${mode === "deplacer" ? '<div class="panneau-item vide" id="panneau-item"></div>' : ""}
       ${outils}${onglets(1)}`,
     "24.1": panneauOutil("24.1", outils),
     "24.3": panneauOutil("24.3", outils),
@@ -828,15 +911,14 @@ function scrapbook(ecranId) {
     : `${esc(ETAT.utilisateur.quartier)} · ${pluriel(m.items.length, "scrap")} · page remplie à ${remplissage} %`;
   return `
   <header class="entete"><div class="entete-ligne">
-    <div class="entete-gauche"><span class="t-titre-m">${esc(m.nom || "Mon scrapbook")}${m.termine ? " <span class=\"t-texte-meta secondaire\">· terminé</span>" : ""}</span>
+    <div class="entete-gauche">
+      <button class="titre-carnet" data-action="ouvrirChoixCarnet">
+        <span class="t-titre-m">${esc(m.nom || "Mon scrapbook")}</span>${icone("chevronBas", 18)}</button>
       <span class="t-texte-meta secondaire">${sous}</span></div>
-    ${ecranId === "24" && mode === "deplacer"
-      ? lien("Valider", { action: "validerMur" })
-      : ecranId === "24"
-        ? `<button class="icone-bouton" data-aller="24.2" aria-label="Partager mon scrapbook">${icone("partager")}</button>`
-        : `<span class="t-texte-meta secondaire">${nomOutil}</span>`}
-  </div>
-  ${ecranId === "24" ? barreCarnets() : ""}</header>
+    ${ecranId === "24"
+      ? `<button class="icone-bouton" data-aller="24.2" aria-label="Partager mon scrapbook">${icone("partager")}</button>`
+      : `<span class="t-texte-meta secondaire">${nomOutil}</span>`}
+  </div></header>
   ${ecranId === "24" && !ETAT.ctx.livreOuvert ? `<div class="livre" id="livre" aria-hidden="true">
     <i class="livre-couv gauche"></i><i class="livre-couv droite"></i>
     <span class="livre-titre">${logo(28)}<span class="t-texte-meta">${esc(m.nom || ETAT.utilisateur.quartier)}</span></span>
@@ -946,8 +1028,16 @@ const quartiers = () => new Set(idsScraps().map((id) => scrap(id).arr)).size;
 /* Dispositions de la collection : on range ses scraps comme on veut. */
 const DISPOS = [["mosaique", "grille4", "Mosaïque"], ["dense", "grille9", "Serré"], ["liste", "liste", "Liste"], ["plein", "empile", "En grand"]];
 const dispoCourante = () => ETAT.ctx.dispoColl || "mosaique";
-const choixDispo = () => `<div class="dispos">${DISPOS.map(([id, ic, nom]) =>
-  `<button class="dispo${dispoCourante() === id ? " active" : ""}" data-action="choisirDispo" data-id="${id}" aria-label="${nom}" title="${nom}">${icone(ic, 20)}</button>`).join("")}</div>`;
+const dispoInfo = () => DISPOS.find(([id]) => id === dispoCourante()) || DISPOS[0];
+/* Les quatre dispositions tenaient une rangée entière alors qu'une seule est
+ * active : un bouton qui porte l'icône courante, et les quatre s'ouvrent au
+ * toucher. Pareil pour les six tris. */
+const choixDispo = () => `<button class="dispo actif" data-action="ouvrirChoixDispo"
+  aria-label="Disposition" title="Disposition · ${dispoInfo()[2]}">${icone(dispoInfo()[1], 20)}</button>`;
+const nomFiltreColl = () => (FILTRES_COLL.find(([id]) => id === (ETAT.ctx.filtreColl || "derniers")) || FILTRES_COLL[0])[1];
+const barreTriColl = () => `<div class="rangee entre" style="gap:8px">
+  ${boutonChoix("Tri", nomFiltreColl(), "ouvrirChoixTri")}
+  ${choixDispo()}</div>`;
 
 function murScraps(ids, o = {}) {
   const dispo = dispoCourante();
@@ -973,13 +1063,9 @@ ecran("28", "D", "Ma collection", "grille", () => {
   return `
   ${grandTitre("Ma collection", `${pluriel(totalScraps(), "scrap")} · ${pluriel(quartiers(), "quartier")}`, lien("Sélectionner", { aller: "29" }))}
   <div class="defile">
-    <div class="rangee entre" style="gap:12px;align-items:center">
-      <div class="puces" style="flex:1">${FILTRES_COLL.map(([id, nom]) => puce(nom, (ETAT.ctx.filtreColl || "derniers") === id, ` data-action="filtreColl" data-id="${id}"`)).join("")}</div>
-    </div>
-    <div class="rangee entre" style="margin:12px 0 4px">
-      <span class="t-texte-meta secondaire">${pluriel(ids.length, "scrap")} affiché${ids.length > 1 ? "s" : ""}</span>${choixDispo()}
-    </div>
-    <div style="margin:8px 0 20px">${ligne("Mes collections", { aller: "30", valeur: `${enCours} en cours` })}</div>
+    ${barreTriColl()}
+    <div style="margin:12px 0 20px">${ligne("Mes collections", { aller: "30", valeur: `${enCours} en cours` })}</div>
+    <p class="t-texte-meta secondaire" style="margin:0 0 10px">${pluriel(ids.length, "scrap")} affiché${ids.length > 1 ? "s" : ""}</p>
     ${murScraps(ids)}
   </div>
   ${onglets(2)}`;
@@ -991,8 +1077,8 @@ ecran("29", "D", "Sélection", "grille", () => {
   return `
   ${grandTitre("Sélection", sel.length ? `${pluriel(sel.length, "sélectionné")} · le dernier : N° ${pad3(scrap(der).num)}` : "Touche les scraps à mettre en avant", lien("Annuler", { action: "annulerSelection" }))}
   <div class="defile">
-    <div class="puces" style="margin-bottom:12px">${FILTRES_COLL.map(([id, nom]) => puce(nom, (ETAT.ctx.filtreColl || "derniers") === id, ` data-action="filtreColl" data-id="${id}"`)).join("")}</div>
-    <div class="rangee entre" style="margin-bottom:16px"><span class="t-texte-meta secondaire">Disposition</span>${choixDispo()}</div>
+    ${barreTriColl()}
+    <div style="height:16px"></div>
     ${murScraps(scrapsTries(), {
       action: "choisirSel", selection: sel,
       carte: (id) => { const i = sel.indexOf(id); return { action: "choisirSel", coche: i >= 0 ? String(i + 1).padStart(2, "0") : "", choisie: i >= 0 }; },
@@ -1301,13 +1387,17 @@ ecran("34", "E", "Placer sur ma vitrine", "grille", () => {
     <div class="rangee">${avatarPersonne(48)}<div><span class="t-titre-m" style="display:block">${esc(u.nom)}</span><span class="t-texte-meta secondaire">${esc(u.quartier)} · rang ${u.rang}</span></div></div>
     <p class="t-texte-meta secondaire" style="margin:20px 0 8px">Vitrine · glisse un scrap pour le placer</p>
     <div class="vitrine fond-papier" id="vitrine"><div class="vitrine-plan" id="vplan"></div></div>
-    <div id="reglages-vitrine" style="margin-top:16px">${sel ? `
-      <span class="t-texte-meta secondaire">Scrap sélectionné · N° ${pad3(scrap(sel.id).num)}</span>
-      <div style="margin-top:12px"><div class="curseur-ligne"><span class="t-texte-petit">Taille</span><span class="t-texte-petit secondaire" id="v-taille">${Math.round((sel.w / 100) * 100)} %</span></div>
-        <input type="range" min="60" max="180" value="${sel.w}" data-input="vitrineTaille"></div>
-      <div style="margin-top:8px"><div class="curseur-ligne"><span class="t-texte-petit">Rotation</span><span class="t-texte-petit secondaire" id="v-rot">${sel.rot}°</span></div>
-        <input type="range" min="-20" max="20" value="${sel.rot}" data-input="vitrineRotation"></div>
-      <div style="margin-top:8px">${lien("Retirer de la vitrine", { action: "retirerVitrine" })}</div>` : ""}</div>
+    <div id="reglages-vitrine" style="margin-top:16px">${sel
+      /* Les deux curseurs ne servent qu'à l'affiche touchée : ils se replient
+       * tant qu'on n'a rien choisi, et s'ouvrent avec le nom du scrap. */
+      ? repli(`Régler · N° ${pad3(scrap(sel.id).num)}`, `${Math.round(sel.w)} % · ${sel.rot}°`, `
+        <div><div class="curseur-ligne"><span class="t-texte-petit">Taille</span><span class="t-texte-petit secondaire" id="v-taille">${Math.round((sel.w / 100) * 100)} %</span></div>
+          <input type="range" min="60" max="180" value="${sel.w}" data-input="vitrineTaille"></div>
+        <div style="margin-top:8px"><div class="curseur-ligne"><span class="t-texte-petit">Rotation</span><span class="t-texte-petit secondaire" id="v-rot">${sel.rot}°</span></div>
+          <input type="range" min="-20" max="20" value="${sel.rot}" data-input="vitrineRotation"></div>
+        <div style="margin-top:8px">${lien("Retirer de la vitrine", { action: "retirerVitrine" })}</div>`,
+        { id: "repli-vitrine", ouvert: !!(ETAT.ctx.replis || {})["repli-vitrine"] })
+      : `<p class="t-texte-petit secondaire" style="margin:0">Touche un scrap de la vitrine pour le régler.</p>`}</div>
   </div>
   ${pied(bouton("Valider", { action: "validerVitrine" }))}`;
 }, (r) => vitrineMonter($("#vitrine", r), true));
@@ -1345,9 +1435,10 @@ ecran("35", "E", "Profil vu par les autres", "grille", () => {
         .map(([v, l]) => `<div><div class="t-titre-l">${v}</div><span class="t-texte-meta secondaire">${l}</span></div>`).join("")}
     </div>
     <div style="padding:20px var(--marge) 24px">
-      <p class="t-texte-meta secondaire" style="margin:0 0 10px">Ce qu'il y a dans sa collection</p>
-      <div class="barres-rarete">${rep.map((x) => `<span class="barre-rarete rarete-${x.cle}" style="--part:${x.part}">
-        <i></i><span class="t-texte-meta">${esc(x.nom)}</span><span class="t-texte-meta secondaire">${x.n}</span></span>`).join("")}</div>
+      ${repli("Ce qu'il y a dans sa collection", rep.map((x) => `${x.n} ${x.nom.toLowerCase()}`).slice(0, 2).join(" · "),
+        `<div class="barres-rarete">${rep.map((x) => `<span class="barre-rarete rarete-${x.cle}" style="--part:${x.part}">
+          <i></i><span class="t-texte-meta">${esc(x.nom)}</span><span class="t-texte-meta secondaire">${x.n}</span></span>`).join("")}</div>`,
+        { id: "repli-rarete", ouvert: !!(ETAT.ctx.replis || {})["repli-rarete"] })}
 
       <div class="deux-col" style="margin-top:24px">
         <div><p class="t-texte-meta secondaire" style="margin:0 0 8px">Scrap mis en avant</p>

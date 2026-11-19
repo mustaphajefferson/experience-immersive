@@ -338,11 +338,27 @@ function murMonter(racine, outil) {
   const ajuster = () => appliquer();
   window.addEventListener("resize", ajuster);
 
+  /* ───────── Les commandes de zoom se rangent toutes seules.
+   * Elles ne servent qu'au moment où on cadre : elles apparaissent au premier
+   * geste sur la page et s'effacent après deux secondes d'immobilité. Rien
+   * n'est caché derrière un bouton — c'est l'écran qui se range. */
+  const cmd = $(".mur-commandes", racine);
+  let minuteur = null;
+  const eveiller = () => {
+    if (!cmd) return;
+    cmd.classList.add("eveil");
+    clearTimeout(minuteur);
+    minuteur = setTimeout(() => cmd.classList.remove("eveil"), 2000);
+  };
+  zone.addEventListener("pointerdown", eveiller, { passive: true });
+  zone.addEventListener("wheel", eveiller, { passive: true });
+
   /* commandes de zoom posées par l'écran */
   zone.addEventListener("click", (e) => {
     const b = e.target.closest("[data-zoom]");
     if (!b) return;
     e.stopPropagation();
+    eveiller();
     const [cx, cy] = centre();
     if (b.dataset.zoom === "ensemble") { centrerPage(kEnsemble()); vibrer(8); }
     else cadrer(vue.k * (b.dataset.zoom === "plus" ? 1.35 : 1 / 1.35), cx, cy);
@@ -617,7 +633,11 @@ function murMonter(racine, outil) {
     toast("Déchiré. Le morceau reste dans ta collection.");
   }
 
-  return () => { window.removeEventListener("resize", ajuster); zone.removeEventListener("wheel", roulette); };
+  return () => {
+    window.removeEventListener("resize", ajuster);
+    zone.removeEventListener("wheel", roulette);
+    clearTimeout(minuteur);
+  };
 }
 
 /* Rangements proposés quand rien n'est sélectionné */
