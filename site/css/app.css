@@ -2261,9 +2261,11 @@ img.affiche-papier.prete { animation: affiche-encre .52s cubic-bezier(.3, .82, .
    Fermé, il ne reste qu'un bouton : on filme une page de scrapbook, pas une
    barre d'outils. */
 .outils--ferme { align-items: center; gap: 10px; }
+/* Composer est ce qui agit sur cet écran : il est donc rouge, en aplat, et
+   c'est le seul rouge de la page. Pas de bouton plein noir. */
 .puce--composer {
   display: inline-flex; align-items: center; gap: 6px; flex: none;
-  background: var(--fond-inverse); color: var(--texte-inverse); box-shadow: none;
+  background: var(--accent-capture); color: var(--accent-sur-accent); box-shadow: none;
 }
 .puce--composer svg { display: block; }
 .puce--fin { flex: none; margin-left: auto; box-shadow: inset 0 0 0 1px var(--trait-fort); }

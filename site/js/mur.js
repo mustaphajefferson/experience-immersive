@@ -330,6 +330,13 @@ function murMonter(racine, outil) {
     }
   }
   appliquer();
+  /* En arrivant droit sur le scrapbook (lien direct, rechargement), l'écran
+   * n'est pas encore mesuré : la largeur vaut zéro, la page partait donc à
+   * l'échelle zéro et le carnet restait blanc. On recadre à la première image
+   * dès que la largeur est connue. */
+  if (!vue.k) requestAnimationFrame(() => {
+    if (!vue.k && zone.clientWidth) { cadrerDepart(); appliquer(); }
+  });
   if (volCible && ETAT.ctx.vol) {
     const vol = ETAT.ctx.vol; ETAT.ctx.vol = null;
     requestAnimationFrame(() => volArriver(vol, plan.querySelector(`[data-item="${CSS.escape(volCible)}"]`),
