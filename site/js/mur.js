@@ -653,7 +653,6 @@ function panneauRangements() {
   return `<div class="panneau-item-int">
     <div class="rangee entre">
       <span class="t-texte-meta secondaire">Touche un scrap, ou range la page d'un coup</span>
-      <button class="bouton-lien t-texte-meta" data-action="modeMur" data-id="regarder">Terminé</button>
     </div>
     <div class="puces" style="margin-top:8px">
       ${RANGEMENTS.map(([k, nom]) => `<button class="puce" data-action="rangerMur" data-id="${k}">${nom}</button>`).join("")}
